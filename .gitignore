@@ -1,0 +1,77 @@
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore user-specific files
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Ignore Visual Studio specific files
+.vscode/
+.vs/
+.vscode/settings.json
+
+# Ignore NuGet packages
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Ignore build results
+*.dll
+*.exe
+*.app
+*.log
+*.pdb
+*.cache
+*.ilk
+*.obj
+*.o
+*.a
+*.lib
+*.so
+*.dylib
+*.class
+
+# Ignore publish output
+publish/
+
+# Ignore temporary files
+*.tmp
+*.temp
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Ignore compiled files
+*.dll
+*.exe
+*.app
+*.log
+*.pdb
+*.cache
+*.ilk
+*.obj
+*.o
+*.a
+*.lib
+*.so
+*.dylib
+*.class
+
+# Ignore Rider project files
+.idea/
+
+# Ignore JetBrains Rider specific files
+.idea/
+*.sln.iml
+
+# Ignore macOS specific files
+.DS_Store
+
+# Ignore Windows specific files
+Thumbs.db
+ehthumbs.db
