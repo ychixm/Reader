@@ -23,6 +23,7 @@ namespace Reader
         private readonly ObservableCollection<ChapterListElement> Views;
         private const int MaxTitleLength = 40; // Define the maximum character limit for the title
         private System.Windows.Threading.DispatcherTimer _resizeTimer;
+        private int _lastColumnCount = 0;
 
         public MainWindow()
         {
@@ -44,36 +45,86 @@ namespace Reader
 
         private void UpdateGridLayout()
         {
-            if (ChapterListGrid.Dispatcher.CheckAccess())
+            // Ensure running on UI thread - this method is called by UI events or
+            // after async operations marshalling to UI, so it should be on UI thread.
+            // If not, Dispatcher.Invoke would be needed. Assuming it's called correctly.
+
+            if (ChapterListGrid.ActualWidth == 0) // Grid not yet rendered
             {
-                ChapterListGrid.Children.Clear();
-                ChapterListGrid.RowDefinitions.Clear();
+                return;
+            }
+
+            double availableSpace = ChapterListGrid.ActualWidth;
+            int newColumnCount = (int)Math.Max(1, Math.Floor(availableSpace / ChapterListElement.DesignWidth));
+
+            // Early exit if column count and item count haven't changed
+            if (newColumnCount == _lastColumnCount && ChapterListGrid.Children.Count == Views.Count)
+            {
+                bool allInPlace = true;
+                for(int i = 0; i < Views.Count; i++)
+                {
+                    var view = Views[i];
+                    int expectedRow = i / newColumnCount;
+                    int expectedCol = i % newColumnCount;
+                    if (Grid.GetRow(view) != expectedRow || Grid.GetColumn(view) != expectedCol || view.Parent != ChapterListGrid)
+                    {
+                        allInPlace = false;
+                        break;
+                    }
+                }
+                if (allInPlace) return;
+            }
+
+            // Update Column Definitions only if column count changed
+            if (newColumnCount != _lastColumnCount || ChapterListGrid.ColumnDefinitions.Count != newColumnCount)
+            {
                 ChapterListGrid.ColumnDefinitions.Clear();
-
-                double availableSpace = ChapterListGrid.ActualWidth;
-                int columns = (int)Math.Max(1, Math.Floor(availableSpace / ChapterListElement.DesignWidth));
-
-                for (int i = 0; i < columns; i++)
+                for (int i = 0; i < newColumnCount; i++)
                 {
                     ChapterListGrid.ColumnDefinitions.Add(new ColumnDefinition());
                 }
+                _lastColumnCount = newColumnCount;
+            }
 
-                int row = 0;
-                int column = 0;
-                foreach (var view in Views)
+            // Row definitions are simpler to clear and rebuild as needed during element placement
+            ChapterListGrid.RowDefinitions.Clear();
+
+            // Ensure all views are in the grid and correctly positioned
+            for (int i = 0; i < Views.Count; i++)
+            {
+                var view = Views[i];
+                if (view.Parent != ChapterListGrid)
                 {
-                    if (column == columns)
-                    {
-                        column = 0;
-                        row++;
-                        ChapterListGrid.RowDefinitions.Add(new RowDefinition());
-                    }
-
-                    Grid.SetRow(view, row);
-                    Grid.SetColumn(view, column);
+                     // If view was parented to something else, it would need to be removed from old parent first.
+                     // Assuming ChapterListElement instances are only parented to this grid or are new.
                     ChapterListGrid.Children.Add(view);
-                    column++;
                 }
+
+                int row = i / newColumnCount;
+                int column = i % newColumnCount;
+
+                Grid.SetRow(view, row);
+                Grid.SetColumn(view, column);
+
+                // Add new row definitions as needed
+                if (ChapterListGrid.RowDefinitions.Count <= row)
+                {
+                    ChapterListGrid.RowDefinitions.Add(new RowDefinition());
+                }
+            }
+
+            // Remove any children from grid that are no longer in Views
+            List<UIElement> childrenToRemove = new List<UIElement>();
+            foreach (UIElement child in ChapterListGrid.Children)
+            {
+                if (child is ChapterListElement cle && !Views.Contains(cle))
+                {
+                    childrenToRemove.Add(child);
+                }
+            }
+            foreach (UIElement childToRemove in childrenToRemove)
+            {
+                ChapterListGrid.Children.Remove(childToRemove);
             }
         }
 
@@ -96,8 +147,8 @@ namespace Reader
                 };
 
                 chapterListElement.SetLabelText(directory.Name);
-                // Set a default/empty image source initially.
-                chapterListElement.SetImageSource(new BitmapImage(new Uri("")));
+                // Set the NoImage.png as the default placeholder
+                chapterListElement.SetImageSource(new BitmapImage(new Uri("pack://application:,,,/Ressources/NoImage.png")));
 
                 Views.Add(chapterListElement); // Add every chapter element to the list.
 
