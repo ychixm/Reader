@@ -10,6 +10,8 @@ using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using Reader.Business;
 using Reader.UserControls;
+using System; // Required for EventArgs and TimeSpan
+using System.Windows.Threading; // Required for DispatcherTimer
 
 namespace Reader
 {
@@ -20,12 +22,23 @@ namespace Reader
     {
         private readonly ObservableCollection<ChapterListElement> Views;
         private const int MaxTitleLength = 40; // Define the maximum character limit for the title
+        private System.Windows.Threading.DispatcherTimer _resizeTimer;
 
         public MainWindow()
         {
             InitializeComponent();
             Views = [];
             LoadChapterListAsync();
+            UpdateGridLayout();
+
+            _resizeTimer = new System.Windows.Threading.DispatcherTimer();
+            _resizeTimer.Interval = TimeSpan.FromMilliseconds(200);
+            _resizeTimer.Tick += ResizeTimer_Tick;
+        }
+
+        private void ResizeTimer_Tick(object? sender, EventArgs e)
+        {
+            _resizeTimer.Stop();
             UpdateGridLayout();
         }
 
@@ -66,7 +79,8 @@ namespace Reader
 
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            UpdateGridLayout();
+            _resizeTimer.Stop();
+            _resizeTimer.Start();
         }
 
         private async void LoadChapterListAsync()
@@ -103,7 +117,7 @@ namespace Reader
                         }
 
                         // Ensure the image is decoded on this background thread and not on the UI thread.
-                        thumbnail.CreateOptions = BitmapCreateOptions.IgnorePlaceHolder;
+                        thumbnail.CreateOptions = BitmapCreateOptions.None;
                         thumbnail.CacheOption = BitmapCacheOption.OnLoad;
 
                         thumbnail.EndInit(); // This performs the decoding.
@@ -143,7 +157,6 @@ namespace Reader
         private void ChapterListElement_Loaded(object? sender, EventArgs e)
         {
             // Update the list when a ChapterListElement has finished loading
-            UpdateGridLayout();
         }
 
         public void AddImageTab(string directoryPath, List<string> imagePaths, bool switchToTab)
