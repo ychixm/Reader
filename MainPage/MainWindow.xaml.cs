@@ -84,36 +84,47 @@ namespace Reader
                 var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
                 if (imageSourceUri != null)
                 {
-                    // Get image dimensions. Consider making Tools.GetImageDimensions async if it's slow.
+                    // Assuming Tools.GetImageDimensions is fast. If not, it should also be run asynchronously.
                     var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
 
-                    BitmapImage? uiImageSource = null;
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        uiImageSource = new BitmapImage();
-                        uiImageSource.BeginInit();
-                        uiImageSource.UriSource = imageSourceUri; // imageSourceUri from the outer scope
-                        if (width > height) // width & height from outer scope
+                    BitmapImage? finalThumbnail = await Task.Run(() => {
+                        BitmapImage thumbnail = new BitmapImage();
+                        thumbnail.BeginInit();
+                        thumbnail.UriSource = imageSourceUri; // UriSource is set on the background thread.
+
+                        // Set decode properties based on dimensions.
+                        if (width > height)
                         {
-                            uiImageSource.DecodePixelWidth = ChapterListElement.DesignWidth;
+                            thumbnail.DecodePixelWidth = ChapterListElement.DesignWidth;
                         }
                         else
                         {
-                            uiImageSource.DecodePixelHeight = ChapterListElement.ImageHeight;
+                            thumbnail.DecodePixelHeight = ChapterListElement.ImageHeight;
                         }
-                        uiImageSource.EndInit();
-                        uiImageSource.Freeze(); // Important for performance and cross-thread access
+
+                        // Ensure the image is decoded on this background thread and not on the UI thread.
+                        thumbnail.CreateOptions = BitmapCreateOptions.IgnorePlaceHolder;
+                        thumbnail.CacheOption = BitmapCacheOption.OnLoad;
+
+                        thumbnail.EndInit(); // This performs the decoding.
+                        thumbnail.Freeze();  // Allow the BitmapImage to be used on the UI thread.
+                        return thumbnail;
                     });
 
+                    // Operations below this line are back on the UI thread due to 'await'.
                     chapterListElement.Loaded += ChapterListElement_Loaded;
-                    if (uiImageSource == null)
+
+                    if (finalThumbnail == null)
                     {
+                        // If thumbnail creation failed or resulted in null, use an empty BitmapImage.
+                        // This matches the original code's behavior for a null uiImageSource.
                         chapterListElement.SetImageSource(new BitmapImage(new Uri("")));
                     }
                     else
                     {
-                        chapterListElement.SetImageSource(uiImageSource);
+                        chapterListElement.SetImageSource(finalThumbnail);
                     }
+
                     chapterListElement.SetLabelText(directory.Name);
 
                     Views.Add(chapterListElement);
