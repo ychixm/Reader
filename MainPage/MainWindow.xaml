@@ -9,7 +9,8 @@
     mc:Ignorable="d"
     Width="{x:Static SystemParameters.PrimaryScreenWidth}"
     Height="{x:Static SystemParameters.PrimaryScreenHeight}"
-    Title="MainWindow">
+    Title="MainWindow"
+    SizeChanged="MainWindow_SizeChanged">
 
     <Grid x:Name="MainFrameGrid">
         <Grid.RowDefinitions>
@@ -38,16 +39,9 @@
                 <TabItem.Header>
                     <TextBlock x:Name="MainTabHeaderTextBlock" Text="Chapters" />
                 </TabItem.Header>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Views}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal"
-                           ItemWidth="{x:Static UserControls:ChapterListElement.DesignWidth}"
-                           ItemHeight="{x:Static UserControls:ChapterListElement.DesignHeight}" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
+                <ScrollViewer CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" x:Name="ScrollViewerChapterList" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Grid x:Name="ChapterListGrid" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    </Grid>
                 </ScrollViewer>
             </TabItem>
         </TabControl>

@@ -29,8 +29,8 @@ namespace Reader.UserControls
         private readonly Dictionary<string, BitmapImage> _imageCache = new Dictionary<string, BitmapImage>();
         private readonly HashSet<string> _currentlyPreloading = new HashSet<string>();
         private CancellationTokenSource _preloadCts = new CancellationTokenSource();
-        private const int PreloadNextCount = 2; // Number of next images to preload
-        private const int PreloadPrevCount = 1; // Number of previous images to preload
+        private const int PreloadNextCount = 2;
+        private const int PreloadPrevCount = 1;
 
         private static BitmapImage? _errorPlaceholderImage;
 
@@ -44,23 +44,28 @@ namespace Reader.UserControls
                     BitmapImage bmp = new BitmapImage();
                     bmp.BeginInit();
                     bmp.UriSource = new Uri(placeholderPath, UriKind.Absolute);
-                    bmp.CacheOption = BitmapCacheOption.OnLoad; // Load it fully
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
                     bmp.EndInit();
-                    bmp.Freeze(); // Make it shareable
+                    bmp.Freeze();
                     _errorPlaceholderImage = bmp;
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Failed to load error placeholder image for ImageTabControl: {ex.Message}");
-                    // _errorPlaceholderImage will remain null if loading fails
                 }
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImageTabControl"/> class.
+        /// Displays images from the provided paths and enables navigation, caching, and preloading.
+        /// </summary>
+        /// <param name="imagePaths">A list of absolute string paths to the images to be displayed.</param>
+        /// <exception cref="ArgumentNullException">Thrown if imagePaths is null.</exception>
         public ImageTabControl(List<string> imagePaths)
         {
             InitializeComponent();
-            EnsureErrorPlaceholderLoaded(); // Call the helper
+            EnsureErrorPlaceholderLoaded();
 
             _imagePaths = imagePaths ?? throw new ArgumentNullException(nameof(imagePaths));
             _preloadCts = new CancellationTokenSource();
@@ -68,7 +73,7 @@ namespace Reader.UserControls
             if (_imagePaths.Count == 0)
             {
                 LoadingIndicator.Visibility = Visibility.Collapsed;
-                DisplayedImage.Source = _errorPlaceholderImage; // Show placeholder if no images
+                DisplayedImage.Source = _errorPlaceholderImage;
                 return;
             }
 
@@ -79,11 +84,33 @@ namespace Reader.UserControls
             this.Focus();
         }
 
+        private static BitmapImage? LoadBitmapImageFromFile(string imagePath, CancellationToken token)
+        {
+            if (token.IsCancellationRequested) return null;
+
+            try
+            {
+                BitmapImage bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.UriSource = new Uri(imagePath);
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.CreateOptions = BitmapCreateOptions.None;
+                bmp.EndInit();
+                bmp.Freeze();
+                return token.IsCancellationRequested ? null : bmp;
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException ))
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading BitmapImage from file {imagePath}: {ex.Message}");
+                return null;
+            }
+        }
+
         private async void LoadAndDisplayImage(int index)
         {
             if (index < 0 || index >= _imagePaths.Count)
             {
-                DisplayedImage.Source = _errorPlaceholderImage; // Index out of bounds
+                DisplayedImage.Source = _errorPlaceholderImage;
                 LoadingIndicator.Visibility = Visibility.Collapsed;
                 return;
             }
@@ -118,17 +145,7 @@ namespace Reader.UserControls
                         return;
                     }
 
-                    bitmapToShow = await Task.Run(async () => {
-                        if (currentToken.IsCancellationRequested) return null;
-                        BitmapImage bmp = new BitmapImage();
-                        bmp.BeginInit();
-                        bmp.UriSource = new Uri(imagePath);
-                        bmp.CacheOption = BitmapCacheOption.OnLoad;
-                        bmp.CreateOptions = BitmapCreateOptions.None;
-                        bmp.EndInit();
-                        bmp.Freeze();
-                        return currentToken.IsCancellationRequested ? null : bmp;
-                    }, currentToken);
+                    bitmapToShow = await Task.Run(() => LoadBitmapImageFromFile(imagePath, currentToken), currentToken);
 
                     if (bitmapToShow != null && !currentToken.IsCancellationRequested)
                     {
@@ -140,8 +157,8 @@ namespace Reader.UserControls
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
-                    Debug.WriteLine($"Failed to load image {imagePath}: {ex.Message}");
-                    bitmapToShow = null; // Ensure it's null on error
+                    Debug.WriteLine($"Failed to load image {imagePath} in LoadAndDisplayImage Task: {ex.Message}");
+                    bitmapToShow = null;
                 }
             }
 
@@ -158,7 +175,7 @@ namespace Reader.UserControls
             }
             else
             {
-                DisplayedImage.Source = _errorPlaceholderImage; // Use the placeholder
+                DisplayedImage.Source = _errorPlaceholderImage;
             }
 
             LoadingIndicator.Visibility = Visibility.Collapsed;
@@ -222,17 +239,7 @@ namespace Reader.UserControls
             {
                 if (token.IsCancellationRequested) return;
 
-                BitmapImage? bitmap = await Task.Run(async () => {
-                    if (token.IsCancellationRequested) return null;
-                    BitmapImage loadedBitmap = new BitmapImage();
-                    loadedBitmap.BeginInit();
-                    loadedBitmap.UriSource = new Uri(imagePath);
-                    loadedBitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    loadedBitmap.CreateOptions = BitmapCreateOptions.None;
-                    loadedBitmap.EndInit();
-                    loadedBitmap.Freeze();
-                    return token.IsCancellationRequested ? null : loadedBitmap;
-                }, token);
+                BitmapImage? bitmap = await Task.Run(() => LoadBitmapImageFromFile(imagePath, token), token);
 
                 if (bitmap != null && !token.IsCancellationRequested)
                 {
@@ -244,7 +251,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                Debug.WriteLine($"Failed to preload image {imagePath}: {ex.Message}");
+                Debug.WriteLine($"Failed to preload image {imagePath} in EnsureImageLoadedAsync Task: {ex.Message}");
             }
             finally
             {
