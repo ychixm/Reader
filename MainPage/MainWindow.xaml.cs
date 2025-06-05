@@ -7,9 +7,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Xml.Linq;
+// Removed: using System.Xml.Linq;
 using Reader.Business;
 using Reader.UserControls;
+using System;
+using System.Threading.Tasks; // Added for Task
 
 namespace Reader
 {
@@ -18,125 +20,94 @@ namespace Reader
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly ObservableCollection<ChapterListElement> Views;
-        private const int MaxTitleLength = 40; // Define the maximum character limit for the title
+        private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
+
+        /// <summary>
+        /// Gets the collection of ChapterListElement items to be displayed.
+        /// This collection is bound to the ItemsControl in the XAML.
+        /// </summary>
+        public ObservableCollection<ChapterListElement> Views { get; } = new ObservableCollection<ChapterListElement>();
+        private const int MaxTitleLength = 40;
 
         public MainWindow()
         {
             InitializeComponent();
-            Views = [];
+            this.DataContext = this;
             LoadChapterListAsync();
-            UpdateGridLayout();
         }
 
-        private void UpdateGridLayout()
+        private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
         {
-            if (ChapterListGrid.Dispatcher.CheckAccess())
+            ChapterListElement chapterListElement = new(directory)
             {
-                ChapterListGrid.Children.Clear();
-                ChapterListGrid.RowDefinitions.Clear();
-                ChapterListGrid.ColumnDefinitions.Clear();
+                BorderBrush = Brushes.DarkGray,
+                BorderThickness = new Thickness(1),
+            };
 
-                double availableSpace = ChapterListGrid.ActualWidth;
-                int columns = (int)Math.Max(1, Math.Floor(availableSpace / ChapterListElement.DesignWidth));
+            chapterListElement.SetLabelText(directory.Name);
+            string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PlaceholderImageRelativePath);
+            chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
-                for (int i = 0; i < columns; i++)
+            Views.Add(chapterListElement);
+
+            var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
+
+            if (imageSourceUri != null)
+            {
+                BitmapImage? finalThumbnail = await Task.Run(() => {
+                    var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
+                    BitmapImage thumbnail = new BitmapImage();
+                    thumbnail.BeginInit();
+                    thumbnail.UriSource = imageSourceUri;
+                    if (width > height) { thumbnail.DecodePixelWidth = (int)ChapterListElement.DesignWidth; }
+                    else { thumbnail.DecodePixelHeight = ChapterListElement.ImageHeight; }
+                    thumbnail.CreateOptions = BitmapCreateOptions.None;
+                    thumbnail.CacheOption = BitmapCacheOption.OnLoad;
+                    thumbnail.EndInit();
+                    thumbnail.Freeze();
+                    return thumbnail;
+                });
+
+                if (finalThumbnail != null)
                 {
-                    ChapterListGrid.ColumnDefinitions.Add(new ColumnDefinition());
-                }
-
-                int row = 0;
-                int column = 0;
-                foreach (var view in Views)
-                {
-                    if (column == columns)
-                    {
-                        column = 0;
-                        row++;
-                        ChapterListGrid.RowDefinitions.Add(new RowDefinition());
-                    }
-
-                    Grid.SetRow(view, row);
-                    Grid.SetColumn(view, column);
-                    ChapterListGrid.Children.Add(view);
-                    column++;
+                    chapterListElement.SetImageSource(finalThumbnail);
                 }
             }
-        }
-
-        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            UpdateGridLayout();
         }
 
         private async void LoadChapterListAsync()
         {
-            List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(""));
-
-            foreach (var directory in chapters)
+            try
             {
-                ChapterListElement chapterListElement = new(directory)
+                List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(""));
+
+                foreach (var directory in chapters)
                 {
-                    BorderBrush = Brushes.DarkGray,
-                    BorderThickness = new Thickness(1),
-                };
-
-                var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
-                if (imageSourceUri != null)
-                {
-                    BitmapImage? uiImageSource = null;
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        uiImageSource = new BitmapImage();
-                        uiImageSource.BeginInit();
-                        uiImageSource.UriSource = imageSourceUri;
-                        var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
-                        if (width > height)
-                        {
-                            uiImageSource.DecodePixelWidth = ChapterListElement.DesignWidth;
-                        }
-                        else
-                        {
-                            uiImageSource.DecodePixelHeight = ChapterListElement.ImageHeight;
-                        }
-                        uiImageSource.EndInit();
-                    });
-
-                    chapterListElement.Loaded += ChapterListElement_Loaded;
-                    if (uiImageSource == null)
-                    {
-                        chapterListElement.SetImageSource(new BitmapImage(new Uri("")));
-                    }
-                    else
-                    {
-                        chapterListElement.SetImageSource(uiImageSource);
-                    }
-                    chapterListElement.SetLabelText(directory.Name);
-
-                    Views.Add(chapterListElement);
-
-                    chapterListElement.IsFinished();
+                    await ProcessChapterDirectoryAsync(directory);
                 }
+                MainTabHeaderTextBlock.Text += " (Loaded)";
             }
-
-            // Update the grid layout after all chapters have been loaded
-            UpdateGridLayout();
-
-            // Update the text to "Chapters (Loaded)"
-            MainTabHeaderTextBlock.Text += " (Loaded)";
+            catch (Exception ex)
+            {
+                // System.Diagnostics.Debug.WriteLine($"LoadChapterListAsync - An error occurred: {ex.Message}");
+                // Optionally, update the UI to show an error message
+                // Or handle exception more gracefully
+            }
         }
 
-        private void ChapterListElement_Loaded(object? sender, EventArgs e)
-        {
-            // Update the list when a ChapterListElement has finished loading
-            UpdateGridLayout();
-        }
+        // Deleted ChapterListElement_Loaded method
 
+        /// <summary>
+        /// Adds a new tab for displaying images from a specified directory path,
+        /// or selects an existing tab if one for the directory already exists.
+        /// </summary>
+        /// <param name="directoryPath">The full path to the directory containing images.</param>
+        /// <param name="imagePaths">A list of full paths to the images within the directory.</param>
+        /// <param name="switchToTab">True to select the tab after adding/finding it; false otherwise.</param>
         public void AddImageTab(string directoryPath, List<string> imagePaths, bool switchToTab)
         {
-            // Check if a tab for the directory already exists
             var existingTab = MainTabControl.Items.OfType<TabItem>()
-                .FirstOrDefault(tab => tab.Header.ToString() == $"Images - {Path.GetFileName(directoryPath)}");
+                .FirstOrDefault(tab => tab.Tag is string path && path == directoryPath);
 
             if (existingTab != null)
             {
@@ -150,7 +121,6 @@ namespace Reader
             var imageTabControl = new ImageTabControl(imagePaths);
             string tabTitle = Path.GetFileName(directoryPath);
 
-            // Truncate the title if it exceeds the maximum character limit
             if (tabTitle.Length > MaxTitleLength)
             {
                 tabTitle = string.Concat(tabTitle.AsSpan(0, MaxTitleLength), "...");
@@ -159,7 +129,8 @@ namespace Reader
             var tabItem = new TabItem
             {
                 Header = tabTitle,
-                Content = imageTabControl
+                Content = imageTabControl,
+                Tag = directoryPath
             };
 
             MainTabControl.Items.Add(tabItem);
@@ -180,7 +151,5 @@ namespace Reader
                 }
             }
         }
-
-        
     }
 }

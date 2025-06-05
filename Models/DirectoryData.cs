@@ -1,16 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
+using System.Collections.Generic; // Keep for List<string>
+using System.IO; // Keep for DirectoryInfo
+
+// Removed: using System.Linq;
+// Removed: using System.Text;
+// Removed: using System.Threading.Tasks;
 
 namespace Reader.Models
 {
+    /// <summary>
+    /// Represents data associated with a directory/chapter.
+    /// </summary>
     public class DirectoryData(DirectoryInfo directoryInfo)
     {
-        public DirectoryInfo DirectoryInfo { get; set; } = directoryInfo;
-        public string DisplayName { get; set; }
-        public List<string> Tags { get; set; }
+        /// <summary>
+        /// Gets the directory information.
+        /// </summary>
+        public DirectoryInfo DirectoryInfo { get; } = directoryInfo ?? throw new ArgumentNullException(nameof(directoryInfo));
+
+        /// <summary>
+        /// Gets or sets the display name for the directory.
+        /// Defaults to the directory's actual name.
+        /// </summary>
+        public string DisplayName { get; set; } = directoryInfo?.Name ?? string.Empty;
+
+        /// <summary>
+        /// Gets or sets a list of tags associated with the directory.
+        /// Initialized to an empty list.
+        /// </summary>
+        public List<string> Tags { get; set; } = new List<string>();
     }
 }
