@@ -148,9 +148,11 @@ namespace Reader
 
                 chapterListElement.SetLabelText(directory.Name);
                 // Set the NoImage.png as the default placeholder
-                chapterListElement.SetImageSource(new BitmapImage(new Uri("pack://application:,,,/Ressources/NoImage.png")));
+                string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ressources", "NoImage.png");
+                chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
                 Views.Add(chapterListElement); // Add every chapter element to the list.
+                UpdateGridLayout(); // <-- New call here
 
                 // Now, try to load and set the actual image for it.
                 var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
@@ -182,7 +184,7 @@ namespace Reader
             }
 
             // Update the grid layout after all chapters have been loaded
-            UpdateGridLayout();
+            // UpdateGridLayout(); // <-- This call should be removed/commented
 
             // Update the text to "Chapters (Loaded)"
             MainTabHeaderTextBlock.Text += " (Loaded)";
