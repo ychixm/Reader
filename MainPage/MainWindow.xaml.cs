@@ -84,10 +84,10 @@ namespace Reader
                 var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
                 if (imageSourceUri != null)
                 {
-                    BitmapImage? uiImageSource = null;
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    var uiImageSource = await Application.Current.Dispatcher.InvokeAsync(() => new BitmapImage());
+
+                    await Task.Run(() =>
                     {
-                        uiImageSource = new BitmapImage();
                         uiImageSource.BeginInit();
                         uiImageSource.UriSource = imageSourceUri;
                         var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
@@ -100,6 +100,7 @@ namespace Reader
                             uiImageSource.DecodePixelHeight = ChapterListElement.ImageHeight;
                         }
                         uiImageSource.EndInit();
+                        uiImageSource.Freeze(); // Freeze for use on UI thread
                     });
 
                     chapterListElement.Loaded += ChapterListElement_Loaded;

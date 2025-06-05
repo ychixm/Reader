@@ -40,17 +40,27 @@ namespace Reader.UserControls
             this.Focus();
         }
 
-        private void LoadAndDisplayImage(int index)
+        private async void LoadAndDisplayImage(int index)
         {
             if (index >= 0 && index < _imagePaths.Count)
             {
-                BitmapImage bitmap = new();
-                bitmap.BeginInit();
-                bitmap.UriSource = new Uri(_imagePaths[index]);
-                bitmap.EndInit();
-                DisplayedImage.Dispatcher.BeginInvoke(() =>
+                // Clear the previous image and show loading indicator
+                DisplayedImage.Source = null;
+                LoadingIndicator.Visibility = Visibility.Visible;
+
+                await Task.Run(() =>
                 {
-                    DisplayedImage.Source = bitmap;
+                    BitmapImage bitmap = new();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = new Uri(_imagePaths[index]);
+                    bitmap.EndInit();
+                    bitmap.Freeze(); // Freeze the BitmapImage for use on the UI thread
+
+                    DisplayedImage.Dispatcher.BeginInvoke(() =>
+                    {
+                        DisplayedImage.Source = bitmap;
+                        LoadingIndicator.Visibility = Visibility.Collapsed;
+                    });
                 });
             }
         }
