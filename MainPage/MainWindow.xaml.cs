@@ -95,55 +95,38 @@ namespace Reader
                     BorderThickness = new Thickness(1),
                 };
 
+                chapterListElement.SetLabelText(directory.Name);
+                // Set a default/empty image source initially.
+                chapterListElement.SetImageSource(new BitmapImage(new Uri("")));
+
+                Views.Add(chapterListElement); // Add every chapter element to the list.
+
+                // Now, try to load and set the actual image for it.
                 var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
+
                 if (imageSourceUri != null)
                 {
-                    // Assuming Tools.GetImageDimensions is fast. If not, it should also be run asynchronously.
                     var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
 
                     BitmapImage? finalThumbnail = await Task.Run(() => {
                         BitmapImage thumbnail = new BitmapImage();
                         thumbnail.BeginInit();
-                        thumbnail.UriSource = imageSourceUri; // UriSource is set on the background thread.
-
-                        // Set decode properties based on dimensions.
-                        if (width > height)
-                        {
-                            thumbnail.DecodePixelWidth = ChapterListElement.DesignWidth;
-                        }
-                        else
-                        {
-                            thumbnail.DecodePixelHeight = ChapterListElement.ImageHeight;
-                        }
-
-                        // Ensure the image is decoded on this background thread and not on the UI thread.
+                        thumbnail.UriSource = imageSourceUri;
+                        if (width > height) { thumbnail.DecodePixelWidth = ChapterListElement.DesignWidth; }
+                        else { thumbnail.DecodePixelHeight = ChapterListElement.ImageHeight; }
                         thumbnail.CreateOptions = BitmapCreateOptions.None;
                         thumbnail.CacheOption = BitmapCacheOption.OnLoad;
-
-                        thumbnail.EndInit(); // This performs the decoding.
-                        thumbnail.Freeze();  // Allow the BitmapImage to be used on the UI thread.
+                        thumbnail.EndInit();
+                        thumbnail.Freeze();
                         return thumbnail;
                     });
 
-                    // Operations below this line are back on the UI thread due to 'await'.
-                    chapterListElement.Loaded += ChapterListElement_Loaded;
-
-                    if (finalThumbnail == null)
+                    if (finalThumbnail != null)
                     {
-                        // If thumbnail creation failed or resulted in null, use an empty BitmapImage.
-                        // This matches the original code's behavior for a null uiImageSource.
-                        chapterListElement.SetImageSource(new BitmapImage(new Uri("")));
-                    }
-                    else
-                    {
+                        // Update the existing element's image
                         chapterListElement.SetImageSource(finalThumbnail);
                     }
-
-                    chapterListElement.SetLabelText(directory.Name);
-
-                    Views.Add(chapterListElement);
-
-                    chapterListElement.IsFinished();
+                    // If finalThumbnail is null, it keeps the default empty image set earlier.
                 }
             }
 
