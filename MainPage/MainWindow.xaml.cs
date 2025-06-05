@@ -71,7 +71,7 @@ namespace Reader
                         BitmapImage thumbnail = new BitmapImage();
                         thumbnail.BeginInit();
                         thumbnail.UriSource = imageSourceUri;
-                        if (width > height) { thumbnail.DecodePixelWidth = ChapterListElement.DesignWidth; }
+                        if (width > height) { thumbnail.DecodePixelWidth = (int)ChapterListElement.DesignWidth; }
                         else { thumbnail.DecodePixelHeight = ChapterListElement.ImageHeight; }
                         thumbnail.CreateOptions = BitmapCreateOptions.None;
                         thumbnail.CacheOption = BitmapCacheOption.OnLoad;
