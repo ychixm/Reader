@@ -5,6 +5,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="clr-namespace:Reader"
     xmlns:UserControls="clr-namespace:Reader.UserControls"
+    xmlns:customPanels="clr-namespace:WpfToolkit.Controls"
     x:Class="Reader.MainWindow"
     mc:Ignorable="d"
     Width="{x:Static SystemParameters.PrimaryScreenWidth}"
@@ -38,11 +39,13 @@
                 <TabItem.Header>
                     <TextBlock x:Name="MainTabHeaderTextBlock" Text="Chapters" />
                 </TabItem.Header>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Views}">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True">
+                    <ItemsControl ItemsSource="{Binding Views}"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal"
+                                <customPanels:VirtualizingWrapPanel Orientation="Horizontal"
                            ItemWidth="{x:Static UserControls:ChapterListElement.DesignWidth}"
                            ItemHeight="{x:Static UserControls:ChapterListElement.DesignHeight}" />
                             </ItemsPanelTemplate>
