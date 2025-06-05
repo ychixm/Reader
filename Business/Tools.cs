@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+// using System.Diagnostics; // Will be removed
 using System.IO;
 using System.Linq;
 // System.Text and System.Threading.Tasks are not strictly needed by the final version of this file.
@@ -25,7 +25,7 @@ namespace Reader.Business
         /// <returns>The first parent of type T, or null if not found.</returns>
         public static T? FindParent<T>(DependencyObject child) where T : DependencyObject
         {
-            if (child == null) return null; // Added null check for child
+            if (child == null) return null;
             DependencyObject parentObject = VisualTreeHelper.GetParent(child);
 
             if (parentObject == null) return null;
@@ -48,15 +48,15 @@ namespace Reader.Business
         /// <returns>A list of DirectoryInfo objects. Returns an empty list if an error occurs.</returns>
         public static List<DirectoryInfo> GetDirectories(string path)
         {
-            string pathToLog = path; // Use original path for logging in case of early error
+            string pathToLog = path;
             try
             {
                 string effectivePath = path;
                 if (string.IsNullOrEmpty(path))
                 {
                     effectivePath = AppDomain.CurrentDomain.BaseDirectory;
-                    Debug.WriteLine($"GetDirectories: input path was empty or null, defaulting to scan {effectivePath}");
-                    pathToLog = effectivePath; // Update pathToLog if default is used for the operation
+                    // Debug.WriteLine($"GetDirectories: input path was empty or null, defaulting to scan {effectivePath}");
+                    pathToLog = effectivePath;
                 }
                 return Directory.GetDirectories(effectivePath)
                                 .Select(directoryPath => new DirectoryInfo(directoryPath))
@@ -64,7 +64,7 @@ namespace Reader.Business
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error getting directories from path '{pathToLog}': {ex.Message}");
+                // Debug.WriteLine($"Error getting directories from path '{pathToLog}': {ex.Message}");
                 return new List<DirectoryInfo>();
             }
         }
@@ -79,7 +79,7 @@ namespace Reader.Business
         {
             if (directoryInfo == null)
             {
-                Debug.WriteLine("GetFirstImageInDirectory: directoryInfo was null.");
+                // Debug.WriteLine("GetFirstImageInDirectory: directoryInfo was null.");
                 return null;
             }
 
@@ -98,7 +98,7 @@ namespace Reader.Business
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error getting first image in directory {directoryInfo.FullName}: {ex.Message}");
+                // Debug.WriteLine($"Error getting first image in directory {directoryInfo.FullName}: {ex.Message}");
                 return null;
             }
         }
@@ -112,7 +112,7 @@ namespace Reader.Business
         {
             if (string.IsNullOrEmpty(imagePath))
             {
-                Debug.WriteLine("GetImageDimensions: imagePath was null or empty.");
+                // Debug.WriteLine("GetImageDimensions: imagePath was null or empty.");
                 return (0,0);
             }
 
@@ -125,7 +125,7 @@ namespace Reader.Business
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error getting image dimensions for {imagePath}: {ex.Message}");
+                // Debug.WriteLine($"Error getting image dimensions for {imagePath}: {ex.Message}");
                 return (0, 0);
             }
         }

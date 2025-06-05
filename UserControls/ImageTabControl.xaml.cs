@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+// using System.Diagnostics; // Will be removed
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -51,7 +51,7 @@ namespace Reader.UserControls
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to load error placeholder image for ImageTabControl: {ex.Message}");
+                    // System.Diagnostics.Debug.WriteLine($"Failed to load error placeholder image for ImageTabControl: {ex.Message}");
                 }
             }
         }
@@ -101,7 +101,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException ))
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading BitmapImage from file {imagePath}: {ex.Message}");
+                // System.Diagnostics.Debug.WriteLine($"Error loading BitmapImage from file {imagePath}: {ex.Message}");
                 return null;
             }
         }
@@ -157,7 +157,7 @@ namespace Reader.UserControls
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
-                    Debug.WriteLine($"Failed to load image {imagePath} in LoadAndDisplayImage Task: {ex.Message}");
+                    // Debug.WriteLine($"Failed to load image {imagePath} in LoadAndDisplayImage Task: {ex.Message}");
                     bitmapToShow = null;
                 }
             }
@@ -215,7 +215,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                Debug.WriteLine($"Error during preloading group: {ex.Message}");
+                // Debug.WriteLine($"Error during preloading group: {ex.Message}");
             }
         }
 
@@ -251,7 +251,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                Debug.WriteLine($"Failed to preload image {imagePath} in EnsureImageLoadedAsync Task: {ex.Message}");
+                // Debug.WriteLine($"Failed to preload image {imagePath} in EnsureImageLoadedAsync Task: {ex.Message}");
             }
             finally
             {

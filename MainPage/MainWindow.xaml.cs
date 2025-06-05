@@ -7,11 +7,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Xml.Linq; // This seems unused, consider removing if no XAML resources or LINQ to XML is used.
+// Removed: using System.Xml.Linq;
 using Reader.Business;
 using Reader.UserControls;
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks; // Added for Task
 
 namespace Reader
@@ -50,7 +49,7 @@ namespace Reader
             chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
             Views.Add(chapterListElement);
-            Debug.WriteLine($"LoadChapterListAsync - Added chapter: {directory.Name}. Views count: {Views.Count}");
+            // Debug.WriteLine($"LoadChapterListAsync - Added chapter: {directory.Name}. Views count: {Views.Count}");
 
             var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
 
@@ -79,7 +78,7 @@ namespace Reader
 
         private async void LoadChapterListAsync()
         {
-            Debug.WriteLine("LoadChapterListAsync - Started.");
+            // Debug.WriteLine("LoadChapterListAsync - Started.");
             try
             {
                 List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(""));
@@ -88,13 +87,14 @@ namespace Reader
                 {
                     await ProcessChapterDirectoryAsync(directory);
                 }
-                Debug.WriteLine($"LoadChapterListAsync - Finished loop. Final Views count: {Views.Count}");
+                // Debug.WriteLine($"LoadChapterListAsync - Finished loop. Final Views count: {Views.Count}");
                 MainTabHeaderTextBlock.Text += " (Loaded)";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"LoadChapterListAsync - An error occurred: {ex.Message}");
+                // System.Diagnostics.Debug.WriteLine($"LoadChapterListAsync - An error occurred: {ex.Message}");
                 // Optionally, update the UI to show an error message
+                // Or handle exception more gracefully
             }
         }
 
