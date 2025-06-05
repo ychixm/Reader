@@ -49,7 +49,6 @@ namespace Reader
             chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
             Views.Add(chapterListElement);
-            // Debug.WriteLine($"LoadChapterListAsync - Added chapter: {directory.Name}. Views count: {Views.Count}");
 
             var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
 
@@ -78,7 +77,6 @@ namespace Reader
 
         private async void LoadChapterListAsync()
         {
-            // Debug.WriteLine("LoadChapterListAsync - Started.");
             try
             {
                 List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(""));
@@ -87,7 +85,6 @@ namespace Reader
                 {
                     await ProcessChapterDirectoryAsync(directory);
                 }
-                // Debug.WriteLine($"LoadChapterListAsync - Finished loop. Final Views count: {Views.Count}");
                 MainTabHeaderTextBlock.Text += " (Loaded)";
             }
             catch (Exception ex)
@@ -122,7 +119,7 @@ namespace Reader
             }
 
             var imageTabControl = new ImageTabControl(imagePaths);
-            string tabTitle = Path.GetFileName(directoryPath); // System.IO.Path
+            string tabTitle = Path.GetFileName(directoryPath);
 
             if (tabTitle.Length > MaxTitleLength)
             {
