@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Collections.ObjectModel; // Was already present
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -10,8 +10,8 @@ using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using Reader.Business;
 using Reader.UserControls;
-using System; // Required for EventArgs and TimeSpan
-using System.Windows.Threading; // Required for DispatcherTimer
+using System;
+// System.Windows.Threading is no longer needed as DispatcherTimer is removed
 
 namespace Reader
 {
@@ -20,118 +20,25 @@ namespace Reader
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly ObservableCollection<ChapterListElement> Views;
+        // Changed Views to a public auto-property with initializer
+        public ObservableCollection<ChapterListElement> Views { get; } = new ObservableCollection<ChapterListElement>();
         private const int MaxTitleLength = 40; // Define the maximum character limit for the title
-        private System.Windows.Threading.DispatcherTimer _resizeTimer;
-        private int _lastColumnCount = 0;
+        // Removed _resizeTimer field
+        // Removed _lastColumnCount field
 
         public MainWindow()
         {
             InitializeComponent();
-            Views = [];
-            LoadChapterListAsync(); // UpdateGridLayout is called incrementally within this now
-
-            _resizeTimer = new System.Windows.Threading.DispatcherTimer();
-            _resizeTimer.Interval = TimeSpan.FromMilliseconds(200);
-            _resizeTimer.Tick += ResizeTimer_Tick;
+            this.DataContext = this; // Set DataContext
+            // Views is initialized by its property initializer, removed Views = [];
+            LoadChapterListAsync();
+            // Removed _resizeTimer initialization
+            // Removed initial UpdateGridLayout() call
         }
 
-        private void ResizeTimer_Tick(object? sender, EventArgs e)
-        {
-            _resizeTimer.Stop();
-            UpdateGridLayout();
-        }
-
-        private void UpdateGridLayout()
-        {
-            // Ensure running on UI thread - this method is called by UI events or
-            // after async operations marshalling to UI, so it should be on UI thread.
-            // If not, Dispatcher.Invoke would be needed. Assuming it's called correctly.
-
-            if (ChapterListGrid.ActualWidth == 0) // Grid not yet rendered
-            {
-                return;
-            }
-
-            double availableSpace = ChapterListGrid.ActualWidth;
-            int newColumnCount = (int)Math.Max(1, Math.Floor(availableSpace / ChapterListElement.DesignWidth));
-
-            // Early exit if column count and item count haven't changed
-            if (newColumnCount == _lastColumnCount && ChapterListGrid.Children.Count == Views.Count)
-            {
-                bool allInPlace = true;
-                for(int i = 0; i < Views.Count; i++)
-                {
-                    var view = Views[i];
-                    int expectedRow = i / newColumnCount;
-                    int expectedCol = i % newColumnCount;
-                    if (Grid.GetRow(view) != expectedRow || Grid.GetColumn(view) != expectedCol || view.Parent != ChapterListGrid)
-                    {
-                        allInPlace = false;
-                        break;
-                    }
-                }
-                if (allInPlace) return;
-            }
-
-            // Update Column Definitions only if column count changed
-            if (newColumnCount != _lastColumnCount || ChapterListGrid.ColumnDefinitions.Count != newColumnCount)
-            {
-                ChapterListGrid.ColumnDefinitions.Clear();
-                for (int i = 0; i < newColumnCount; i++)
-                {
-                    ChapterListGrid.ColumnDefinitions.Add(new ColumnDefinition());
-                }
-                _lastColumnCount = newColumnCount;
-            }
-
-            // Row definitions are simpler to clear and rebuild as needed during element placement
-            ChapterListGrid.RowDefinitions.Clear();
-
-            // Ensure all views are in the grid and correctly positioned
-            for (int i = 0; i < Views.Count; i++)
-            {
-                var view = Views[i];
-                if (view.Parent != ChapterListGrid)
-                {
-                     // If view was parented to something else, it would need to be removed from old parent first.
-                     // Assuming ChapterListElement instances are only parented to this grid or are new.
-                    ChapterListGrid.Children.Add(view);
-                }
-
-                int row = i / newColumnCount;
-                int column = i % newColumnCount;
-
-                Grid.SetRow(view, row);
-                Grid.SetColumn(view, column);
-
-                // Add new row definitions as needed
-                if (ChapterListGrid.RowDefinitions.Count <= row)
-                {
-                    ChapterListGrid.RowDefinitions.Add(new RowDefinition());
-                }
-            }
-
-            // Remove any children from grid that are no longer in Views
-            List<UIElement> childrenToRemove = new List<UIElement>();
-            foreach (UIElement child in ChapterListGrid.Children)
-            {
-                if (child is ChapterListElement cle && !Views.Contains(cle))
-                {
-                    childrenToRemove.Add(child);
-                }
-            }
-            foreach (UIElement childToRemove in childrenToRemove)
-            {
-                ChapterListGrid.Children.Remove(childToRemove);
-            }
-        }
-
-        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            _resizeTimer.Stop();
-            _resizeTimer.Start();
-        }
+        // Removed ResizeTimer_Tick method
+        // Removed UpdateGridLayout method
+        // Removed MainWindow_SizeChanged method
 
         private async void LoadChapterListAsync()
         {
@@ -146,20 +53,18 @@ namespace Reader
                 };
 
                 chapterListElement.SetLabelText(directory.Name);
-                // Set the NoImage.png as the default placeholder
                 string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ressources", "NoImage.png");
                 chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
                 Views.Add(chapterListElement); // Add every chapter element to the list.
-                UpdateGridLayout(); // <-- New call here
+                // Removed UpdateGridLayout() call from here
 
-                // Now, try to load and set the actual image for it.
                 var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
 
                 if (imageSourceUri != null)
                 {
                     BitmapImage? finalThumbnail = await Task.Run(() => {
-                        var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath); // Moved inside
+                        var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
                         BitmapImage thumbnail = new BitmapImage();
                         thumbnail.BeginInit();
                         thumbnail.UriSource = imageSourceUri;
@@ -174,28 +79,22 @@ namespace Reader
 
                     if (finalThumbnail != null)
                     {
-                        // Update the existing element's image
                         chapterListElement.SetImageSource(finalThumbnail);
                     }
-                    // If finalThumbnail is null, it keeps the default empty image set earlier.
                 }
             }
-
-            // Update the grid layout after all chapters have been loaded
-            // UpdateGridLayout(); // This call was removed/commented in a previous step and is now fully deleted.
-
-            // Update the text to "Chapters (Loaded)"
+            // Removed final UpdateGridLayout() call from here
             MainTabHeaderTextBlock.Text += " (Loaded)";
         }
 
         private void ChapterListElement_Loaded(object? sender, EventArgs e)
         {
-            // Update the list when a ChapterListElement has finished loading
+            // This method is currently empty and was previously used for UpdateGridLayout.
+            // It can be removed if no longer needed for other purposes. For now, it's kept as empty.
         }
 
         public void AddImageTab(string directoryPath, List<string> imagePaths, bool switchToTab)
         {
-            // Check if a tab for the directory already exists using the Tag property
             var existingTab = MainTabControl.Items.OfType<TabItem>()
                 .FirstOrDefault(tab => tab.Tag is string path && path == directoryPath);
 
@@ -211,7 +110,6 @@ namespace Reader
             var imageTabControl = new ImageTabControl(imagePaths);
             string tabTitle = Path.GetFileName(directoryPath);
 
-            // Truncate the title if it exceeds the maximum character limit
             if (tabTitle.Length > MaxTitleLength)
             {
                 tabTitle = string.Concat(tabTitle.AsSpan(0, MaxTitleLength), "...");
@@ -219,9 +117,9 @@ namespace Reader
 
             var tabItem = new TabItem
             {
-                Header = tabTitle, // Display title (can be truncated)
+                Header = tabTitle,
                 Content = imageTabControl,
-                Tag = directoryPath // Store the full, non-truncated path
+                Tag = directoryPath
             };
 
             MainTabControl.Items.Add(tabItem);
@@ -242,7 +140,5 @@ namespace Reader
                 }
             }
         }
-
-        
     }
 }
