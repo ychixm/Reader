@@ -11,6 +11,7 @@ using System.Xml.Linq;
 using Reader.Business;
 using Reader.UserControls;
 using System;
+using System.Diagnostics; // Added for Debug.WriteLine
 // System.Windows.Threading is no longer needed as DispatcherTimer is removed
 
 namespace Reader
@@ -42,6 +43,7 @@ namespace Reader
 
         private async void LoadChapterListAsync()
         {
+            Debug.WriteLine("LoadChapterListAsync - Started.");
             List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(""));
 
             foreach (var directory in chapters)
@@ -57,6 +59,7 @@ namespace Reader
                 chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
                 Views.Add(chapterListElement); // Add every chapter element to the list.
+                Debug.WriteLine($"LoadChapterListAsync - Added chapter: {directory.Name}. Views count: {Views.Count}");
                 // Removed UpdateGridLayout() call from here
 
                 var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
@@ -83,6 +86,7 @@ namespace Reader
                     }
                 }
             }
+            Debug.WriteLine($"LoadChapterListAsync - Finished loop. Final Views count: {Views.Count}");
             // Removed final UpdateGridLayout() call from here
             MainTabHeaderTextBlock.Text += " (Loaded)";
         }

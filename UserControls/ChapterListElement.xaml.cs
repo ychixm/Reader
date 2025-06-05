@@ -19,8 +19,8 @@ namespace Reader.UserControls
         private DirectoryData _directory { get; set; }
         private List<string>? _imagePaths = null; // Made nullable and initialized to null
         public static readonly int ImageHeight = 250;
-        public static readonly int DesignHeight = 350;
-        public static readonly int DesignWidth = 199;
+        public static readonly double DesignHeight = 350.0;
+        public static readonly double DesignWidth = 199.0;
 
 
         public ChapterListElement(DirectoryInfo directoryInfo)
