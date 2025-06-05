@@ -50,7 +50,8 @@ namespace Reader.Business
                                               .Where(f => f.Extension.Equals(".jpg", System.StringComparison.OrdinalIgnoreCase) ||
                                                           f.Extension.Equals(".png", System.StringComparison.OrdinalIgnoreCase) ||
                                                           f.Extension.Equals(".bmp", System.StringComparison.OrdinalIgnoreCase) ||
-                                                          f.Extension.Equals(".gif", System.StringComparison.OrdinalIgnoreCase))
+                                                          f.Extension.Equals(".gif", System.StringComparison.OrdinalIgnoreCase) ||
+                                                          f.Extension.Equals(".webp", System.StringComparison.OrdinalIgnoreCase))
                                               .OrderBy(f => f.Name)
                                               .ToList();
 

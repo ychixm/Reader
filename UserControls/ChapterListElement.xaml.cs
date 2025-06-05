@@ -85,7 +85,8 @@ namespace Reader.UserControls
                     .Where(f => f.EndsWith(".jpg", System.StringComparison.OrdinalIgnoreCase) ||
                                 f.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase) ||
                                 f.EndsWith(".bmp", System.StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".gif", System.StringComparison.OrdinalIgnoreCase))
+                                f.EndsWith(".gif", System.StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".webp", System.StringComparison.OrdinalIgnoreCase))
                     .ToList());
 
                 mainWindow.AddImageTab(_directory.DirectoryInfo.FullName, _imagePaths, switchToTab);

@@ -197,9 +197,9 @@ namespace Reader
 
         public void AddImageTab(string directoryPath, List<string> imagePaths, bool switchToTab)
         {
-            // Check if a tab for the directory already exists
+            // Check if a tab for the directory already exists using the Tag property
             var existingTab = MainTabControl.Items.OfType<TabItem>()
-                .FirstOrDefault(tab => tab.Header.ToString() == $"Images - {Path.GetFileName(directoryPath)}");
+                .FirstOrDefault(tab => tab.Tag is string path && path == directoryPath);
 
             if (existingTab != null)
             {
@@ -221,8 +221,9 @@ namespace Reader
 
             var tabItem = new TabItem
             {
-                Header = tabTitle,
-                Content = imageTabControl
+                Header = tabTitle, // Display title (can be truncated)
+                Content = imageTabControl,
+                Tag = directoryPath // Store the full, non-truncated path
             };
 
             MainTabControl.Items.Add(tabItem);
