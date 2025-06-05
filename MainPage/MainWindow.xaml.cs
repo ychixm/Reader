@@ -29,8 +29,7 @@ namespace Reader
         {
             InitializeComponent();
             Views = [];
-            LoadChapterListAsync();
-            UpdateGridLayout();
+            LoadChapterListAsync(); // UpdateGridLayout is called incrementally within this now
 
             _resizeTimer = new System.Windows.Threading.DispatcherTimer();
             _resizeTimer.Interval = TimeSpan.FromMilliseconds(200);
@@ -159,9 +158,8 @@ namespace Reader
 
                 if (imageSourceUri != null)
                 {
-                    var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
-
                     BitmapImage? finalThumbnail = await Task.Run(() => {
+                        var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath); // Moved inside
                         BitmapImage thumbnail = new BitmapImage();
                         thumbnail.BeginInit();
                         thumbnail.UriSource = imageSourceUri;
@@ -184,7 +182,7 @@ namespace Reader
             }
 
             // Update the grid layout after all chapters have been loaded
-            // UpdateGridLayout(); // <-- This call should be removed/commented
+            // UpdateGridLayout(); // This call was removed/commented in a previous step and is now fully deleted.
 
             // Update the text to "Chapters (Loaded)"
             MainTabHeaderTextBlock.Text += " (Loaded)";

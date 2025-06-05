@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System; // Added for Action
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,13 +17,11 @@ namespace Reader.UserControls
     public partial class ChapterListElement : UserControl
     {
         private DirectoryData _directory { get; set; }
-        private List<string> _imagePaths;
+        private List<string>? _imagePaths = null; // Made nullable and initialized to null
         public static readonly int ImageHeight = 250;
         public static readonly int DesignHeight = 350;
         public static readonly int DesignWidth = 199;
 
-        // Declare the Loaded event
-        public new event EventHandler Loaded;
 
         public ChapterListElement(DirectoryInfo directoryInfo)
         {
@@ -40,12 +39,6 @@ namespace Reader.UserControls
 
         }
 
-        public void IsFinished()
-        {
-            // Raise the Loaded event 
-            Loaded?.Invoke(this, EventArgs.Empty);
-        }
-
 
         public void SetLabelText(string text)
         {
@@ -55,10 +48,15 @@ namespace Reader.UserControls
 
         public void SetImageSource(BitmapImage imageSource)
         {
-            ChapterImage.Dispatcher.Invoke(() =>
+            if (ChapterImage.Dispatcher.CheckAccess())
             {
                 ChapterImage.Source = imageSource;
-            });
+            }
+            else
+            {
+                // Use BeginInvoke for fire-and-forget update to UI thread
+                ChapterImage.Dispatcher.BeginInvoke(new Action(() => ChapterImage.Source = imageSource));
+            }
         }
 
         private void ChapterListElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -81,15 +79,21 @@ namespace Reader.UserControls
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)
             {
-                _imagePaths = await Task.Run(() => Directory.EnumerateFiles(_directory.DirectoryInfo.FullName)
-                    .Where(f => f.EndsWith(".jpg", System.StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".bmp", System.StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".gif", System.StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".webp", System.StringComparison.OrdinalIgnoreCase))
-                    .ToList());
+                if (_imagePaths == null) // Check if already populated
+                {
+                    _imagePaths = await Task.Run(() => Directory.EnumerateFiles(_directory.DirectoryInfo.FullName)
+                        .Where(f => f.EndsWith(".jpg", System.StringComparison.OrdinalIgnoreCase) ||
+                                    f.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase) ||
+                                    f.EndsWith(".bmp", System.StringComparison.OrdinalIgnoreCase) ||
+                                    f.EndsWith(".gif", System.StringComparison.OrdinalIgnoreCase) ||
+                                    f.EndsWith(".webp", System.StringComparison.OrdinalIgnoreCase))
+                        .ToList());
+                }
 
-                mainWindow.AddImageTab(_directory.DirectoryInfo.FullName, _imagePaths, switchToTab);
+                if (_imagePaths != null) // Add null check for safety
+                {
+                    mainWindow.AddImageTab(_directory.DirectoryInfo.FullName, _imagePaths, switchToTab);
+                }
             }
         }
 

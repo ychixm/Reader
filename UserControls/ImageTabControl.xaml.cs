@@ -32,23 +32,49 @@ namespace Reader.UserControls
         private const int PreloadNextCount = 2; // Number of next images to preload
         private const int PreloadPrevCount = 1; // Number of previous images to preload
 
+        private static BitmapImage? _errorPlaceholderImage;
+
+        private static void EnsureErrorPlaceholderLoaded()
+        {
+            if (_errorPlaceholderImage == null)
+            {
+                try
+                {
+                    string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ressources", "NoImage.png");
+                    BitmapImage bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(placeholderPath, UriKind.Absolute);
+                    bmp.CacheOption = BitmapCacheOption.OnLoad; // Load it fully
+                    bmp.EndInit();
+                    bmp.Freeze(); // Make it shareable
+                    _errorPlaceholderImage = bmp;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to load error placeholder image for ImageTabControl: {ex.Message}");
+                    // _errorPlaceholderImage will remain null if loading fails
+                }
+            }
+        }
+
         public ImageTabControl(List<string> imagePaths)
         {
             InitializeComponent();
+            EnsureErrorPlaceholderLoaded(); // Call the helper
+
             _imagePaths = imagePaths ?? throw new ArgumentNullException(nameof(imagePaths));
-            _preloadCts = new CancellationTokenSource(); // Initialize CTS
+            _preloadCts = new CancellationTokenSource();
 
             if (_imagePaths.Count == 0)
             {
                 LoadingIndicator.Visibility = Visibility.Collapsed;
-                // Optionally display a "No images" message
+                DisplayedImage.Source = _errorPlaceholderImage; // Show placeholder if no images
                 return;
             }
 
-            _currentIndex = 0; // Set the initial index to 0 to load the first image
-            LoadAndDisplayImage(_currentIndex); // This is async void
+            _currentIndex = 0;
+            LoadAndDisplayImage(_currentIndex);
 
-            // Set focus to the control to receive keyboard events
             this.Focusable = true;
             this.Focus();
         }
@@ -57,13 +83,13 @@ namespace Reader.UserControls
         {
             if (index < 0 || index >= _imagePaths.Count)
             {
+                DisplayedImage.Source = _errorPlaceholderImage; // Index out of bounds
+                LoadingIndicator.Visibility = Visibility.Collapsed;
                 return;
             }
             _currentIndex = index;
             string imagePath = _imagePaths[index];
 
-            // Cancel any ongoing preloads before starting a new one or loading the current image.
-            // Create a new CTS for future preloads.
             if (_preloadCts != null)
             {
                 _preloadCts.Cancel();
@@ -83,24 +109,24 @@ namespace Reader.UserControls
             }
             else
             {
-                // Image not in cache, load it
                 try
                 {
                     if (currentToken.IsCancellationRequested)
                     {
+                        DisplayedImage.Source = _errorPlaceholderImage;
                         LoadingIndicator.Visibility = Visibility.Collapsed;
                         return;
                     }
 
-                    bitmapToShow = await Task.Run(async () => { // Changed to async lambda
+                    bitmapToShow = await Task.Run(async () => {
                         if (currentToken.IsCancellationRequested) return null;
                         BitmapImage bmp = new BitmapImage();
                         bmp.BeginInit();
                         bmp.UriSource = new Uri(imagePath);
-                        bmp.CacheOption = BitmapCacheOption.OnLoad; // Load fully into memory
-                        bmp.CreateOptions = BitmapCreateOptions.None; // Changed from IgnorePlaceHolder if that was used
+                        bmp.CacheOption = BitmapCacheOption.OnLoad;
+                        bmp.CreateOptions = BitmapCreateOptions.None;
                         bmp.EndInit();
-                        bmp.Freeze(); // Allow cross-thread access
+                        bmp.Freeze();
                         return currentToken.IsCancellationRequested ? null : bmp;
                     }, currentToken);
 
@@ -115,12 +141,13 @@ namespace Reader.UserControls
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
                     Debug.WriteLine($"Failed to load image {imagePath}: {ex.Message}");
-                    bitmapToShow = null;
+                    bitmapToShow = null; // Ensure it's null on error
                 }
             }
 
             if (currentToken.IsCancellationRequested)
             {
+                DisplayedImage.Source = _errorPlaceholderImage;
                 LoadingIndicator.Visibility = Visibility.Collapsed;
                 return;
             }
@@ -131,15 +158,13 @@ namespace Reader.UserControls
             }
             else
             {
-                // Display a placeholder or leave blank if loading failed or was cancelled
-                DisplayedImage.Source = null;
+                DisplayedImage.Source = _errorPlaceholderImage; // Use the placeholder
             }
 
             LoadingIndicator.Visibility = Visibility.Collapsed;
 
             if (!currentToken.IsCancellationRequested)
             {
-                // Start preloading adjacent images with the current token
                 _ = PreloadAdjacentImagesAsync(_currentIndex, currentToken);
             }
         }
@@ -149,7 +174,6 @@ namespace Reader.UserControls
             if (token.IsCancellationRequested) return;
             List<Task> preloadTasks = new List<Task>();
 
-            // Preload next images
             for (int i = 1; i <= PreloadNextCount; i++)
             {
                 int nextIndex = currentIndex + i;
@@ -159,7 +183,6 @@ namespace Reader.UserControls
                 }
             }
 
-            // Preload previous images
             for (int i = 1; i <= PreloadPrevCount; i++)
             {
                 int prevIndex = currentIndex - i;
@@ -173,10 +196,8 @@ namespace Reader.UserControls
             {
                 await Task.WhenAll(preloadTasks);
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException)) // Don't log OperationCanceledException from Task.WhenAll
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                // Individual tasks already log their specific errors.
-                // This catches aggregate exceptions or issues with Task.WhenAll itself.
                 Debug.WriteLine($"Error during preloading group: {ex.Message}");
             }
         }
@@ -199,9 +220,9 @@ namespace Reader.UserControls
 
             try
             {
-                if (token.IsCancellationRequested) return; // Check token before Task.Run
+                if (token.IsCancellationRequested) return;
 
-                BitmapImage? bitmap = await Task.Run(async () => { // Changed to async lambda
+                BitmapImage? bitmap = await Task.Run(async () => {
                     if (token.IsCancellationRequested) return null;
                     BitmapImage loadedBitmap = new BitmapImage();
                     loadedBitmap.BeginInit();
@@ -238,7 +259,6 @@ namespace Reader.UserControls
         {
             if (_currentIndex > 0)
             {
-                // LoadAndDisplayImage will handle CTS cancellation and creation
                 LoadAndDisplayImage(_currentIndex - 1);
             }
         }
@@ -247,7 +267,6 @@ namespace Reader.UserControls
         {
             if (_currentIndex < _imagePaths.Count - 1)
             {
-                // LoadAndDisplayImage will handle CTS cancellation and creation
                 LoadAndDisplayImage(_currentIndex + 1);
             }
         }
@@ -278,16 +297,7 @@ namespace Reader.UserControls
             {
                 _currentlyPreloading.Clear();
             }
-            // DisplayedImage.CacheMode = null; // This property does not exist on Image control directly
             DisplayedImage.Source = null;
-
-            // Force garbage collection to release memory asynchronously - this is generally not recommended.
-            // Consider if this is truly necessary or if letting the GC manage memory is sufficient.
-            // Task.Run(() =>
-            // {
-            //     GC.Collect();
-            //     GC.WaitForPendingFinalizers();
-            // });
         }
     }
 }
