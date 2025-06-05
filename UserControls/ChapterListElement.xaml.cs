@@ -57,10 +57,7 @@ namespace Reader.UserControls
         {
             ChapterImage.Dispatcher.Invoke(() =>
             {
-                if (!imageSource.IsFrozen)
-                {
-                    ChapterImage.Source = imageSource;
-                }
+                ChapterImage.Source = imageSource;
             });
         }
 
