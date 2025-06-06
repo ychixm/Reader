@@ -381,7 +381,7 @@ namespace Reader
                 TabDropdownModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.TabDropdown);
         }
 
-        private async void RandomChapterButton_Click(object sender, RoutedEventArgs e)
+        private async Task OpenRandomChapter(bool switchToTab)
         {
             if (Views == null || !Views.Any())
             {
@@ -393,8 +393,6 @@ namespace Reader
             int randomIndex = random.Next(Views.Count);
             ChapterListElement selectedChapterElement = Views[randomIndex];
 
-            // Assuming ChapterListElement has a public property 'ChapterDirectory' of type DirectoryInfo
-            // This might need to be implemented in UserControls/ChapterListElement.xaml.cs as per plan step 3
             DirectoryInfo chapterDirectoryInfo = selectedChapterElement.ChapterDirectory;
 
             if (chapterDirectoryInfo == null)
@@ -422,11 +420,24 @@ namespace Reader
 
             if (imagePaths != null && imagePaths.Any())
             {
-                AddImageTab(chapterDirectoryInfo.FullName, imagePaths, true);
+                AddImageTab(chapterDirectoryInfo.FullName, imagePaths, switchToTab);
             }
             else
             {
                 MessageBox.Show($"No supported image files found in {chapterDirectoryInfo.FullName}.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private async void RandomChapterButton_Click(object sender, RoutedEventArgs e)
+        {
+            await OpenRandomChapter(true);
+        }
+
+        private async void RandomChapterButton_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Middle)
+            {
+                await OpenRandomChapter(false);
             }
         }
     }
