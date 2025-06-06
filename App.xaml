@@ -33,14 +33,14 @@
             <SolidColorBrush x:Key="TabItemBackground_MouseOver_Dark">#FF454545</SolidColorBrush>
             <SolidColorBrush x:Key="TabControlContentBackground_Dark">#FF252525</SolidColorBrush>
 
-            <!-- Generic Theme-Aware Brush Keys (Default to Light Theme via DynamicResource) -->
-            <SolidColorBrush x:Key="TabItemBackgroundBrush" Color="{DynamicResource TabItemBackground_Light}"/>
-            <SolidColorBrush x:Key="TabItemBorderBrush" Color="{DynamicResource TabItemBorderBrush_Light}"/>
-            <SolidColorBrush x:Key="TabItemForegroundBrush" Color="{DynamicResource TabItemForeground_Light}"/>
-            <SolidColorBrush x:Key="TabItemBackground_SelectedBrush" Color="{DynamicResource TabItemBackground_Selected_Light}"/>
-            <SolidColorBrush x:Key="TabItemForeground_SelectedBrush" Color="{DynamicResource TabItemForeground_Selected_Light}"/>
-            <SolidColorBrush x:Key="TabItemBackground_MouseOverBrush" Color="{DynamicResource TabItemBackground_MouseOver_Light}"/>
-            <SolidColorBrush x:Key="TabControlContentBackgroundBrush" Color="{DynamicResource TabControlContentBackground_Light}"/>
+            <!-- Generic Theme-Aware Brush Keys (Placeholders to be populated by ThemeManager) -->
+            <SolidColorBrush x:Key="TabItemBackgroundBrush"/>
+            <SolidColorBrush x:Key="TabItemBorderBrush"/>
+            <SolidColorBrush x:Key="TabItemForegroundBrush"/>
+            <SolidColorBrush x:Key="TabItemBackground_SelectedBrush"/>
+            <SolidColorBrush x:Key="TabItemForeground_SelectedBrush"/>
+            <SolidColorBrush x:Key="TabItemBackground_MouseOverBrush"/>
+            <SolidColorBrush x:Key="TabControlContentBackgroundBrush"/>
 
             <!-- TextBlock Styles -->
             <Style x:Key="DarkModeTextBlockStyle" TargetType="TextBlock"><Setter Property="Foreground" Value="White"/></Style>

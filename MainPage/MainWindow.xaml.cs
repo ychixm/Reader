@@ -14,20 +14,45 @@ using Reader.UserControls;
 using System;
 using System.Threading.Tasks; // Added for Task
 using System.Windows.Threading; // For DispatcherPriority
+using System.ComponentModel; // For INotifyPropertyChanged
+using System.Runtime.CompilerServices; // For CallerMemberName
+using Reader.Models; // For TabOverflowMode
 
 namespace Reader
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
 
         private ScrollViewer _tabItemsScrollViewer;
         private RepeatButton _leftScrollButton;
         private RepeatButton _rightScrollButton;
         private Button _tabListDropdownButton;
+
+        private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar; // Default mode
+        public TabOverflowMode CurrentTabOverflowMode
+        {
+            get => _currentTabOverflowMode;
+            set
+            {
+                if (_currentTabOverflowMode != value)
+                {
+                    _currentTabOverflowMode = value;
+                    OnPropertyChanged(); // Notify XAML that the property has changed
+                    SaveCurrentOverflowModeSetting(); // New method call to save
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the collection of ChapterListElement items to be displayed.
@@ -39,8 +64,35 @@ namespace Reader
         public MainWindow()
         {
             InitializeComponent();
-            this.DataContext = this;
-            LoadChapterListAsync();
+            this.DataContext = this; // Ensure this is set
+
+            LoadPersistedTabOverflowMode(); // New method call
+
+            LoadChapterListAsync(); // Existing method
+        }
+
+        private void LoadPersistedTabOverflowMode()
+        {
+            AppSettings settings = AppSettingsService.LoadAppSettings();
+            if (!string.IsNullOrEmpty(settings.DefaultTabOverflowMode))
+            {
+                if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))
+                {
+                    // Set the property directly to avoid re-saving immediately if it's the same as default
+                    _currentTabOverflowMode = mode;
+                    OnPropertyChanged(nameof(CurrentTabOverflowMode));
+                }
+                // else: log error about invalid mode string if desired
+            }
+            // If no persisted setting, it will use the default value set in the _currentTabOverflowMode field initializer.
+            // UpdateMenuCheckedStates() is called in MainTabControl_Loaded, which will reflect this loaded mode.
+        }
+
+        private void SaveCurrentOverflowModeSetting()
+        {
+            AppSettings settings = AppSettingsService.LoadAppSettings(); // Load current or default settings
+            settings.DefaultTabOverflowMode = CurrentTabOverflowMode.ToString(); // Update the mode
+            AppSettingsService.SaveAppSettings(settings); // Save all settings
         }
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
@@ -193,7 +245,8 @@ namespace Reader
                 _tabItemsScrollViewer.ScrollChanged += TabItemsScrollViewer_ScrollChanged;
             }
 
-            UpdateScrollButtonVisibility(); // Call to set initial state
+            UpdateScrollButtonVisibility(); // Call to set initial state of scroll buttons
+            UpdateMenuCheckedStates(); // Call to set initial state of menu checks
         }
 
         private void LeftScrollButton_Click(object sender, RoutedEventArgs e)
@@ -296,6 +349,37 @@ namespace Reader
                     }), System.Windows.Threading.DispatcherPriority.Background);
                 }
             }
+        }
+
+        private void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
+        {
+            CurrentTabOverflowMode = TabOverflowMode.Scrollbar;
+            UpdateMenuCheckedStates();
+        }
+
+        private void SetOverflowMode_Arrows_Click(object sender, RoutedEventArgs e)
+        {
+            CurrentTabOverflowMode = TabOverflowMode.ArrowButtons;
+            UpdateMenuCheckedStates();
+        }
+
+        private void SetOverflowMode_Dropdown_Click(object sender, RoutedEventArgs e)
+        {
+            CurrentTabOverflowMode = TabOverflowMode.TabDropdown;
+            UpdateMenuCheckedStates();
+        }
+
+        private void UpdateMenuCheckedStates()
+        {
+            // These MenuItems are defined with x:Name in MainWindow.xaml, so they are fields in this class.
+            if (ScrollbarModeMenuItem != null)
+                ScrollbarModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.Scrollbar);
+
+            if (ArrowButtonsModeMenuItem != null)
+                ArrowButtonsModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.ArrowButtons);
+
+            if (TabDropdownModeMenuItem != null)
+                TabDropdownModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.TabDropdown);
         }
     }
 }
