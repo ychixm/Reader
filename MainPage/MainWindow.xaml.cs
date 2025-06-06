@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives; // For RepeatButton
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -21,6 +22,10 @@ namespace Reader
     public partial class MainWindow : Window
     {
         private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
+
+        private ScrollViewer _tabItemsScrollViewer;
+        private RepeatButton _leftScrollButton;
+        private RepeatButton _rightScrollButton;
 
         /// <summary>
         /// Gets the collection of ChapterListElement items to be displayed.
@@ -149,6 +154,68 @@ namespace Reader
                 {
                     MainTabControl.Items.Remove(tabItem);
                 }
+            }
+        }
+
+        private void MainTabControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Ensure the template is applied so we can find parts
+            MainTabControl.ApplyTemplate();
+
+            _tabItemsScrollViewer = MainTabControl.Template.FindName("TabItemsScrollViewer", MainTabControl) as ScrollViewer;
+            _leftScrollButton = MainTabControl.Template.FindName("LeftScrollButton", MainTabControl) as RepeatButton;
+            _rightScrollButton = MainTabControl.Template.FindName("RightScrollButton", MainTabControl) as RepeatButton;
+
+            if (_leftScrollButton != null)
+            {
+                _leftScrollButton.Click += LeftScrollButton_Click;
+            }
+            if (_rightScrollButton != null)
+            {
+                _rightScrollButton.Click += RightScrollButton_Click;
+            }
+
+            if (_tabItemsScrollViewer != null)
+            {
+                _tabItemsScrollViewer.ScrollChanged += TabItemsScrollViewer_ScrollChanged;
+            }
+
+            UpdateScrollButtonVisibility(); // Call to set initial state
+        }
+
+        private void LeftScrollButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_tabItemsScrollViewer != null)
+            {
+                _tabItemsScrollViewer.LineLeft();
+                UpdateScrollButtonVisibility();
+            }
+        }
+
+        private void RightScrollButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_tabItemsScrollViewer != null)
+            {
+                _tabItemsScrollViewer.LineRight();
+                UpdateScrollButtonVisibility();
+            }
+        }
+
+        private void UpdateScrollButtonVisibility()
+        {
+            if (_tabItemsScrollViewer == null || _leftScrollButton == null || _rightScrollButton == null)
+                return;
+
+            _leftScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset > 0;
+            _rightScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset < _tabItemsScrollViewer.ScrollableWidth;
+        }
+
+        private void TabItemsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            // We only care about horizontal scroll changes for button visibility
+            if (e.HorizontalChange != 0 || e.ExtentWidthChange != 0 || e.ViewportWidthChange != 0)
+            {
+                UpdateScrollButtonVisibility();
             }
         }
     }

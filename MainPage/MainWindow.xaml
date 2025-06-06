@@ -59,10 +59,21 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" x:Name="HeaderScrollViewer">
-                                <!-- The ItemsPresenter will host the panel defined in TabControl.ItemsPanel (our UniformGrid) -->
-                                <ItemsPresenter x:Name="PART_ItemsHolder" Margin="2,2,0,0" />
-                            </ScrollViewer>
+                            <Grid Grid.Row="0"> <!-- This is the HeaderAreaGrid -->
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <RepeatButton x:Name="LeftScrollButton" Grid.Column="0" Content="&lt;" VerticalAlignment="Center" Focusable="False" />
+
+                                <ScrollViewer x:Name="TabItemsScrollViewer" Grid.Column="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                                    <ItemsPresenter x:Name="PART_ItemsHolder" Margin="2,2,0,0" />
+                                </ScrollViewer>
+
+                                <RepeatButton x:Name="RightScrollButton" Grid.Column="2" Content="&gt;" VerticalAlignment="Center" Focusable="False" />
+                            </Grid>
                             <Border Grid.Row="1"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
@@ -102,7 +113,8 @@
 
         <TabControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" x:Name="MainTabControl" MouseDown="MainTabControl_MouseDown"
                     ItemContainerStyle="{StaticResource ModernTabItemStyle}"
-                    Style="{StaticResource ScrollableTabControlStyle}">
+                    Style="{StaticResource ScrollableTabControlStyle}"
+                    Loaded="MainTabControl_Loaded">
             <TabControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid IsItemsHost="True" Rows="1"/>
