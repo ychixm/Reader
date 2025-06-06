@@ -30,6 +30,8 @@ namespace Reader.UserControls
         public static readonly double DesignHeight = 350.0;
         public static readonly double DesignWidth = 199.0;
 
+        public static readonly Size DesignSize = new Size(DesignWidth, DesignHeight); // Add this line
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ChapterListElement"/> class.
         /// </summary>

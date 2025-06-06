@@ -127,6 +127,8 @@ namespace WpfToolkit.Controls
 
         protected Size Extent { get; set; } = new Size(0, 0);
         public Size ViewportSize { get; protected set; } = new Size(0, 0);
+        public double ViewportWidth => ViewportSize.Width;
+        public double ViewportHeight => ViewportSize.Height;
         protected Point ScrollOffset { get; set; } = new Point(0, 0);
 
         private Visibility previousVerticalScrollBarVisibility = Visibility.Collapsed;
