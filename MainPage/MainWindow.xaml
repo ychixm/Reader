@@ -59,7 +59,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <Grid Grid.Row="0"> <!-- This is the HeaderAreaGrid -->
+                            <Grid Grid.Row="0" Height="30"> <!-- This is the HeaderAreaGrid -->
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/> <!-- LeftScrollButton -->
                                     <ColumnDefinition Width="*"/>    <!-- TabItemsScrollViewer -->
