@@ -276,9 +276,8 @@ namespace Reader
             _leftScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset > 0;
             _rightScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset < _tabItemsScrollViewer.ScrollableWidth;
 
-            // Dropdown button visibility logic (new)
-            bool hasOverflow = _tabItemsScrollViewer.ScrollableWidth > 0;
-            _tabListDropdownButton.Visibility = hasOverflow ? Visibility.Visible : Visibility.Collapsed;
+            // The visibility of _tabListDropdownButton is now controlled by DataTriggers in XAML.
+            // Optional: Could manage IsEnabled state here if desired, e.g., disable if !hasOverflow and CurrentTabOverflowMode is TabDropdown
         }
 
         private void TabItemsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
