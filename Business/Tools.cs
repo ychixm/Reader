@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 // System.Text and System.Threading.Tasks are not strictly needed by the final version of this file.
+using System.Text.Json;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
@@ -54,9 +55,33 @@ namespace Reader.Business
                 string effectivePath = path;
                 if (string.IsNullOrEmpty(path))
                 {
-                    effectivePath = AppDomain.CurrentDomain.BaseDirectory;
-                    // Debug.WriteLine($"GetDirectories: input path was empty or null, defaulting to scan {effectivePath}");
-                    pathToLog = effectivePath;
+                    string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+                    try
+                    {
+                        if (File.Exists(configFilePath))
+                        {
+                            string jsonContent = File.ReadAllText(configFilePath);
+                            var appSettings = JsonSerializer.Deserialize<AppSettings>(jsonContent);
+                            if (appSettings != null && !string.IsNullOrEmpty(appSettings.DefaultPath))
+                            {
+                                effectivePath = appSettings.DefaultPath;
+                            }
+                            else
+                            {
+                                effectivePath = AppDomain.CurrentDomain.BaseDirectory;
+                            }
+                        }
+                        else
+                        {
+                            effectivePath = AppDomain.CurrentDomain.BaseDirectory;
+                        }
+                    }
+                    catch (Exception) // Catch potential errors during file reading or deserialization
+                    {
+                        // Debug.WriteLine($"Error reading or parsing appsettings.json: {ex.Message}");
+                        effectivePath = AppDomain.CurrentDomain.BaseDirectory; // Fallback
+                    }
+                    pathToLog = effectivePath; // Update pathToLog for logging purposes
                 }
                 return Directory.GetDirectories(effectivePath)
                                 .Select(directoryPath => new DirectoryInfo(directoryPath))
@@ -129,5 +154,10 @@ namespace Reader.Business
                 return (0, 0);
             }
         }
+    }
+
+    public class AppSettings
+    {
+        public string DefaultPath { get; set; }
     }
 }
