@@ -42,7 +42,8 @@
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True">
                     <ItemsControl ItemsSource="{Binding Views}"
                                   VirtualizingPanel.IsVirtualizing="True"
-                                  VirtualizingPanel.VirtualizationMode="Recycling">
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <customPanels:VirtualizingWrapPanel Orientation="Horizontal"
