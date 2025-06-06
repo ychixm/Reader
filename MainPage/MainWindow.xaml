@@ -43,7 +43,9 @@
                     <ItemsControl ItemsSource="{Binding Views}"
                                   VirtualizingPanel.IsVirtualizing="True"
                                   VirtualizingPanel.VirtualizationMode="Recycling"
-                                  ScrollViewer.CanContentScroll="True">
+                                  ScrollViewer.CanContentScroll="True"
+                                  VirtualizingPanel.CacheLength="2,2"
+                                  VirtualizingPanel.CacheLengthUnit="Page">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <customPanels:VirtualizingWrapPanel Orientation="Horizontal"
