@@ -13,6 +13,7 @@ using Reader.Business;
 using Reader.UserControls;
 using System;
 using System.Threading.Tasks; // Added for Task
+using System.Windows.Threading; // For DispatcherPriority
 
 namespace Reader
 {
@@ -26,6 +27,7 @@ namespace Reader
         private ScrollViewer _tabItemsScrollViewer;
         private RepeatButton _leftScrollButton;
         private RepeatButton _rightScrollButton;
+        private Button _tabListDropdownButton;
 
         /// <summary>
         /// Gets the collection of ChapterListElement items to be displayed.
@@ -165,6 +167,7 @@ namespace Reader
             _tabItemsScrollViewer = MainTabControl.Template.FindName("TabItemsScrollViewer", MainTabControl) as ScrollViewer;
             _leftScrollButton = MainTabControl.Template.FindName("LeftScrollButton", MainTabControl) as RepeatButton;
             _rightScrollButton = MainTabControl.Template.FindName("RightScrollButton", MainTabControl) as RepeatButton;
+            _tabListDropdownButton = MainTabControl.Template.FindName("TabListDropdownButton", MainTabControl) as Button;
 
             if (_leftScrollButton != null)
             {
@@ -173,6 +176,16 @@ namespace Reader
             if (_rightScrollButton != null)
             {
                 _rightScrollButton.Click += RightScrollButton_Click;
+            }
+            if (_tabListDropdownButton != null)
+            {
+                _tabListDropdownButton.Click += TabListDropdownButton_Click;
+                // Attempt to find the ContextMenu resource from MainWindow's resources
+                var contextMenu = this.TryFindResource("TabListContextMenu") as ContextMenu;
+                if (contextMenu != null)
+                {
+                    _tabListDropdownButton.ContextMenu = contextMenu;
+                }
             }
 
             if (_tabItemsScrollViewer != null)
@@ -203,11 +216,16 @@ namespace Reader
 
         private void UpdateScrollButtonVisibility()
         {
-            if (_tabItemsScrollViewer == null || _leftScrollButton == null || _rightScrollButton == null)
+            if (_tabItemsScrollViewer == null || _leftScrollButton == null || _rightScrollButton == null || _tabListDropdownButton == null)
                 return;
 
+            // Arrow button logic (existing)
             _leftScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset > 0;
             _rightScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset < _tabItemsScrollViewer.ScrollableWidth;
+
+            // Dropdown button visibility logic (new)
+            bool hasOverflow = _tabItemsScrollViewer.ScrollableWidth > 0;
+            _tabListDropdownButton.Visibility = hasOverflow ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void TabItemsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -216,6 +234,67 @@ namespace Reader
             if (e.HorizontalChange != 0 || e.ExtentWidthChange != 0 || e.ViewportWidthChange != 0)
             {
                 UpdateScrollButtonVisibility();
+            }
+        }
+
+        private void TabListDropdownButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_tabListDropdownButton == null || _tabListDropdownButton.ContextMenu == null)
+                return;
+
+            ContextMenu contextMenu = _tabListDropdownButton.ContextMenu;
+            contextMenu.Items.Clear(); // Clear previous items
+
+            foreach (object item in MainTabControl.Items)
+            {
+                if (item is TabItem tabItem)
+                {
+                    // Skip the "Add Tab Button Tab" if it exists and is not a real tab
+                    if (tabItem.Name == "AddTabButtonTab" && tabItem.Header is Button) continue;
+
+
+                    MenuItem menuItem = new MenuItem();
+                    // Try to get header text, could be a string or a FrameworkElement like TextBlock
+                    string headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString();
+
+                    // Special handling for the main tab if its header is complex or not easily stringified
+                    if (string.IsNullOrEmpty(headerText) && tabItem == MainTab && MainTabHeaderTextBlock != null)
+                    {
+                        headerText = MainTabHeaderTextBlock.Text;
+                    }
+
+                    menuItem.Header = headerText ?? "Unnamed Tab";
+                    menuItem.Tag = tabItem; // Store the TabItem itself
+                    menuItem.Click += ContextMenuItem_Click; // Handler for when a tab is selected from menu
+                    contextMenu.Items.Add(menuItem);
+                }
+            }
+
+            if (contextMenu.HasItems)
+            {
+                contextMenu.PlacementTarget = _tabListDropdownButton;
+                contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                contextMenu.IsOpen = true;
+            }
+        }
+
+        private void ContextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is TabItem tabItem)
+            {
+                MainTabControl.SelectedItem = tabItem;
+
+                // Ensure the tab item is visible within the scroll viewer
+                if (_tabItemsScrollViewer != null && tabItem.IsVisible)
+                {
+                    // It's important that tabItem is part of the visual tree and has been rendered.
+                    // Being selected should ensure it's loaded.
+                    // We need to allow the layout to update after selection before bringing it into view.
+                    // Dispatcher can help here.
+                    tabItem.Dispatcher.BeginInvoke(new Action(() => {
+                        tabItem.BringIntoView();
+                    }), System.Windows.Threading.DispatcherPriority.Background);
+                }
             }
         }
     }
