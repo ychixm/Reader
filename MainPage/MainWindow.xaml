@@ -133,12 +133,13 @@
                     <MenuItem Header="_Open" />
                     <MenuItem Header="_Save" />
                     <Separator />
+                    <MenuItem Header="_Options">
+                        <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>
+                        <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/>
+                        <MenuItem x:Name="TabDropdownModeMenuItem" Header="_Tab Dropdown Mode" IsCheckable="True" Click="SetOverflowMode_Dropdown_Click"/>
+                    </MenuItem>
+                    <Separator />
                     <MenuItem Header="_Exit" />
-                </MenuItem>
-                <MenuItem Header="_Options">
-                    <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>
-                    <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/>
-                    <MenuItem x:Name="TabDropdownModeMenuItem" Header="_Tab Dropdown Mode" IsCheckable="True" Click="SetOverflowMode_Dropdown_Click"/>
                 </MenuItem>
             </Menu>
         </DockPanel>
