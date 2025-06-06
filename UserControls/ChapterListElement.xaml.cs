@@ -24,11 +24,16 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
+        private static bool _isDarkModeInitialized = false;
+        private static bool _cachedIsDarkMode;
+
         private DirectoryData _directory { get; } // Made getter-only
         private List<string>? _imagePaths = null;
         public static readonly int ImageHeight = 250;
         public static readonly double DesignHeight = 350.0;
         public static readonly double DesignWidth = 199.0;
+
+        public static readonly Size DesignSize = new Size(DesignWidth, DesignHeight); // Add this line
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ChapterListElement"/> class.
@@ -115,14 +120,21 @@ namespace Reader.UserControls
             }
         }
 
+        private static bool GetCurrentSystemIsDarkMode()
+        {
+            if (!_isDarkModeInitialized)
+            {
+                var uiSettings = new Windows.UI.ViewManagement.UISettings();
+                var backgroundColor = uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Background);
+                _cachedIsDarkMode = backgroundColor.R < 128 && backgroundColor.G < 128 && backgroundColor.B < 128;
+                _isDarkModeInitialized = true; // Set flag after initialization
+            }
+            return _cachedIsDarkMode;
+        }
+
         private void SetLabelColorBasedOnTheme()
         {
-            // This method's dependency on Windows.UI.ViewManagement.UISettings might need review
-            // if that namespace/class is not available in a pure WPF project without UWP SDK components.
-            // For now, keeping it as it was in the original file.
-            var uiSettings = new UISettings();
-            var backgroundColor = uiSettings.GetColorValue(UIColorType.Background);
-            var isDarkMode = backgroundColor.R < 128 && backgroundColor.G < 128 && backgroundColor.B < 128;
+            bool isDarkMode = GetCurrentSystemIsDarkMode(); // Use the new helper
 
             if (isDarkMode)
             {
