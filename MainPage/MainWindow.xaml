@@ -131,7 +131,7 @@
                 <MenuItem Header="_File">
                     <MenuItem Header="_New" />
                     <MenuItem Header="_Open" />
-                    <MenuItem Header="_Save" />
+                    <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" />
                     <Separator />
                     <MenuItem Header="_Options">
                         <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>

@@ -380,5 +380,54 @@ namespace Reader
             if (TabDropdownModeMenuItem != null)
                 TabDropdownModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.TabDropdown);
         }
+
+        private async void RandomChapterButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Views == null || !Views.Any())
+            {
+                MessageBox.Show("No chapters loaded to choose from.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            Random random = new Random();
+            int randomIndex = random.Next(Views.Count);
+            ChapterListElement selectedChapterElement = Views[randomIndex];
+
+            // Assuming ChapterListElement has a public property 'ChapterDirectory' of type DirectoryInfo
+            // This might need to be implemented in UserControls/ChapterListElement.xaml.cs as per plan step 3
+            DirectoryInfo chapterDirectoryInfo = selectedChapterElement.ChapterDirectory;
+
+            if (chapterDirectoryInfo == null)
+            {
+                MessageBox.Show("Selected chapter element does not have directory information.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            List<string> imagePaths = null;
+            try
+            {
+                imagePaths = await Task.Run(() => Directory.EnumerateFiles(chapterDirectoryInfo.FullName)
+                    .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+                    .ToList());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error reading images from directory {chapterDirectoryInfo.FullName}: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (imagePaths != null && imagePaths.Any())
+            {
+                AddImageTab(chapterDirectoryInfo.FullName, imagePaths, true);
+            }
+            else
+            {
+                MessageBox.Show($"No supported image files found in {chapterDirectoryInfo.FullName}.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
     }
 }

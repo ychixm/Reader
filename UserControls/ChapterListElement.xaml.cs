@@ -26,6 +26,7 @@ namespace Reader.UserControls
     public partial class ChapterListElement : UserControl
     {
         private DirectoryData _directory { get; } // Made getter-only
+        public System.IO.DirectoryInfo ChapterDirectory => _directory.DirectoryInfo;
         private List<string>? _imagePaths = null;
         public static readonly int ImageHeight = 250;
         public static readonly double DesignHeight = 350.0;
