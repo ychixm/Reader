@@ -13,7 +13,8 @@ using Reader.Models; // Keep for DirectoryData
 // If UISettings is a custom class in that namespace, it should be kept or its usage re-evaluated.
 // For now, assuming SetLabelColorBasedOnTheme might be simplified or its dependency managed elsewhere if an error occurs.
 // Re-adding for now as it was in original - if it causes build error, it's an external type.
-using Windows.UI.ViewManagement;
+// using Windows.UI.ViewManagement; // No longer needed here
+using Reader.Business; // Added for ThemeManager
 
 
 namespace Reader.UserControls
@@ -24,9 +25,6 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
-        private static bool _isDarkModeInitialized = false;
-        private static bool _cachedIsDarkMode;
-
         private DirectoryData _directory { get; } // Made getter-only
         private List<string>? _imagePaths = null;
         public static readonly int ImageHeight = 250;
@@ -120,21 +118,9 @@ namespace Reader.UserControls
             }
         }
 
-        private static bool GetCurrentSystemIsDarkMode()
-        {
-            if (!_isDarkModeInitialized)
-            {
-                var uiSettings = new Windows.UI.ViewManagement.UISettings();
-                var backgroundColor = uiSettings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Background);
-                _cachedIsDarkMode = backgroundColor.R < 128 && backgroundColor.G < 128 && backgroundColor.B < 128;
-                _isDarkModeInitialized = true; // Set flag after initialization
-            }
-            return _cachedIsDarkMode;
-        }
-
         private void SetLabelColorBasedOnTheme()
         {
-            bool isDarkMode = GetCurrentSystemIsDarkMode(); // Use the new helper
+            bool isDarkMode = ThemeManager.GetCurrentSystemIsDarkMode(); // Use the new helper
 
             if (isDarkMode)
             {

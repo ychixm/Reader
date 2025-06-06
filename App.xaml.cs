@@ -1,6 +1,7 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
+using Reader.Business; // Added for ThemeManager
 
 namespace Reader
 {
@@ -9,6 +10,12 @@ namespace Reader
     /// </summary>
     public partial class App : Application
     {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e); // Call base implementation first
+
+            ThemeManager.ApplyTheme(); // Apply the theme
+        }
     }
 
 }

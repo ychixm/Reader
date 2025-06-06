@@ -14,6 +14,38 @@
             <Style x:Key="LightModeLabelStyle" TargetType="Label">
                 <Setter Property="Foreground" Value="Black"/>
             </Style>
+
+            <!-- Light Theme Brushes -->
+            <SolidColorBrush x:Key="TabItemBackground_Light">#FFF0F0F0</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemBorderBrush_Light">#FFABADB3</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemForeground_Light">Black</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemBackground_Selected_Light">White</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemForeground_Selected_Light">Black</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemBackground_MouseOver_Light">#FFE5E5E5</SolidColorBrush>
+            <SolidColorBrush x:Key="TabControlContentBackground_Light">White</SolidColorBrush>
+
+            <!-- Dark Theme Brushes -->
+            <SolidColorBrush x:Key="TabItemBackground_Dark">#FF333333</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemBorderBrush_Dark">#FF555555</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemForeground_Dark">White</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemBackground_Selected_Dark">#FF505050</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemForeground_Selected_Dark">White</SolidColorBrush>
+            <SolidColorBrush x:Key="TabItemBackground_MouseOver_Dark">#FF454545</SolidColorBrush>
+            <SolidColorBrush x:Key="TabControlContentBackground_Dark">#FF252525</SolidColorBrush>
+
+            <!-- Generic Theme-Aware Brush Keys (Placeholders to be populated by ThemeManager) -->
+            <SolidColorBrush x:Key="TabItemBackgroundBrush"/>
+            <SolidColorBrush x:Key="TabItemBorderBrush"/>
+            <SolidColorBrush x:Key="TabItemForegroundBrush"/>
+            <SolidColorBrush x:Key="TabItemBackground_SelectedBrush"/>
+            <SolidColorBrush x:Key="TabItemForeground_SelectedBrush"/>
+            <SolidColorBrush x:Key="TabItemBackground_MouseOverBrush"/>
+            <SolidColorBrush x:Key="TabControlContentBackgroundBrush"/>
+
+            <!-- TextBlock Styles -->
+            <Style x:Key="DarkModeTextBlockStyle" TargetType="TextBlock"><Setter Property="Foreground" Value="White"/></Style>
+            <Style x:Key="LightModeTextBlockStyle" TargetType="TextBlock"><Setter Property="Foreground" Value="Black"/></Style>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

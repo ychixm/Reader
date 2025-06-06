@@ -159,5 +159,6 @@ namespace Reader.Business
     public class AppSettings
     {
         public string DefaultPath { get; set; }
+        public string DefaultTabOverflowMode { get; set; }
     }
 }
