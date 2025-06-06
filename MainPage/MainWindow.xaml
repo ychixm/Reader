@@ -14,15 +14,16 @@
 
     <Window.Resources>
         <Style x:Key="ModernTabItemStyle" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource TabItemForegroundBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
                         <Grid x:Name="templateRoot">
                             <Border x:Name="TabBorder"
-                                    BorderBrush="Gray"
+                                    BorderBrush="{DynamicResource TabItemBorderBrush}"
                                     BorderThickness="1,1,1,0"
                                     CornerRadius="5,5,0,0"
-                                    Background="LightGray">
+                                    Background="{DynamicResource TabItemBackgroundBrush}">
                                 <ContentPresenter x:Name="ContentSite"
                                                   ContentSource="Header"
                                                   HorizontalAlignment="Center"
@@ -32,15 +33,16 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="TabBorder" Property="Background" Value="White"/>
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource TabItemBackground_SelectedBrush}"/>
                                 <Setter Property="Panel.ZIndex" Value="1"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TabItemForeground_SelectedBrush}"/>
                             </Trigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
                                     <Condition Property="IsMouseOver" Value="True"/>
                                     <Condition Property="IsSelected" Value="False"/>
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="TabBorder" Property="Background" Value="#EEEEEE"/>
+                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource TabItemBackground_MouseOverBrush}"/>
                             </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -64,7 +66,7 @@
                             <Border Grid.Row="1"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
-                                    Background="{TemplateBinding Background}">
+                                    Background="{DynamicResource TabControlContentBackgroundBrush}">
                                 <ContentPresenter x:Name="PART_SelectedContentHost"
                                                   ContentSource="SelectedContent"
                                                   Margin="{TemplateBinding Padding}"/>
