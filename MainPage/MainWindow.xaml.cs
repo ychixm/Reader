@@ -17,6 +17,7 @@ using System.Windows.Threading; // For DispatcherPriority
 using System.ComponentModel; // For INotifyPropertyChanged
 using System.Runtime.CompilerServices; // For CallerMemberName
 using Reader.Models; // For TabOverflowMode
+using Reader.Utils; // For WpfHelpers
 
 namespace Reader
 {
@@ -27,6 +28,11 @@ namespace Reader
     {
         private AppSettings _settings; // Initialized in constructor.
         private TabOverflowManager? _tabOverflowManager; // Initialized in MainTabControl_Loaded
+
+        private static readonly HashSet<string> SupportedImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"
+        };
 
         private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
 
@@ -80,12 +86,12 @@ namespace Reader
 
             Views.Add(chapterListElement);
 
-            var imageSourceUri = await Task.Run(() => Tools.GetFirstImageInDirectory(directory));
+            var imageSourceUri = await Task.Run(() => FileSystemHelpers.GetFirstFileByExtensions(directory, SupportedImageExtensions)); // Changed to FileSystemHelpers
 
             if (imageSourceUri != null)
             {
                 BitmapImage? finalThumbnail = await Task.Run(() => {
-                    var (width, height) = Tools.GetImageDimensions(imageSourceUri.LocalPath);
+                    var (width, height) = FileSystemHelpers.GetImageDimensions(imageSourceUri.LocalPath); // Changed to FileSystemHelpers
                     BitmapImage thumbnail = new BitmapImage();
                     thumbnail.BeginInit();
                     thumbnail.UriSource = imageSourceUri;
@@ -120,7 +126,7 @@ namespace Reader
                     effectivePath = AppDomain.CurrentDomain.BaseDirectory;
                 }
 
-                List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(effectivePath));
+                List<DirectoryInfo> chapters = await Task.Run(() => FileSystemHelpers.GetDirectories(effectivePath)); // Changed to FileSystemHelpers
 
                 foreach (var directory in chapters)
                 {
@@ -185,7 +191,7 @@ namespace Reader
         {
             if (e.ChangedButton == MouseButton.Middle)
             {
-                var tabItem = Tools.FindParent<TabItem>((DependencyObject)e.OriginalSource);
+                var tabItem = WpfHelpers.FindParent<TabItem>((DependencyObject)e.OriginalSource);
                 if (tabItem != null && tabItem != MainTab)
                 {
                     MainTabControl.Items.Remove(tabItem);

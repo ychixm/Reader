@@ -14,7 +14,8 @@ using Reader.Models; // Keep for DirectoryData, and now for ChapterOpenRequested
 // For now, assuming SetLabelColorBasedOnTheme might be simplified or its dependency managed elsewhere if an error occurs.
 // Re-adding for now as it was in original - if it causes build error, it's an external type.
 // using Windows.UI.ViewManagement; // No longer needed here
-using Reader.Business; // Added for ThemeManager
+// using Reader.Business; // No longer needed for ThemeManager directly, if WindowsThemeHelpers is used.
+using Reader.Utils; // For WindowsThemeHelpers
 
 
 namespace Reader.UserControls
@@ -121,7 +122,7 @@ namespace Reader.UserControls
 
         private void SetLabelColorBasedOnTheme()
         {
-            bool isDarkMode = ThemeManager.GetCurrentSystemIsDarkMode(); // Use the new helper
+            bool isDarkMode = WindowsThemeHelpers.GetCurrentSystemIsDarkMode(); // Changed to WindowsThemeHelpers
 
             if (isDarkMode)
             {
