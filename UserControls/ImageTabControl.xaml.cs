@@ -56,6 +56,26 @@ namespace Reader.UserControls
             }
         }
 
+        public void DisplayedImage_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_imagePaths == null || _imagePaths.Count == 0 || DisplayedImage.Source == _errorPlaceholderImage)
+            {
+                return;
+            }
+
+            Point position = e.GetPosition(DisplayedImage);
+            double width = DisplayedImage.ActualWidth;
+
+            if (position.X < width * 0.33)
+            {
+                LeftArrow_Click(this, new RoutedEventArgs());
+            }
+            else if (position.X > width * 0.67)
+            {
+                RightArrow_Click(this, new RoutedEventArgs());
+            }
+        }
+
         private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
         {
             Point clickPosition = e.GetPosition(this);
