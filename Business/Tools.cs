@@ -46,51 +46,19 @@ namespace Reader.Business
         /// Gets a list of subdirectories for a given path.
         /// If the path is null or empty, it defaults to the application's base directory.
         /// </summary>
-        /// <param name="path">The path to search for directories.</param>
+        /// <param name="directoryPath">The path to search for directories.</param>
         /// <returns>A list of DirectoryInfo objects. Returns an empty list if an error occurs.</returns>
-        public static List<DirectoryInfo> GetDirectories(string path)
+        public static List<DirectoryInfo> GetDirectories(string directoryPath)
         {
-            string pathToLog = path;
             try
             {
-                string effectivePath = path;
-                if (string.IsNullOrEmpty(path))
-                {
-                    string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
-                    try
-                    {
-                        if (File.Exists(configFilePath))
-                        {
-                            string jsonContent = File.ReadAllText(configFilePath);
-                            var appSettings = JsonSerializer.Deserialize<AppSettings>(jsonContent);
-                            if (appSettings != null && !string.IsNullOrEmpty(appSettings.DefaultPath))
-                            {
-                                effectivePath = appSettings.DefaultPath;
-                            }
-                            else
-                            {
-                                effectivePath = AppDomain.CurrentDomain.BaseDirectory;
-                            }
-                        }
-                        else
-                        {
-                            effectivePath = AppDomain.CurrentDomain.BaseDirectory;
-                        }
-                    }
-                    catch (Exception) // Catch potential errors during file reading or deserialization
-                    {
-                        // Debug.WriteLine($"Error reading or parsing appsettings.json: {ex.Message}");
-                        effectivePath = AppDomain.CurrentDomain.BaseDirectory; // Fallback
-                    }
-                    pathToLog = effectivePath; // Update pathToLog for logging purposes
-                }
-                return Directory.GetDirectories(effectivePath)
-                                .Select(directoryPath => new DirectoryInfo(directoryPath))
+                return Directory.GetDirectories(directoryPath)
+                                .Select(path => new DirectoryInfo(path))
                                 .ToList();
             }
             catch (Exception ex)
             {
-                // Debug.WriteLine($"Error getting directories from path '{pathToLog}': {ex.Message}");
+                // Debug.WriteLine($"Error getting directories from path '{directoryPath}': {ex.Message}");
                 return new List<DirectoryInfo>();
             }
         }
@@ -101,32 +69,37 @@ namespace Reader.Business
         /// </summary>
         /// <param name="directoryInfo">The directory to scan.</param>
         /// <returns>A Uri for the first image file, or null if no supported images are found or an error occurs.</returns>
-        public static Uri? GetFirstImageInDirectory(DirectoryInfo directoryInfo)
+        private static Uri? GetFirstFileByExtensions(DirectoryInfo directoryInfo, HashSet<string> validExtensions)
         {
             if (directoryInfo == null)
             {
-                // Debug.WriteLine("GetFirstImageInDirectory: directoryInfo was null.");
+                // Debug.WriteLine("GetFirstFileByExtensions: directoryInfo was null.");
                 return null;
             }
 
             try
             {
-                var imageFiles = directoryInfo.EnumerateFiles()
-                                              .Where(f => SupportedImageExtensions.Contains(f.Extension))
-                                              .OrderBy(f => f.Name)
-                                              .ToList();
+                var files = directoryInfo.EnumerateFiles()
+                                         .Where(f => validExtensions.Contains(f.Extension))
+                                         .OrderBy(f => f.Name)
+                                         .ToList();
 
-                if (imageFiles.Count == 0)
+                if (files.Count == 0)
                 {
                     return null;
                 }
-                return new Uri(imageFiles.First().FullName);
+                return new Uri(files.First().FullName);
             }
             catch (Exception ex)
             {
-                // Debug.WriteLine($"Error getting first image in directory {directoryInfo.FullName}: {ex.Message}");
+                // Debug.WriteLine($"Error getting first file by extensions in directory {directoryInfo.FullName}: {ex.Message}");
                 return null;
             }
+        }
+
+        public static Uri? GetFirstImageInDirectory(DirectoryInfo directoryInfo)
+        {
+            return GetFirstFileByExtensions(directoryInfo, SupportedImageExtensions);
         }
 
         /// <summary>
@@ -155,12 +128,5 @@ namespace Reader.Business
                 return (0, 0);
             }
         }
-    }
-
-    public class AppSettings
-    {
-        public string DefaultPath { get; set; }
-        public string DefaultTabOverflowMode { get; set; }
-        public NavigationMethod EnabledNavigationMethods { get; set; } = NavigationMethod.All;
     }
 }

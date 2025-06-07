@@ -23,37 +23,12 @@ namespace Reader
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window, INotifyPropertyChanged
+    public partial class MainWindow : BaseWindow
     {
         private AppSettings _settings;
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        private TabOverflowManager _tabOverflowManager;
 
         private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
-
-        private ScrollViewer _tabItemsScrollViewer;
-        private RepeatButton _leftScrollButton;
-        private RepeatButton _rightScrollButton;
-        private Button _tabListDropdownButton;
-
-        private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar; // Default mode
-        public TabOverflowMode CurrentTabOverflowMode
-        {
-            get => _currentTabOverflowMode;
-            set
-            {
-                if (_currentTabOverflowMode != value)
-                {
-                    _currentTabOverflowMode = value;
-                    OnPropertyChanged(); // Notify XAML that the property has changed
-                    SaveCurrentOverflowModeSetting(); // New method call to save
-                }
-            }
-        }
 
         /// <summary>
         /// Gets the collection of ChapterListElement items to be displayed.
@@ -65,9 +40,9 @@ namespace Reader
         public MainWindow()
         {
             InitializeComponent();
-            this.DataContext = this; // Ensure this is set
+            // this.DataContext = this; // DataContext might not be needed if CurrentTabOverflowMode is removed for binding
 
-            LoadPersistedTabOverflowMode(); // Existing method call
+            // LoadPersistedTabOverflowMode(); // Moved to TabOverflowManager
             LoadNavigationOptionStates(); // Load and apply navigation states
 
             // Attach event handlers for navigation options
@@ -98,12 +73,7 @@ namespace Reader
             // UpdateMenuCheckedStates() is called in MainTabControl_Loaded, which will reflect this loaded mode.
         }
 
-        private void SaveCurrentOverflowModeSetting()
-        {
-            AppSettings settings = AppSettingsService.LoadAppSettings(); // Load current or default settings
-            settings.DefaultTabOverflowMode = CurrentTabOverflowMode.ToString(); // Update the mode
-            AppSettingsService.SaveAppSettings(settings); // Save all settings
-        }
+        // SaveCurrentOverflowModeSetting MOVED to TabOverflowManager
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
         {
@@ -112,6 +82,7 @@ namespace Reader
                 BorderBrush = Brushes.DarkGray,
                 BorderThickness = new Thickness(1),
             };
+            chapterListElement.ChapterOpenRequested += HandleChapterOpenRequested; // Subscribe to the event
 
             chapterListElement.SetLabelText(directory.Name);
             string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PlaceholderImageRelativePath);
@@ -148,7 +119,18 @@ namespace Reader
         {
             try
             {
-                List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(""));
+                string effectivePath;
+                AppSettings settings = AppSettingsService.LoadAppSettings();
+                if (!string.IsNullOrEmpty(settings.DefaultPath))
+                {
+                    effectivePath = settings.DefaultPath;
+                }
+                else
+                {
+                    effectivePath = AppDomain.CurrentDomain.BaseDirectory;
+                }
+
+                List<DirectoryInfo> chapters = await Task.Run(() => Tools.GetDirectories(effectivePath));
 
                 foreach (var directory in chapters)
                 {
@@ -223,41 +205,39 @@ namespace Reader
 
         private void MainTabControl_Loaded(object sender, RoutedEventArgs e)
         {
-            // Ensure the template is applied so we can find parts
-            MainTabControl.ApplyTemplate();
+            // Instantiate TabOverflowManager. It will handle finding template parts and subscribing to events.
+            _tabOverflowManager = new TabOverflowManager(MainTabControl, this, ScrollbarModeMenuItem, ArrowButtonsModeMenuItem, TabDropdownModeMenuItem);
 
-            _tabItemsScrollViewer = MainTabControl.Template.FindName("TabItemsScrollViewer", MainTabControl) as ScrollViewer;
-            _leftScrollButton = MainTabControl.Template.FindName("LeftScrollButton", MainTabControl) as RepeatButton;
-            _rightScrollButton = MainTabControl.Template.FindName("RightScrollButton", MainTabControl) as RepeatButton;
-            _tabListDropdownButton = MainTabControl.Template.FindName("TabListDropdownButton", MainTabControl) as Button;
+            // The DataContext for CurrentTabOverflowMode binding might need to be set to _tabOverflowManager if XAML binds to it.
+            // If MainWindow still needs to expose it, it should be a pass-through to _tabOverflowManager.CurrentTabOverflowMode.
+            // For now, assuming direct calls to _tabOverflowManager.SetOverflowMode() from UI event handlers.
+            // If XAML bindings like <DataTrigger Binding="{Binding CurrentTabOverflowMode}" ...> are used,
+            // then MainWindow might need to expose CurrentTabOverflowMode and delegate to _tabOverflowManager,
+            // or the DataContext of the TabControl or relevant parent needs to be set to _tabOverflowManager.
+            // For simplicity of this refactoring step, we'll assume XAML event handlers call manager's methods.
+            // The XAML currently has: <DataTrigger Binding="{Binding CurrentTabOverflowMode}" Value="Scrollbar">
+            // This means `this.DataContext = this;` should be kept, and MainWindow needs to expose CurrentTabOverflowMode.
 
-            if (_leftScrollButton != null)
+            // Re-instating DataContext and CurrentTabOverflowMode property that delegates to the manager.
+            this.DataContext = this;
+        }
+
+        // Expose CurrentTabOverflowMode for XAML binding, delegating to the manager
+        public TabOverflowMode CurrentTabOverflowMode
+        {
+            get => _tabOverflowManager != null ? _tabOverflowManager.CurrentTabOverflowMode : TabOverflowMode.Scrollbar; // Provide a default if manager not ready
+            // Setter might not be strictly needed if all changes go via manager.SetOverflowMode()
+            // but if XAML somehow tries to set it, it should also go to manager.
+            set
             {
-                _leftScrollButton.Click += LeftScrollButton_Click;
-            }
-            if (_rightScrollButton != null)
-            {
-                _rightScrollButton.Click += RightScrollButton_Click;
-            }
-            if (_tabListDropdownButton != null)
-            {
-                _tabListDropdownButton.Click += TabListDropdownButton_Click;
-                // Attempt to find the ContextMenu resource from MainWindow's resources
-                var contextMenu = this.TryFindResource("TabListContextMenu") as ContextMenu;
-                if (contextMenu != null)
+                if (_tabOverflowManager != null)
                 {
-                    _tabListDropdownButton.ContextMenu = contextMenu;
+                    _tabOverflowManager.SetOverflowMode(value);
+                    OnPropertyChanged(); // Notify XAML of change
                 }
             }
-
-            if (_tabItemsScrollViewer != null)
-            {
-                _tabItemsScrollViewer.ScrollChanged += TabItemsScrollViewer_ScrollChanged;
-            }
-
-            UpdateScrollButtonVisibility(); // Call to set initial state of scroll buttons
-            UpdateMenuCheckedStates(); // Call to set initial state of menu checks
         }
+
 
         private void LoadNavigationOptionStates()
         {
@@ -303,137 +283,32 @@ namespace Reader
             // For now, new ImageTabControls will pick up the new settings upon creation.
         }
 
-        private void LeftScrollButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_tabItemsScrollViewer != null)
-            {
-                _tabItemsScrollViewer.LineLeft();
-                UpdateScrollButtonVisibility();
-            }
-        }
-
-        private void RightScrollButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_tabItemsScrollViewer != null)
-            {
-                _tabItemsScrollViewer.LineRight();
-                UpdateScrollButtonVisibility();
-            }
-        }
-
-        private void UpdateScrollButtonVisibility()
-        {
-            if (_tabItemsScrollViewer == null || _leftScrollButton == null || _rightScrollButton == null || _tabListDropdownButton == null)
-                return;
-
-            // Arrow button logic (existing)
-            _leftScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset > 0;
-            _rightScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset < _tabItemsScrollViewer.ScrollableWidth;
-
-            // The visibility of _tabListDropdownButton is now controlled by DataTriggers in XAML.
-            // Optional: Could manage IsEnabled state here if desired, e.g., disable if !hasOverflow and CurrentTabOverflowMode is TabDropdown
-        }
-
-        private void TabItemsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
-        {
-            // We only care about horizontal scroll changes for button visibility
-            if (e.HorizontalChange != 0 || e.ExtentWidthChange != 0 || e.ViewportWidthChange != 0)
-            {
-                UpdateScrollButtonVisibility();
-            }
-        }
-
-        private void TabListDropdownButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_tabListDropdownButton == null || _tabListDropdownButton.ContextMenu == null)
-                return;
-
-            ContextMenu contextMenu = _tabListDropdownButton.ContextMenu;
-            contextMenu.Items.Clear(); // Clear previous items
-
-            foreach (object item in MainTabControl.Items)
-            {
-                if (item is TabItem tabItem)
-                {
-                    // Skip the "Add Tab Button Tab" if it exists and is not a real tab
-                    if (tabItem.Name == "AddTabButtonTab" && tabItem.Header is Button) continue;
-
-
-                    MenuItem menuItem = new MenuItem();
-                    // Try to get header text, could be a string or a FrameworkElement like TextBlock
-                    string headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString();
-
-                    // Special handling for the main tab if its header is complex or not easily stringified
-                    if (string.IsNullOrEmpty(headerText) && tabItem == MainTab && MainTabHeaderTextBlock != null)
-                    {
-                        headerText = MainTabHeaderTextBlock.Text;
-                    }
-
-                    menuItem.Header = headerText ?? "Unnamed Tab";
-                    menuItem.Tag = tabItem; // Store the TabItem itself
-                    menuItem.Click += ContextMenuItem_Click; // Handler for when a tab is selected from menu
-                    contextMenu.Items.Add(menuItem);
-                }
-            }
-
-            if (contextMenu.HasItems)
-            {
-                contextMenu.PlacementTarget = _tabListDropdownButton;
-                contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                contextMenu.IsOpen = true;
-            }
-        }
-
-        private void ContextMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is TabItem tabItem)
-            {
-                MainTabControl.SelectedItem = tabItem;
-
-                // Ensure the tab item is visible within the scroll viewer
-                if (_tabItemsScrollViewer != null && tabItem.IsVisible)
-                {
-                    // It's important that tabItem is part of the visual tree and has been rendered.
-                    // Being selected should ensure it's loaded.
-                    // We need to allow the layout to update after selection before bringing it into view.
-                    // Dispatcher can help here.
-                    tabItem.Dispatcher.BeginInvoke(new Action(() => {
-                        tabItem.BringIntoView();
-                    }), System.Windows.Threading.DispatcherPriority.Background);
-                }
-            }
-        }
+        // LeftScrollButton_Click MOVED to TabOverflowManager
+        // RightScrollButton_Click MOVED to TabOverflowManager
+        // UpdateScrollButtonVisibility MOVED to TabOverflowManager
+        // TabItemsScrollViewer_ScrollChanged MOVED to TabOverflowManager
+        // TabListDropdownButton_Click MOVED to TabOverflowManager
+        // ContextMenuItem_Click MOVED to TabOverflowManager
 
         private void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
         {
-            CurrentTabOverflowMode = TabOverflowMode.Scrollbar;
-            UpdateMenuCheckedStates();
+            _tabOverflowManager?.SetOverflowMode(TabOverflowMode.Scrollbar);
+            // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
         private void SetOverflowMode_Arrows_Click(object sender, RoutedEventArgs e)
         {
-            CurrentTabOverflowMode = TabOverflowMode.ArrowButtons;
-            UpdateMenuCheckedStates();
+            _tabOverflowManager?.SetOverflowMode(TabOverflowMode.ArrowButtons);
+            // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
         private void SetOverflowMode_Dropdown_Click(object sender, RoutedEventArgs e)
         {
-            CurrentTabOverflowMode = TabOverflowMode.TabDropdown;
-            UpdateMenuCheckedStates();
+            _tabOverflowManager?.SetOverflowMode(TabOverflowMode.TabDropdown);
+            // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
-        private void UpdateMenuCheckedStates()
-        {
-            // These MenuItems are defined with x:Name in MainWindow.xaml, so they are fields in this class.
-            if (ScrollbarModeMenuItem != null)
-                ScrollbarModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.Scrollbar);
-
-            if (ArrowButtonsModeMenuItem != null)
-                ArrowButtonsModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.ArrowButtons);
-
-            if (TabDropdownModeMenuItem != null)
-                TabDropdownModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.TabDropdown);
-        }
+        // UpdateMenuCheckedStates MOVED to TabOverflowManager
 
         private async Task OpenRandomChapter(bool switchToTab)
         {
@@ -493,6 +368,11 @@ namespace Reader
             {
                 await OpenRandomChapter(false);
             }
+        }
+
+        private void HandleChapterOpenRequested(object sender, ChapterOpenRequestedEventArgs e)
+        {
+            AddImageTab(e.DirectoryPath, e.ImagePaths, e.SwitchToTab);
         }
     }
 }

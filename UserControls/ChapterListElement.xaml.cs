@@ -8,7 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Reader.Models; // Keep for DirectoryData
+using Reader.Models; // Keep for DirectoryData, and now for ChapterOpenRequestedEventArgs
 // Removed Windows.UI.ViewManagement as UISettings is not defined in this snippet.
 // If UISettings is a custom class in that namespace, it should be kept or its usage re-evaluated.
 // For now, assuming SetLabelColorBasedOnTheme might be simplified or its dependency managed elsewhere if an error occurs.
@@ -25,6 +25,8 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
+        public event EventHandler<ChapterOpenRequestedEventArgs> ChapterOpenRequested;
+
         private DirectoryData _directory { get; } // Made getter-only
         public System.IO.DirectoryInfo ChapterDirectory => _directory.DirectoryInfo;
         private List<string>? _imagePaths = null;
@@ -98,25 +100,23 @@ namespace Reader.UserControls
 
         private async void OpenImageTab(bool switchToTab)
         {
-            // Assuming Application.Current.MainWindow is of type MainWindow
-            if (Application.Current.MainWindow is MainWindow mainWindow)
+            if (_imagePaths == null)
             {
-                if (_imagePaths == null)
-                {
-                    _imagePaths = await Task.Run(() => Directory.EnumerateFiles(_directory.DirectoryInfo.FullName)
-                        .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                    f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                                    f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
-                                    f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
-                                    f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
-                        .ToList());
-                }
-
-                if (_imagePaths != null)
-                {
-                    mainWindow.AddImageTab(_directory.DirectoryInfo.FullName, _imagePaths, switchToTab);
-                }
+                _imagePaths = await Task.Run(() => Directory.EnumerateFiles(_directory.DirectoryInfo.FullName)
+                    .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+                    .ToList());
             }
+
+            if (_imagePaths != null && _imagePaths.Any()) // Ensure there are images before raising event
+            {
+                var args = new ChapterOpenRequestedEventArgs(_directory.DirectoryInfo.FullName, _imagePaths, switchToTab);
+                ChapterOpenRequested?.Invoke(this, args);
+            }
+            // Optional: else, handle the case where no images were found (e.g., log, show message)
         }
 
         private void SetLabelColorBasedOnTheme()

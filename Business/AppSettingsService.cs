@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json; // Requires System.Text.Json NuGet package if not already part of the project
+using Reader.Models;
 
 namespace Reader.Business
 {
