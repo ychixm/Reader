@@ -83,12 +83,14 @@ namespace Reader.Business
             {
                 if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))
                 {
-                    // Set the backing field directly to avoid re-saving/re-updating UI if it's the same as default
-                    _currentTabOverflowMode = mode;
+                    // Use the property setter to ensure all related logic (save, UI updates) is triggered
+                    // if the loaded mode is different from the initial default _currentTabOverflowMode.
+                    CurrentTabOverflowMode = mode;
                 }
                 // else: log error about invalid mode string if desired
             }
             // If no persisted setting, it will use the default value set in the _currentTabOverflowMode field initializer.
+            // If that default is different from what would be set by CurrentTabOverflowMode = default, then the setter logic runs.
         }
 
         private void SaveCurrentOverflowModeSetting()
