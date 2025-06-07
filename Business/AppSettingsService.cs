@@ -7,6 +7,7 @@ namespace Reader.Business
 {
     public static class AppSettingsService
     {
+        public static event EventHandler? SettingsChanged;
         private static readonly string ConfigFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
 
         public static AppSettings LoadAppSettings()
@@ -39,6 +40,7 @@ namespace Reader.Business
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 string jsonContent = JsonSerializer.Serialize(settings, options);
                 File.WriteAllText(ConfigFilePath, jsonContent);
+                SettingsChanged?.Invoke(null, EventArgs.Empty);
             }
             catch (Exception) // CS0168: ex not used
             {

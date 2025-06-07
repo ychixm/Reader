@@ -102,8 +102,10 @@ namespace Reader.UserControls
         {
             InitializeComponent();
             EnsureErrorPlaceholderLoaded();
+            this.Unloaded += UserControl_Unloaded; // Ensure unsubscription handler is attached
 
             _settings = AppSettingsService.LoadAppSettings(); // Load settings
+            AppSettingsService.SettingsChanged += HandleAppSettingsChanged; // Subscribe to settings changes
 
             _imagePaths = imagePaths ?? throw new ArgumentNullException(nameof(imagePaths));
             _preloadCts = new CancellationTokenSource();
@@ -370,6 +372,22 @@ namespace Reader.UserControls
                 _currentlyPreloading.Clear();
             }
             DisplayedImage.Source = null;
+            AppSettingsService.SettingsChanged -= HandleAppSettingsChanged; // Unsubscribe
+        }
+
+        private void HandleAppSettingsChanged(object? sender, EventArgs e)
+        {
+            _settings = AppSettingsService.LoadAppSettings(); // Reload settings
+
+            // Ensure UI updates run on the UI thread
+            if (Dispatcher.CheckAccess())
+            {
+                ApplyNavigationSettings(); // Update button visibility
+            }
+            else
+            {
+                Dispatcher.Invoke(() => ApplyNavigationSettings());
+            }
         }
     }
 }
