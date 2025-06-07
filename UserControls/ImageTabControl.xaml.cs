@@ -56,6 +56,24 @@ namespace Reader.UserControls
             }
         }
 
+        private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            Point clickPosition = e.GetPosition(this);
+            double controlWidth = this.ActualWidth;
+            double clickPercentage = clickPosition.X / controlWidth;
+
+            if (clickPercentage < 0.33)
+            {
+                // Simulate LeftArrow_Click
+                LeftArrow_Click(this, new RoutedEventArgs());
+            }
+            else if (clickPercentage > 0.67)
+            {
+                // Simulate RightArrow_Click
+                RightArrow_Click(this, new RoutedEventArgs());
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageTabControl"/> class.
         /// Displays images from the provided paths and enables navigation, caching, and preloading.
