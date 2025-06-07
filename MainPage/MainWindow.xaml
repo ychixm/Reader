@@ -133,6 +133,12 @@
                     <MenuItem Header="_Open" />
                     <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" PreviewMouseUp="RandomChapterButton_PreviewMouseUp" />
                     <Separator />
+                    <MenuItem Header="_OptionsPageSwap">
+                        <MenuItem Header="_Keyboard Arrows" IsCheckable="True" x:Name="KeyboardArrowsOption"/>
+                        <MenuItem Header="_Grid Click" IsCheckable="True" x:Name="GridClickOption"/>
+                        <MenuItem Header="_Visible Buttons" IsCheckable="True" x:Name="VisibleButtonsOption"/>
+                    </MenuItem>
+                    <Separator />
                     <MenuItem Header="_Options">
                         <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>
                         <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/>
@@ -141,6 +147,7 @@
                     <Separator />
                     <MenuItem Header="_Exit" />
                 </MenuItem>
+                
             </Menu>
         </DockPanel>
 

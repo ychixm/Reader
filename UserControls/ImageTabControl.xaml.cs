@@ -15,6 +15,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Reader.Models;
+using Reader.Business;
 
 namespace Reader.UserControls
 {
@@ -23,6 +25,7 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ImageTabControl : UserControl
     {
+        private AppSettings _settings;
         private readonly List<string> _imagePaths;
         private int _currentIndex;
 
@@ -56,6 +59,39 @@ namespace Reader.UserControls
             }
         }
 
+        // DisplayedImage_MouseDown method removed as requested
+
+        public void Grid_Overall_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Ignore clicks on the navigation buttons themselves
+            if (e.OriginalSource == LeftArrow || e.OriginalSource == RightArrow)
+            {
+                return;
+            }
+
+            if (!(_settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick)))
+            {
+                return;
+            }
+
+            if (_imagePaths == null || _imagePaths.Count == 0 || DisplayedImage.Source == _errorPlaceholderImage)
+            {
+                return;
+            }
+
+            Point position = e.GetPosition(this); // 'this' is the UserControl
+            double controlWidth = this.ActualWidth;
+
+            if (position.X < controlWidth * 0.33)
+            {
+                LeftArrow_Click(this, new RoutedEventArgs());
+            }
+            else if (position.X > controlWidth * 0.67)
+            {
+                RightArrow_Click(this, new RoutedEventArgs());
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ImageTabControl"/> class.
         /// Displays images from the provided paths and enables navigation, caching, and preloading.
@@ -66,6 +102,8 @@ namespace Reader.UserControls
         {
             InitializeComponent();
             EnsureErrorPlaceholderLoaded();
+
+            _settings = AppSettingsService.LoadAppSettings(); // Load settings
 
             _imagePaths = imagePaths ?? throw new ArgumentNullException(nameof(imagePaths));
             _preloadCts = new CancellationTokenSource();
@@ -82,6 +120,26 @@ namespace Reader.UserControls
 
             this.Focusable = true;
             this.Focus();
+
+            ApplyNavigationSettings(); // Apply settings
+        }
+
+        private void ApplyNavigationSettings()
+        {
+            if (_settings == null)
+            {
+                // Fallback or log if settings are unexpectedly null
+                // For robustness, one might load default AppSettings here
+                // or ensure _settings is initialized to a default new AppSettings()
+                // if LoadAppSettings could return null (though current AppSettingsService returns new AppSettings()).
+                return;
+            }
+
+            bool showButtons = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
+            Visibility buttonVisibility = showButtons ? Visibility.Visible : Visibility.Collapsed;
+
+            LeftArrow.Visibility = buttonVisibility;
+            RightArrow.Visibility = buttonVisibility;
         }
 
         private static BitmapImage? LoadBitmapImageFromFile(string imagePath, CancellationToken token)
@@ -280,13 +338,22 @@ namespace Reader.UserControls
         {
             base.OnKeyDown(e);
 
-            if (e.Key == Key.Left)
+            if (e.Key == Key.Left || e.Key == Key.Right)
             {
-                LeftArrow_Click(this, new RoutedEventArgs());
-            }
-            else if (e.Key == Key.Right)
-            {
-                RightArrow_Click(this, new RoutedEventArgs());
+                if (!(_settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows)))
+                {
+                    e.Handled = true; // Optional: Mark as handled to prevent further processing
+                    return;
+                }
+
+                if (e.Key == Key.Left)
+                {
+                    LeftArrow_Click(this, new RoutedEventArgs());
+                }
+                else if (e.Key == Key.Right)
+                {
+                    RightArrow_Click(this, new RoutedEventArgs());
+                }
             }
         }
 

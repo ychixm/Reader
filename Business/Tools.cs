@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
+using Reader.Models;
 
 namespace Reader.Business
 {
@@ -160,5 +161,6 @@ namespace Reader.Business
     {
         public string DefaultPath { get; set; }
         public string DefaultTabOverflowMode { get; set; }
+        public NavigationMethod EnabledNavigationMethods { get; set; } = NavigationMethod.All;
     }
 }
