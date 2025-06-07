@@ -1,5 +1,6 @@
 using System.Windows; // Required for Application.Current
-// using Windows.UI.ViewManagement; // Removed due to incompatibility
+using Microsoft.Win32; // Required for Registry access
+using System; // Required for Exception
 
 namespace Reader.Business
 {
@@ -10,9 +11,26 @@ namespace Reader.Business
 
         public static bool GetCurrentSystemIsDarkMode()
         {
-            // Always return false (light mode) as UISettings is not available.
-            // TODO: Implement a WPF-compatible way to detect system dark mode if needed.
-            return false;
+            try
+            {
+                // The AppsUseLightTheme registry value is 0 for dark mode, 1 for light mode.
+                // Registry.GetValue returns null if the path or name does not exist.
+                var registryValue = Registry.GetValue(
+                    @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+                    "AppsUseLightTheme",
+                    null); // Default value if not found
+
+                if (registryValue is int appsUseLightTheme)
+                {
+                    return appsUseLightTheme == 0;
+                }
+            }
+            catch (Exception) // CS0168: ex not used
+            {
+                // Log error or handle (e.g., System.Diagnostics.Debug.WriteLine($"Error reading theme from registry: {ex.Message}"));
+                // Default to light theme in case of any error.
+            }
+            return false; // Default to light theme
         }
 
         public static void ApplyTheme()
