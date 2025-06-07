@@ -151,7 +151,7 @@ namespace Reader.Business
             // And MainTabHeaderTextBlock is also named.
             // A cleaner way would be for MainWindow to pass these or a delegate to get them.
             // For now, let's try finding MainTabHeaderTextBlock from _ownerWindow if possible, or make assumptions.
-            TextBlock mainTabHeaderTextBlock = _ownerWindow.FindName("MainTabHeaderTextBlock") as TextBlock;
+            TextBlock? mainTabHeaderTextBlock = _ownerWindow.FindName("MainTabHeaderTextBlock") as TextBlock; // Made nullable
 
 
             foreach (object item in _tabControl.Items)
@@ -161,7 +161,7 @@ namespace Reader.Business
                     if (tabItem.Name == "AddTabButtonTab" && tabItem.Header is Button) continue;
 
                     MenuItem menuItem = new MenuItem();
-                    string headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString();
+                    string? headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString(); // Made nullable
 
                     // Attempt to get the header text for the main tab specifically
                     // This relies on MainTab having a specific name or being the first tab.

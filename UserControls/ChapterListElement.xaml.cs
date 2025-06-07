@@ -25,7 +25,7 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
-        public event EventHandler<ChapterOpenRequestedEventArgs> ChapterOpenRequested;
+        public event EventHandler<ChapterOpenRequestedEventArgs>? ChapterOpenRequested;
 
         private DirectoryData _directory { get; } // Made getter-only
         public System.IO.DirectoryInfo ChapterDirectory => _directory.DirectoryInfo;

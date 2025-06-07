@@ -25,8 +25,8 @@ namespace Reader
     /// </summary>
     public partial class MainWindow : BaseWindow
     {
-        private AppSettings _settings;
-        private TabOverflowManager _tabOverflowManager;
+        private AppSettings _settings; // Initialized in constructor.
+        private TabOverflowManager? _tabOverflowManager; // Initialized in MainTabControl_Loaded
 
         private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
 
@@ -40,10 +40,16 @@ namespace Reader
         public MainWindow()
         {
             InitializeComponent();
-            // this.DataContext = this; // DataContext might not be needed if CurrentTabOverflowMode is removed for binding
+            // this.DataContext = this;
+
+            // Initialize _settings directly here as LoadNavigationOptionStates uses it.
+            _settings = AppSettingsService.LoadAppSettings(); // Initialize _settings
+            // LoadNavigationOptionStates will also call LoadAppSettings, but _settings needs to be non-null before that.
+            // Or, ensure LoadNavigationOptionStates handles a potentially null _settings or is called after _settings is set.
+            // The existing LoadNavigationOptionStates re-assigns _settings.
 
             // LoadPersistedTabOverflowMode(); // Moved to TabOverflowManager
-            LoadNavigationOptionStates(); // Load and apply navigation states
+            LoadNavigationOptionStates(); // Load and apply navigation states. This will set _settings.
 
             // Attach event handlers for navigation options
             KeyboardArrowsOption.Checked += NavigationOption_Changed;
@@ -56,23 +62,7 @@ namespace Reader
             LoadChapterListAsync(); // Existing method
         }
 
-        private void LoadPersistedTabOverflowMode()
-        {
-            AppSettings settings = AppSettingsService.LoadAppSettings();
-            if (!string.IsNullOrEmpty(settings.DefaultTabOverflowMode))
-            {
-                if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))
-                {
-                    // Set the property directly to avoid re-saving immediately if it's the same as default
-                    _currentTabOverflowMode = mode;
-                    OnPropertyChanged(nameof(CurrentTabOverflowMode));
-                }
-                // else: log error about invalid mode string if desired
-            }
-            // If no persisted setting, it will use the default value set in the _currentTabOverflowMode field initializer.
-            // UpdateMenuCheckedStates() is called in MainTabControl_Loaded, which will reflect this loaded mode.
-        }
-
+        // LoadPersistedTabOverflowMode MOVED to TabOverflowManager
         // SaveCurrentOverflowModeSetting MOVED to TabOverflowManager
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
@@ -138,7 +128,7 @@ namespace Reader
                 }
                 MainTabHeaderTextBlock.Text += " (Loaded)";
             }
-            catch (Exception ex)
+            catch (Exception) // CS0168: ex not used
             {
                 // System.Diagnostics.Debug.WriteLine($"LoadChapterListAsync - An error occurred: {ex.Message}");
                 // Optionally, update the UI to show an error message
@@ -225,15 +215,29 @@ namespace Reader
         // Expose CurrentTabOverflowMode for XAML binding, delegating to the manager
         public TabOverflowMode CurrentTabOverflowMode
         {
-            get => _tabOverflowManager != null ? _tabOverflowManager.CurrentTabOverflowMode : TabOverflowMode.Scrollbar; // Provide a default if manager not ready
-            // Setter might not be strictly needed if all changes go via manager.SetOverflowMode()
-            // but if XAML somehow tries to set it, it should also go to manager.
+            get
+            {
+                // Ensure _tabOverflowManager is initialized before accessing, provide a default if not.
+                return _tabOverflowManager != null ? _tabOverflowManager.CurrentTabOverflowMode : default(TabOverflowMode);
+            }
             set
             {
-                if (_tabOverflowManager != null)
+                // Check if manager exists and if the value is actually changing
+                if (_tabOverflowManager != null && _tabOverflowManager.CurrentTabOverflowMode != value)
                 {
-                    _tabOverflowManager.SetOverflowMode(value);
-                    OnPropertyChanged(); // Notify XAML of change
+                    _tabOverflowManager.SetOverflowMode(value); // Call the public method
+                                                                    // The manager's setter should handle saving and internal UI updates.
+                    OnPropertyChanged(); // Notify XAML that this MainWindow property changed
+                }
+                else if (_tabOverflowManager == null && value != default(TabOverflowMode))
+                {
+                    // This case might occur if XAML tries to set a value before MainTabControl_Loaded initializes _tabOverflowManager.
+                    // Depending on desired behavior, could queue the value, log, or ignore.
+                    // For now, this path does nothing if manager isn't ready.
+                    // Consider if default(TabOverflowMode) (which is Scrollbar) is the right default if manager is null.
+                    // The getter already defaults to Scrollbar if manager is null (as TabOverflowMode.Scrollbar is 0).
+                    // If the XAML binding sets a different initial value before manager is ready, this could be an issue.
+                    // However, the manager loads the persisted value on init, which should then propagate.
                 }
             }
         }
@@ -341,7 +345,7 @@ namespace Reader
                                 f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
                     .ToList());
             }
-            catch (Exception ex)
+            catch (Exception ex) // Restore ex for MessageBox
             {
                 MessageBox.Show($"Error reading images from directory {chapterDirectoryInfo.FullName}: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -370,7 +374,7 @@ namespace Reader
             }
         }
 
-        private void HandleChapterOpenRequested(object sender, ChapterOpenRequestedEventArgs e)
+        private void HandleChapterOpenRequested(object? sender, ChapterOpenRequestedEventArgs e) // Made sender nullable
         {
             AddImageTab(e.DirectoryPath, e.ImagePaths, e.SwitchToTab);
         }

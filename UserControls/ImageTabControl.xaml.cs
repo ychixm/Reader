@@ -52,7 +52,7 @@ namespace Reader.UserControls
                     bmp.Freeze();
                     _errorPlaceholderImage = bmp;
                 }
-                catch (Exception ex)
+                catch (Exception) // CS0168: ex not used
                 {
                     // System.Diagnostics.Debug.WriteLine($"Failed to load error placeholder image for ImageTabControl: {ex.Message}");
                 }
@@ -157,7 +157,7 @@ namespace Reader.UserControls
                 bmp.Freeze();
                 return token.IsCancellationRequested ? null : bmp;
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException ))
+            catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException )) // Restore ex for when clause
             {
                 // System.Diagnostics.Debug.WriteLine($"Error loading BitmapImage from file {imagePath}: {ex.Message}");
                 return null;
@@ -213,7 +213,7 @@ namespace Reader.UserControls
                         }
                     }
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
+                catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
                 {
                     bitmapToShow = null;
                 }
@@ -270,7 +270,7 @@ namespace Reader.UserControls
             {
                 await Task.WhenAll(preloadTasks);
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
+            catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
             {
 
             }
@@ -306,7 +306,7 @@ namespace Reader.UserControls
                     }
                 }
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
+            catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
             {
             }
             finally

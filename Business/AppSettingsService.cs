@@ -21,7 +21,7 @@ namespace Reader.Business
                     return JsonSerializer.Deserialize<AppSettings>(jsonContent) ?? new AppSettings();
                 }
             }
-            catch (Exception ex)
+            catch (Exception) // CS0168: ex not used
             {
                 // Log error (e.g., System.Diagnostics.Debug.WriteLine($"Error loading app settings: {ex.Message}");)
                 // Fall through to return default settings
@@ -40,7 +40,7 @@ namespace Reader.Business
                 string jsonContent = JsonSerializer.Serialize(settings, options);
                 File.WriteAllText(ConfigFilePath, jsonContent);
             }
-            catch (Exception ex)
+            catch (Exception) // CS0168: ex not used
             {
                 // Log error (e.g., System.Diagnostics.Debug.WriteLine($"Error saving app settings: {ex.Message}");)
                 // Consider how to handle save failures (e.g., notify user, retry)

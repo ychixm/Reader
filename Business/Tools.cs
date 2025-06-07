@@ -56,7 +56,7 @@ namespace Reader.Business
                                 .Select(path => new DirectoryInfo(path))
                                 .ToList();
             }
-            catch (Exception ex)
+            catch (Exception) // CS0168: ex not used
             {
                 // Debug.WriteLine($"Error getting directories from path '{directoryPath}': {ex.Message}");
                 return new List<DirectoryInfo>();
@@ -90,7 +90,7 @@ namespace Reader.Business
                 }
                 return new Uri(files.First().FullName);
             }
-            catch (Exception ex)
+            catch (Exception) // CS0168: ex not used
             {
                 // Debug.WriteLine($"Error getting first file by extensions in directory {directoryInfo.FullName}: {ex.Message}");
                 return null;
@@ -122,7 +122,7 @@ namespace Reader.Business
                 BitmapFrame frame = decoder.Frames[0];
                 return (frame.PixelWidth, frame.PixelHeight);
             }
-            catch (Exception ex)
+            catch (Exception) // CS0168: ex not used
             {
                 // Debug.WriteLine($"Error getting image dimensions for {imagePath}: {ex.Message}");
                 return (0, 0);
