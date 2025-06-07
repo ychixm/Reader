@@ -14,6 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ReaderUtils\**" />
+    <EmbeddedResource Remove="ReaderUtils\**" />
+    <None Remove="ReaderUtils\**" />
+    <Page Remove="ReaderUtils\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Ressources\NoImage.png" />
   </ItemGroup>
 
