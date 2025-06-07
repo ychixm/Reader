@@ -17,15 +17,15 @@ namespace Reader.Business
         private readonly TabControl _tabControl;
         private readonly Window _ownerWindow;
 
-        private readonly ScrollViewer _tabItemsScrollViewer;
-        private readonly RepeatButton _leftScrollButton;
-        private readonly RepeatButton _rightScrollButton;
-        private readonly Button _tabListDropdownButton;
+        private ScrollViewer _tabItemsScrollViewer; // Removed readonly
+        private RepeatButton _leftScrollButton;     // Removed readonly
+        private RepeatButton _rightScrollButton;    // Removed readonly
+        private Button _tabListDropdownButton;        // Removed readonly
 
-        // Menu items for updating checked states
-        private readonly MenuItem _scrollbarModeMenuItem;
-        private readonly MenuItem _arrowButtonsModeMenuItem;
-        private readonly MenuItem _tabDropdownModeMenuItem;
+        // Menu items for updating checked states - now nullable
+        private readonly MenuItem? _scrollbarModeMenuItem;
+        private readonly MenuItem? _arrowButtonsModeMenuItem;
+        private readonly MenuItem? _tabDropdownModeMenuItem;
 
         private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar; // Default mode
         public TabOverflowMode CurrentTabOverflowMode
@@ -52,6 +52,25 @@ namespace Reader.Business
             _arrowButtonsModeMenuItem = arrowButtonsModeMenuItem ?? throw new ArgumentNullException(nameof(arrowButtonsModeMenuItem));
             _tabDropdownModeMenuItem = tabDropdownModeMenuItem ?? throw new ArgumentNullException(nameof(tabDropdownModeMenuItem));
 
+            InitializeCommon();
+        }
+
+        // New constructor for ImageViewerAppControl that doesn't require MenuItems
+        public TabOverflowManager(TabControl tabControl, Window ownerWindow)
+        {
+            _tabControl = tabControl ?? throw new ArgumentNullException(nameof(tabControl));
+            _ownerWindow = ownerWindow ?? throw new ArgumentNullException(nameof(ownerWindow));
+
+            // Nullable MenuItem fields are implicitly null here
+            _scrollbarModeMenuItem = null;
+            _arrowButtonsModeMenuItem = null;
+            _tabDropdownModeMenuItem = null;
+
+            InitializeCommon();
+        }
+
+        private void InitializeCommon()
+        {
             _tabControl.ApplyTemplate();
 
             _tabItemsScrollViewer = _tabControl.Template.FindName("TabItemsScrollViewer", _tabControl) as ScrollViewer ?? throw new InvalidOperationException("TabItemsScrollViewer not found in TabControl template.");

@@ -1,0 +1,25 @@
+<Window x:Class="Reader.MainFrame"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Reader"
+        mc:Ignorable="d"
+        Title="MainFrame" Height="768" Width="1024">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- For app launcher area -->
+            <RowDefinition Height="*"/>    <!-- For MainAppTabControl -->
+        </Grid.RowDefinitions>
+
+        <!-- Placeholder for app launcher items -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <Button x:Name="LaunchReaderAppButton" Content="Open Reader App" Margin="5" Padding="5" Click="LaunchReaderAppButton_Click"/>
+        </StackPanel>
+
+        <!-- MainAppTabControl for hosting applications -->
+        <TabControl x:Name="MainAppTabControl" Grid.Row="1">
+            <!-- Tabs for different apps will be added here -->
+        </TabControl>
+    </Grid>
+</Window>
