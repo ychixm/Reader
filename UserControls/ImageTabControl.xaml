@@ -5,17 +5,17 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
+    <Grid MouseDown="Grid_Overall_MouseDown">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <Button x:Name="LeftArrow" Content="<" Width="100" VerticalAlignment="Stretch" Click="LeftArrow_Click"
+        <Button x:Name="LeftArrow" Content="&lt;" Width="100" VerticalAlignment="Stretch" Click="LeftArrow_Click"
                 Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-        <Image x:Name="DisplayedImage" Grid.Column="1" Stretch="Uniform" MouseDown="DisplayedImage_MouseDown"/>
+        <Image x:Name="DisplayedImage" Grid.Column="1" Stretch="Uniform"/>
         <TextBlock x:Name="LoadingIndicator" Grid.Column="1" Text="Loading..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Visibility="Collapsed"/>
-        <Button x:Name="RightArrow" Content=">" Width="100" VerticalAlignment="Stretch" Grid.Column="2" Click="RightArrow_Click"
+        <Button x:Name="RightArrow" Content="&gt;" Width="100" VerticalAlignment="Stretch" Grid.Column="2" Click="RightArrow_Click"
                 Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
     </Grid>
 </UserControl>

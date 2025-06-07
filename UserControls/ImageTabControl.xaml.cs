@@ -56,40 +56,30 @@ namespace Reader.UserControls
             }
         }
 
-        public void DisplayedImage_MouseDown(object sender, MouseButtonEventArgs e)
+        // DisplayedImage_MouseDown method removed as requested
+
+        public void Grid_Overall_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            // Ignore clicks on the navigation buttons themselves
+            if (e.OriginalSource == LeftArrow || e.OriginalSource == RightArrow)
+            {
+                return;
+            }
+
             if (_imagePaths == null || _imagePaths.Count == 0 || DisplayedImage.Source == _errorPlaceholderImage)
             {
                 return;
             }
 
-            Point position = e.GetPosition(DisplayedImage);
-            double width = DisplayedImage.ActualWidth;
-
-            if (position.X < width * 0.33)
-            {
-                LeftArrow_Click(this, new RoutedEventArgs());
-            }
-            else if (position.X > width * 0.67)
-            {
-                RightArrow_Click(this, new RoutedEventArgs());
-            }
-        }
-
-        private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            Point clickPosition = e.GetPosition(this);
+            Point position = e.GetPosition(this); // 'this' is the UserControl
             double controlWidth = this.ActualWidth;
-            double clickPercentage = clickPosition.X / controlWidth;
 
-            if (clickPercentage < 0.33)
+            if (position.X < controlWidth * 0.33)
             {
-                // Simulate LeftArrow_Click
                 LeftArrow_Click(this, new RoutedEventArgs());
             }
-            else if (clickPercentage > 0.67)
+            else if (position.X > controlWidth * 0.67)
             {
-                // Simulate RightArrow_Click
                 RightArrow_Click(this, new RoutedEventArgs());
             }
         }
