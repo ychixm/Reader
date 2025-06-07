@@ -25,6 +25,7 @@ namespace Reader
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private AppSettings _settings;
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -66,7 +67,16 @@ namespace Reader
             InitializeComponent();
             this.DataContext = this; // Ensure this is set
 
-            LoadPersistedTabOverflowMode(); // New method call
+            LoadPersistedTabOverflowMode(); // Existing method call
+            LoadNavigationOptionStates(); // Load and apply navigation states
+
+            // Attach event handlers for navigation options
+            KeyboardArrowsOption.Checked += NavigationOption_Changed;
+            KeyboardArrowsOption.Unchecked += NavigationOption_Changed;
+            GridClickOption.Checked += NavigationOption_Changed;
+            GridClickOption.Unchecked += NavigationOption_Changed;
+            VisibleButtonsOption.Checked += NavigationOption_Changed;
+            VisibleButtonsOption.Unchecked += NavigationOption_Changed;
 
             LoadChapterListAsync(); // Existing method
         }
@@ -247,6 +257,50 @@ namespace Reader
 
             UpdateScrollButtonVisibility(); // Call to set initial state of scroll buttons
             UpdateMenuCheckedStates(); // Call to set initial state of menu checks
+        }
+
+        private void LoadNavigationOptionStates()
+        {
+            _settings = AppSettingsService.LoadAppSettings();
+            // Ensure _settings is not null, though LoadAppSettings should return new AppSettings() if file is missing/corrupt
+            if (_settings == null) _settings = new AppSettings();
+
+            KeyboardArrowsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows);
+            GridClickOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick);
+            VisibleButtonsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
+        }
+
+        private void NavigationOption_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_settings == null)
+            {
+                // This could happen if event fires before _settings is initialized, though unlikely with constructor setup.
+                // Load settings as a fallback.
+                _settings = AppSettingsService.LoadAppSettings();
+                if (_settings == null) _settings = new AppSettings(); // Ensure not null
+            }
+
+            NavigationMethod currentMethods = NavigationMethod.None;
+            if (KeyboardArrowsOption.IsChecked) currentMethods |= NavigationMethod.KeyboardArrows;
+            if (GridClickOption.IsChecked) currentMethods |= NavigationMethod.GridClick;
+            if (VisibleButtonsOption.IsChecked) currentMethods |= NavigationMethod.VisibleButtons;
+
+            // "At least one" rule
+            if (currentMethods == NavigationMethod.None)
+            {
+                if (sender is MenuItem menuItem)
+                {
+                    menuItem.IsChecked = true; // Re-check the item that was just unchecked
+                }
+                // Optional: MessageBox.Show("At least one page navigation method must be selected.", "Options Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return; // Prevent saving NavigationMethod.None
+            }
+
+            _settings.EnabledNavigationMethods = currentMethods;
+            AppSettingsService.SaveAppSettings(_settings);
+
+            // If ImageTabControl instances need to be updated dynamically, an eventing mechanism would be needed here.
+            // For now, new ImageTabControls will pick up the new settings upon creation.
         }
 
         private void LeftScrollButton_Click(object sender, RoutedEventArgs e)
