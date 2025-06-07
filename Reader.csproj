@@ -4,11 +4,21 @@
 	  <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- Suppress most SDK attributes -->
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute> <!-- Explicitly suppress this too -->
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="ReaderUtils\**" />
+    <EmbeddedResource Remove="ReaderUtils\**" />
+    <None Remove="ReaderUtils\**" />
+    <Page Remove="ReaderUtils\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Remove="Ressources\NoImage.png" />
@@ -36,6 +46,14 @@
     <Content Include="Ressources\NoImage.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fluent.Ribbon" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="ReaderUtils/ReaderUtils.csproj" />
   </ItemGroup>
 
 </Project>

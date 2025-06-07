@@ -1,36 +1,20 @@
 using System.Windows; // Required for Application.Current
-using Windows.UI.ViewManagement; // Required for UISettings
+// using Microsoft.Win32; // No longer needed
+// using System; // No longer needed for Exception
+using ReaderUtils; // Changed from Reader.Utils
 
 namespace Reader.Business
 {
     public static class ThemeManager
     {
-        private static bool _isDarkModeInitialized = false;
-        private static bool _cachedIsDarkMode;
+        // private static bool _isDarkModeInitialized = false; // Removed CS0414
+        // private static bool _cachedIsDarkMode; // Removed CS0169
 
-        public static bool GetCurrentSystemIsDarkMode()
-        {
-            if (!_isDarkModeInitialized)
-            {
-                try
-                {
-                    var uiSettings = new UISettings();
-                    var backgroundColor = uiSettings.GetColorValue(UIColorType.Background);
-                    _cachedIsDarkMode = backgroundColor.R < 128 && backgroundColor.G < 128 && backgroundColor.B < 128;
-                }
-                catch (System.Exception)
-                {
-                    // Fallback for environments where UISettings might not be available (e.g. older Windows)
-                    _cachedIsDarkMode = false;
-                }
-                _isDarkModeInitialized = true;
-            }
-            return _cachedIsDarkMode;
-        }
+        // GetCurrentSystemIsDarkMode method removed.
 
         public static void ApplyTheme()
         {
-            bool isDarkMode = GetCurrentSystemIsDarkMode();
+            bool isDarkMode = WindowsThemeHelpers.GetCurrentSystemIsDarkMode();
 
             if (isDarkMode)
             {

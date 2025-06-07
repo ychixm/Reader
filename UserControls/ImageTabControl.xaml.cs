@@ -52,7 +52,7 @@ namespace Reader.UserControls
                     bmp.Freeze();
                     _errorPlaceholderImage = bmp;
                 }
-                catch (Exception ex)
+                catch (Exception) // CS0168: ex not used
                 {
                     // System.Diagnostics.Debug.WriteLine($"Failed to load error placeholder image for ImageTabControl: {ex.Message}");
                 }
@@ -102,8 +102,10 @@ namespace Reader.UserControls
         {
             InitializeComponent();
             EnsureErrorPlaceholderLoaded();
+            this.Unloaded += UserControl_Unloaded; // Ensure unsubscription handler is attached
 
             _settings = AppSettingsService.LoadAppSettings(); // Load settings
+            AppSettingsService.SettingsChanged += HandleAppSettingsChanged; // Subscribe to settings changes
 
             _imagePaths = imagePaths ?? throw new ArgumentNullException(nameof(imagePaths));
             _preloadCts = new CancellationTokenSource();
@@ -140,6 +142,7 @@ namespace Reader.UserControls
 
             LeftArrow.Visibility = buttonVisibility;
             RightArrow.Visibility = buttonVisibility;
+            this.Focus(); // Set focus to the control
         }
 
         private static BitmapImage? LoadBitmapImageFromFile(string imagePath, CancellationToken token)
@@ -157,7 +160,7 @@ namespace Reader.UserControls
                 bmp.Freeze();
                 return token.IsCancellationRequested ? null : bmp;
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException ))
+            catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException )) // Restore ex for when clause
             {
                 // System.Diagnostics.Debug.WriteLine($"Error loading BitmapImage from file {imagePath}: {ex.Message}");
                 return null;
@@ -213,7 +216,7 @@ namespace Reader.UserControls
                         }
                     }
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
+                catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
                 {
                     bitmapToShow = null;
                 }
@@ -270,7 +273,7 @@ namespace Reader.UserControls
             {
                 await Task.WhenAll(preloadTasks);
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
+            catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
             {
 
             }
@@ -306,7 +309,7 @@ namespace Reader.UserControls
                     }
                 }
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
+            catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
             {
             }
             finally
@@ -370,6 +373,22 @@ namespace Reader.UserControls
                 _currentlyPreloading.Clear();
             }
             DisplayedImage.Source = null;
+            AppSettingsService.SettingsChanged -= HandleAppSettingsChanged; // Unsubscribe
+        }
+
+        private void HandleAppSettingsChanged(object? sender, EventArgs e)
+        {
+            _settings = AppSettingsService.LoadAppSettings(); // Reload settings
+
+            // Ensure UI updates run on the UI thread
+            if (Dispatcher.CheckAccess())
+            {
+                ApplyNavigationSettings(); // Update button visibility
+            }
+            else
+            {
+                Dispatcher.Invoke(() => ApplyNavigationSettings());
+            }
         }
     }
 }
