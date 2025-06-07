@@ -142,6 +142,7 @@ namespace Reader.UserControls
 
             LeftArrow.Visibility = buttonVisibility;
             RightArrow.Visibility = buttonVisibility;
+            this.Focus(); // Set focus to the control
         }
 
         private static BitmapImage? LoadBitmapImageFromFile(string imagePath, CancellationToken token)
