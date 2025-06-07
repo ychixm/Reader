@@ -137,6 +137,7 @@
                         <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>
                         <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/>
                         <MenuItem x:Name="TabDropdownModeMenuItem" Header="_Tab Dropdown Mode" IsCheckable="True" Click="SetOverflowMode_Dropdown_Click"/>
+                        <MenuItem Header="_OptionsPageSwap"/>
                     </MenuItem>
                     <Separator />
                     <MenuItem Header="_Exit" />
