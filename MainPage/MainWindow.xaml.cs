@@ -302,19 +302,31 @@ namespace Reader
 
         private void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
         {
-            _tabOverflowManager?.SetOverflowMode(TabOverflowMode.Scrollbar);
+            if (_tabOverflowManager != null)
+            {
+                _tabOverflowManager.SetOverflowMode(TabOverflowMode.Scrollbar);
+                OnPropertyChanged(nameof(CurrentTabOverflowMode));
+            }
             // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
         private void SetOverflowMode_Arrows_Click(object sender, RoutedEventArgs e)
         {
-            _tabOverflowManager?.SetOverflowMode(TabOverflowMode.ArrowButtons);
+            if (_tabOverflowManager != null)
+            {
+                _tabOverflowManager.SetOverflowMode(TabOverflowMode.ArrowButtons);
+                OnPropertyChanged(nameof(CurrentTabOverflowMode));
+            }
             // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
         private void SetOverflowMode_Dropdown_Click(object sender, RoutedEventArgs e)
         {
-            _tabOverflowManager?.SetOverflowMode(TabOverflowMode.TabDropdown);
+            if (_tabOverflowManager != null)
+            {
+                _tabOverflowManager.SetOverflowMode(TabOverflowMode.TabDropdown);
+                OnPropertyChanged(nameof(CurrentTabOverflowMode));
+            }
             // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
