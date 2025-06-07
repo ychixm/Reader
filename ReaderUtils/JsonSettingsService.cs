@@ -3,7 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Diagnostics; // For Debug.WriteLine
 
-namespace Reader.Utils
+namespace ReaderUtils // Changed namespace
 {
     public class JsonSettingsService<T> where T : class, new()
     {

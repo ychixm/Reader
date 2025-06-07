@@ -15,7 +15,7 @@ using Reader.Models; // Keep for DirectoryData, and now for ChapterOpenRequested
 // Re-adding for now as it was in original - if it causes build error, it's an external type.
 // using Windows.UI.ViewManagement; // No longer needed here
 // using Reader.Business; // No longer needed for ThemeManager directly, if WindowsThemeHelpers is used.
-using Reader.Utils; // For WindowsThemeHelpers
+using ReaderUtils; // Changed from Reader.Utils
 
 
 namespace Reader.UserControls

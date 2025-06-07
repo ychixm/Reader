@@ -1,7 +1,7 @@
 using System.Windows; // Required for Application.Current
 // using Microsoft.Win32; // No longer needed
 // using System; // No longer needed for Exception
-using Reader.Utils; // For WindowsThemeHelpers
+using ReaderUtils; // Changed from Reader.Utils
 
 namespace Reader.Business
 {

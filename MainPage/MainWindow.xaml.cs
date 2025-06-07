@@ -17,7 +17,7 @@ using System.Windows.Threading; // For DispatcherPriority
 using System.ComponentModel; // For INotifyPropertyChanged
 using System.Runtime.CompilerServices; // For CallerMemberName
 using Reader.Models; // For TabOverflowMode
-using Reader.Utils; // For WpfHelpers
+using ReaderUtils; // Changed from Reader.Utils
 
 namespace Reader
 {

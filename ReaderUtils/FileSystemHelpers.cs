@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Media.Imaging; // For GetImageDimensions
 
-namespace Reader.Utils
+namespace ReaderUtils // Changed namespace
 {
     public static class FileSystemHelpers
     {

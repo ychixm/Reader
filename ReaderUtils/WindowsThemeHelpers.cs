@@ -1,11 +1,13 @@
 using System;
 using Microsoft.Win32;
 using System.Diagnostics; // For Debug.WriteLine, if used in catch block
+using System.Runtime.Versioning; // For SupportedOSPlatform attribute
 
-namespace Reader.Utils
+namespace ReaderUtils // Changed namespace
 {
     public static class WindowsThemeHelpers
     {
+        [SupportedOSPlatform("windows")]
         public static bool GetCurrentSystemIsDarkMode()
         {
             try
