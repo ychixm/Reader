@@ -60,4 +60,11 @@
     <ProjectReference Include="ReaderUtils/ReaderUtils.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Page Include="UserControls\**\*.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+
 </Project>
