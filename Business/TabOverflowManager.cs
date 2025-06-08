@@ -1,67 +1,68 @@
 using Reader.Models;
+using ReaderUtils; // Added for WpfHelpers
 using System;
 using System.Collections.Generic;
+using System.Diagnostics; // For Debug.WriteLine
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives; // For RepeatButton, PlacementMode
-using System.Windows.Input; // For MouseButtonEventArgs (if needed, ContextMenuItem_Click uses RoutedEventArgs)
-using System.Windows.Media; // For VisualTreeHelper (if needed, though template finding is primary)
-using System.Windows.Threading; // For DispatcherPriority
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Reader.Business
 {
     public class TabOverflowManager
     {
         private readonly TabControl _tabControl;
-        private readonly Window _ownerWindow;
+        private readonly Window? _ownerWindow; // Made nullable
 
-        private ScrollViewer _tabItemsScrollViewer; // Removed readonly
-        private RepeatButton _leftScrollButton;     // Removed readonly
-        private RepeatButton _rightScrollButton;    // Removed readonly
-        private Button _tabListDropdownButton;        // Removed readonly
+        private ScrollViewer? _tabItemsScrollViewer; // Now nullable
+        private RepeatButton? _leftScrollButton;     // Now nullable
+        private RepeatButton? _rightScrollButton;    // Now nullable
+        private Button? _tabListDropdownButton;        // Now nullable
 
-        // Menu items for updating checked states - now nullable
         private readonly MenuItem? _scrollbarModeMenuItem;
         private readonly MenuItem? _arrowButtonsModeMenuItem;
         private readonly MenuItem? _tabDropdownModeMenuItem;
 
-        private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar; // Default mode
+        private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar;
         public TabOverflowMode CurrentTabOverflowMode
         {
             get => _currentTabOverflowMode;
-            private set // Make setter private, controlled by SetOverflowMode method
+            private set
             {
                 if (_currentTabOverflowMode != value)
                 {
                     _currentTabOverflowMode = value;
                     SaveCurrentOverflowModeSetting();
-                    UpdateMenuCheckedStates();
-                    UpdateScrollButtonVisibility();
+                    UpdateMenuCheckedStates(); // Safe: checks for null menu items
+                    UpdateUiForOverflowMode(); // Updated method name
                 }
             }
         }
 
-        public TabOverflowManager(TabControl tabControl, Window ownerWindow, MenuItem scrollbarModeMenuItem, MenuItem arrowButtonsModeMenuItem, MenuItem tabDropdownModeMenuItem)
+        // Constructor used by MainFrame (or similar) that provides menu items
+        public TabOverflowManager(TabControl tabControl, Window ownerWindow, MenuItem? scrollbarModeMenuItem, MenuItem? arrowButtonsModeMenuItem, MenuItem? tabDropdownModeMenuItem) // MenuItems nullable
         {
             _tabControl = tabControl ?? throw new ArgumentNullException(nameof(tabControl));
-            _ownerWindow = ownerWindow ?? throw new ArgumentNullException(nameof(ownerWindow));
+            _ownerWindow = ownerWindow;
 
-            _scrollbarModeMenuItem = scrollbarModeMenuItem ?? throw new ArgumentNullException(nameof(scrollbarModeMenuItem));
-            _arrowButtonsModeMenuItem = arrowButtonsModeMenuItem ?? throw new ArgumentNullException(nameof(arrowButtonsModeMenuItem));
-            _tabDropdownModeMenuItem = tabDropdownModeMenuItem ?? throw new ArgumentNullException(nameof(tabDropdownModeMenuItem));
+            _scrollbarModeMenuItem = scrollbarModeMenuItem;
+            _arrowButtonsModeMenuItem = arrowButtonsModeMenuItem;
+            _tabDropdownModeMenuItem = tabDropdownModeMenuItem;
 
             InitializeCommon();
         }
 
-        // New constructor for ImageViewerAppControl that doesn't require MenuItems
-        public TabOverflowManager(TabControl tabControl, Window ownerWindow)
+        // Constructor used by ImageViewerAppControl that doesn't require MenuItems or specific ownerWindow UI elements for context menu
+        public TabOverflowManager(TabControl tabControl, Window? ownerWindow) // ownerWindow is nullable
         {
             _tabControl = tabControl ?? throw new ArgumentNullException(nameof(tabControl));
-            _ownerWindow = ownerWindow ?? throw new ArgumentNullException(nameof(ownerWindow));
+            _ownerWindow = ownerWindow; // Can be null
 
-            // Nullable MenuItem fields are implicitly null here
             _scrollbarModeMenuItem = null;
             _arrowButtonsModeMenuItem = null;
             _tabDropdownModeMenuItem = null;
@@ -73,43 +74,79 @@ namespace Reader.Business
         {
             _tabControl.ApplyTemplate();
 
-            _tabItemsScrollViewer = _tabControl.Template.FindName("TabItemsScrollViewer", _tabControl) as ScrollViewer ?? throw new InvalidOperationException("TabItemsScrollViewer not found in TabControl template.");
-            _leftScrollButton = _tabControl.Template.FindName("LeftScrollButton", _tabControl) as RepeatButton ?? throw new InvalidOperationException("LeftScrollButton not found in TabControl template.");
-            _rightScrollButton = _tabControl.Template.FindName("RightScrollButton", _tabControl) as RepeatButton ?? throw new InvalidOperationException("RightScrollButton not found in TabControl template.");
-            _tabListDropdownButton = _tabControl.Template.FindName("TabListDropdownButton", _tabControl) as Button ?? throw new InvalidOperationException("TabListDropdownButton not found in TabControl template.");
-
-            _leftScrollButton.Click += LeftScrollButton_Click;
-            _rightScrollButton.Click += RightScrollButton_Click;
-            _tabListDropdownButton.Click += TabListDropdownButton_Click;
-            _tabItemsScrollViewer.ScrollChanged += TabItemsScrollViewer_ScrollChanged;
-
-            var contextMenu = _ownerWindow.TryFindResource("TabListContextMenu") as ContextMenu;
-            if (contextMenu != null)
+            // Attempt to find ScrollViewer robustly
+            _tabItemsScrollViewer = _tabControl.Template.FindName("PART_ScrollViewer", _tabControl) as ScrollViewer;
+            if (_tabItemsScrollViewer == null)
             {
-                _tabListDropdownButton.ContextMenu = contextMenu;
+                _tabItemsScrollViewer = _tabControl.Template.FindName("TabItemsScrollViewer", _tabControl) as ScrollViewer;
+            }
+            if (_tabItemsScrollViewer == null && _tabControl.HasItems && _tabControl.Items.Count > 0) // Ensure TabControl is populated for VisualTreeHelper
+            {
+                // Try to find it by traversing the visual tree as a last resort
+                // This assumes _tabControl is already loaded and has a visual tree
+                if (VisualTreeHelper.GetChildrenCount(_tabControl) > 0)
+                   _tabItemsScrollViewer = WpfHelpers.FindVisualChild<ScrollViewer>(_tabControl);
+            }
+
+            if (_tabItemsScrollViewer == null)
+            {
+                Debug.WriteLine("WARN: TabItemsScrollViewer (or PART_ScrollViewer) not found in TabControl template. Scroll-dependent overflow modes will be affected.");
+            }
+            else
+            {
+                _tabItemsScrollViewer.ScrollChanged += TabItemsScrollViewer_ScrollChanged;
+            }
+
+            // Try to find other parts but don't throw if not found; features will be disabled.
+            _leftScrollButton = _tabControl.Template.FindName("LeftScrollButton", _tabControl) as RepeatButton;
+            _rightScrollButton = _tabControl.Template.FindName("RightScrollButton", _tabControl) as RepeatButton;
+            _tabListDropdownButton = _tabControl.Template.FindName("TabListDropdownButton", _tabControl) as Button;
+
+            if (_leftScrollButton != null) _leftScrollButton.Click += LeftScrollButton_Click;
+            else Debug.WriteLine("WARN: LeftScrollButton not found in TabControl template.");
+
+            if (_rightScrollButton != null) _rightScrollButton.Click += RightScrollButton_Click;
+            else Debug.WriteLine("WARN: RightScrollButton not found in TabControl template.");
+
+            if (_tabListDropdownButton != null)
+            {
+                _tabListDropdownButton.Click += TabListDropdownButton_Click;
+                // ContextMenu setup - only if ownerWindow and Resource are available
+                if (_ownerWindow != null && _ownerWindow.TryFindResource("TabListContextMenu") is ContextMenu contextMenu)
+                {
+                    _tabListDropdownButton.ContextMenu = contextMenu;
+                }
+                else if (_ownerWindow == null)
+                {
+                     Debug.WriteLine("INFO: Owner window is null, cannot attach TabListContextMenu by resource name for TabListDropdownButton.");
+                }
+                else
+                {
+                    Debug.WriteLine("WARN: TabListContextMenu not found as a resource in the owner window for TabListDropdownButton.");
+                }
+            }
+            else
+            {
+                Debug.WriteLine("WARN: TabListDropdownButton not found in TabControl template.");
             }
 
             LoadPersistedTabOverflowMode();
-
-            UpdateScrollButtonVisibility();
-            UpdateMenuCheckedStates();
+            UpdateUiForOverflowMode();
         }
 
-        private void LoadPersistedTabOverflowMode()
+        public TabOverflowMode LoadPersistedTabOverflowMode()
         {
             AppSettings settings = AppSettingsService.LoadAppSettings();
             if (!string.IsNullOrEmpty(settings.DefaultTabOverflowMode))
             {
                 if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))
                 {
-                    // Use the property setter to ensure all related logic (save, UI updates) is triggered
-                    // if the loaded mode is different from the initial default _currentTabOverflowMode.
                     CurrentTabOverflowMode = mode;
+                    return mode;
                 }
-                // else: log error about invalid mode string if desired
             }
-            // If no persisted setting, it will use the default value set in the _currentTabOverflowMode field initializer.
-            // If that default is different from what would be set by CurrentTabOverflowMode = default, then the setter logic runs.
+            CurrentTabOverflowMode = TabOverflowMode.Scrollbar;
+            return CurrentTabOverflowMode;
         }
 
         private void SaveCurrentOverflowModeSetting()
@@ -119,60 +156,83 @@ namespace Reader.Business
             AppSettingsService.SaveAppSettings(settings);
         }
 
-        public void SetOverflowMode(TabOverflowMode mode)
+        public void SetOverflowMode(TabOverflowMode mode, bool updateUiElements = true)
         {
-            CurrentTabOverflowMode = mode; // This will trigger the setter logic including saving and UI updates
+            CurrentTabOverflowMode = mode;
+            if (updateUiElements) UpdateUiForOverflowMode();
         }
 
-        private void UpdateScrollButtonVisibility()
+        private void UpdateUiForOverflowMode()
         {
-            if (_tabItemsScrollViewer == null || _leftScrollButton == null || _rightScrollButton == null || _tabListDropdownButton == null)
-                return;
+            bool isScrollbarMode = CurrentTabOverflowMode == TabOverflowMode.Scrollbar;
+            bool isArrowButtonsMode = CurrentTabOverflowMode == TabOverflowMode.ArrowButtons;
 
-            _leftScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset > 0;
-            _rightScrollButton.IsEnabled = _tabItemsScrollViewer.HorizontalOffset < _tabItemsScrollViewer.ScrollableWidth;
+            if (_tabItemsScrollViewer != null)
+            {
+                _tabItemsScrollViewer.HorizontalScrollBarVisibility = isScrollbarMode ? ScrollBarVisibility.Auto : ScrollBarVisibility.Hidden;
+            }
+
+            if (_leftScrollButton != null) _leftScrollButton.Visibility = isArrowButtonsMode ? Visibility.Visible : Visibility.Collapsed;
+            if (_rightScrollButton != null) _rightScrollButton.Visibility = isArrowButtonsMode ? Visibility.Visible : Visibility.Collapsed;
+
+            UpdateScrollButtonEnablement();
         }
+
+        private void UpdateScrollButtonEnablement()
+        {
+            if (CurrentTabOverflowMode == TabOverflowMode.ArrowButtons)
+            {
+                if (_leftScrollButton != null) _leftScrollButton.IsEnabled = _tabItemsScrollViewer != null && _tabItemsScrollViewer.HorizontalOffset > 0;
+                if (_rightScrollButton != null) _rightScrollButton.IsEnabled = _tabItemsScrollViewer != null && _tabItemsScrollViewer.HorizontalOffset < _tabItemsScrollViewer.ScrollableWidth;
+            }
+            else
+            {
+                if (_leftScrollButton != null) _leftScrollButton.IsEnabled = false;
+                if (_rightScrollButton != null) _rightScrollButton.IsEnabled = false;
+            }
+        }
+
 
         private void TabItemsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            if (e.HorizontalChange != 0 || e.ExtentWidthChange != 0 || e.ViewportWidthChange != 0)
+            if (CurrentTabOverflowMode == TabOverflowMode.ArrowButtons && (e.HorizontalChange != 0 || e.ExtentWidthChange != 0 || e.ViewportWidthChange != 0))
             {
-                UpdateScrollButtonVisibility();
+                UpdateScrollButtonEnablement();
             }
         }
 
         private void LeftScrollButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_tabItemsScrollViewer != null)
+            if (_tabItemsScrollViewer != null && CurrentTabOverflowMode == TabOverflowMode.ArrowButtons)
             {
                 _tabItemsScrollViewer.LineLeft();
-                // UpdateScrollButtonVisibility(); // Already called by ScrollChanged
             }
         }
 
         private void RightScrollButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_tabItemsScrollViewer != null)
+            if (_tabItemsScrollViewer != null && CurrentTabOverflowMode == TabOverflowMode.ArrowButtons)
             {
                 _tabItemsScrollViewer.LineRight();
-                // UpdateScrollButtonVisibility(); // Already called by ScrollChanged
             }
         }
 
         private void TabListDropdownButton_Click(object sender, RoutedEventArgs e)
         {
             if (_tabListDropdownButton == null || _tabListDropdownButton.ContextMenu == null)
+            {
+                Debug.WriteLine("TabListDropdownButton or its ContextMenu is null. Cannot show tab list.");
                 return;
+            }
 
             ContextMenu contextMenu = _tabListDropdownButton.ContextMenu;
             contextMenu.Items.Clear();
 
-            // Need access to MainTab and MainTabHeaderTextBlock from MainWindow.
-            // This is a bit tricky. For now, let's assume MainTab is identifiable by Name or Type.
-            // And MainTabHeaderTextBlock is also named.
-            // A cleaner way would be for MainWindow to pass these or a delegate to get them.
-            // For now, let's try finding MainTabHeaderTextBlock from _ownerWindow if possible, or make assumptions.
-            TextBlock? mainTabHeaderTextBlock = _ownerWindow.FindName("MainTabHeaderTextBlock") as TextBlock; // Made nullable
+            TextBlock? mainTabHeaderTextBlock = null;
+            if (_ownerWindow != null)
+            {
+                mainTabHeaderTextBlock = _ownerWindow.FindName("MainTabHeaderTextBlock") as TextBlock;
+            }
 
 
             foreach (object item in _tabControl.Items)
@@ -182,12 +242,8 @@ namespace Reader.Business
                     if (tabItem.Name == "AddTabButtonTab" && tabItem.Header is Button) continue;
 
                     MenuItem menuItem = new MenuItem();
-                    string? headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString(); // Made nullable
+                    string? headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString();
 
-                    // Attempt to get the header text for the main tab specifically
-                    // This relies on MainTab having a specific name or being the first tab.
-                    // The original code used `tabItem == MainTab` which is not possible here directly.
-                    // If the main tab's header is complex, this might need adjustment or a delegate.
                     if (string.IsNullOrEmpty(headerText) && tabItem == _tabControl.Items.OfType<TabItem>().FirstOrDefault() && mainTabHeaderTextBlock != null)
                     {
                          headerText = mainTabHeaderTextBlock.Text;
@@ -203,7 +259,7 @@ namespace Reader.Business
             if (contextMenu.HasItems)
             {
                 contextMenu.PlacementTarget = _tabListDropdownButton;
-                contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                contextMenu.Placement = PlacementMode.Bottom;
                 contextMenu.IsOpen = true;
             }
         }
@@ -218,7 +274,7 @@ namespace Reader.Business
                 {
                     tabItem.Dispatcher.BeginInvoke(new Action(() => {
                         tabItem.BringIntoView();
-                    }), System.Windows.Threading.DispatcherPriority.Background);
+                    }), DispatcherPriority.Background);
                 }
             }
         }
