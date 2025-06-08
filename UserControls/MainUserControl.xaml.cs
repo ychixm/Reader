@@ -179,7 +179,23 @@ namespace Reader.UserControls
             // If TabOverflowManager expects a Window or specific properties from BaseWindow, this could be an issue.
             // For now, we pass 'this' (MainUserControl instance).
             // The MenuItem parameters (ScrollbarModeMenuItem etc.) are x:Names from XAML.
-            _tabOverflowManager = new TabOverflowManager(MainTabControl, this, ScrollbarModeMenuItem, ArrowButtonsModeMenuItem, TabDropdownModeMenuItem);
+            // _tabOverflowManager = new TabOverflowManager(MainTabControl, this, ScrollbarModeMenuItem, ArrowButtonsModeMenuItem, TabDropdownModeMenuItem);
+
+            var tabListContextMenu = (ContextMenu)this.Resources["TabListContextMenu"];
+            if (tabListContextMenu == null)
+            {
+                throw new InvalidOperationException("TabListContextMenu not found in UserControl resources.");
+            }
+
+            // MainTabHeaderTextBlock, ScrollbarModeMenuItem, ArrowButtonsModeMenuItem, TabDropdownModeMenuItem are x:Name defined in XAML for this UserControl
+            _tabOverflowManager = new TabOverflowManager(
+                MainTabControl,
+                tabListContextMenu,
+                MainTabHeaderTextBlock, // This is the x:Name of the TextBlock
+                ScrollbarModeMenuItem,
+                ArrowButtonsModeMenuItem,
+                TabDropdownModeMenuItem
+            );
             this.DataContext = this; // Set DataContext for bindings like {Binding CurrentTabOverflowMode}
         }
 

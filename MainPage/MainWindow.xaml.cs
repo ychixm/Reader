@@ -1,4 +1,4 @@
-using System.Windows;
+using System.Windows; // This using is important for 'Window'
 
 namespace Reader
 {
@@ -6,11 +6,11 @@ namespace Reader
     /// Old MainWindow.xaml.cs. Functionality moved to MainUserControl.xaml.cs and MainFrame.xaml.
     /// This file is kept to prevent build errors from missing partial class, but it's not used.
     /// </summary>
-    public partial class MainWindow : BaseWindow
+    public partial class MainWindow : Window // Changed BaseWindow to Window
     {
         public MainWindow()
         {
-            InitializeComponent(); // Loads the minimal XAML content
+            InitializeComponent();
         }
     }
 }

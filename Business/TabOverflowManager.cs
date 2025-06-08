@@ -1,26 +1,28 @@
 using Reader.Models;
+using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives; 
+using System.Windows.Controls.Primitives;
+// using System.Windows.Media; // Not strictly needed for this file's content
 
 namespace Reader.Business
 {
     public class TabOverflowManager
     {
         private readonly TabControl _tabControl;
-        private readonly Window _ownerWindow;
-
         private readonly ScrollViewer _tabItemsScrollViewer;
         private readonly RepeatButton _leftScrollButton;
         private readonly RepeatButton _rightScrollButton;
         private readonly Button _tabListDropdownButton;
+        private readonly ContextMenu _tabListContextMenu;
+        private readonly TextBlock _mainTabHeaderTextBlock;
 
-        // Menu items for updating checked states
         private readonly MenuItem _scrollbarModeMenuItem;
         private readonly MenuItem _arrowButtonsModeMenuItem;
         private readonly MenuItem _tabDropdownModeMenuItem;
 
-        private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar; // Default mode
+        private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar;
         public TabOverflowMode CurrentTabOverflowMode
         {
             get => _currentTabOverflowMode;
@@ -36,11 +38,16 @@ namespace Reader.Business
             }
         }
 
-        public TabOverflowManager(TabControl tabControl, Window ownerWindow, MenuItem scrollbarModeMenuItem, MenuItem arrowButtonsModeMenuItem, MenuItem tabDropdownModeMenuItem)
+        public TabOverflowManager(TabControl tabControl,
+                                  ContextMenu tabListContextMenu,
+                                  TextBlock mainTabHeaderTextBlock,
+                                  MenuItem scrollbarModeMenuItem,
+                                  MenuItem arrowButtonsModeMenuItem,
+                                  MenuItem tabDropdownModeMenuItem)
         {
             _tabControl = tabControl ?? throw new ArgumentNullException(nameof(tabControl));
-            _ownerWindow = ownerWindow ?? throw new ArgumentNullException(nameof(ownerWindow));
-
+            _tabListContextMenu = tabListContextMenu ?? throw new ArgumentNullException(nameof(tabListContextMenu));
+            _mainTabHeaderTextBlock = mainTabHeaderTextBlock; // Assuming it can be null based on original FindName behavior, or add null check if it must exist. For now, keeping as is.
             _scrollbarModeMenuItem = scrollbarModeMenuItem ?? throw new ArgumentNullException(nameof(scrollbarModeMenuItem));
             _arrowButtonsModeMenuItem = arrowButtonsModeMenuItem ?? throw new ArgumentNullException(nameof(arrowButtonsModeMenuItem));
             _tabDropdownModeMenuItem = tabDropdownModeMenuItem ?? throw new ArgumentNullException(nameof(tabDropdownModeMenuItem));
@@ -52,19 +59,14 @@ namespace Reader.Business
             _rightScrollButton = _tabControl.Template.FindName("RightScrollButton", _tabControl) as RepeatButton ?? throw new InvalidOperationException("RightScrollButton not found in TabControl template.");
             _tabListDropdownButton = _tabControl.Template.FindName("TabListDropdownButton", _tabControl) as Button ?? throw new InvalidOperationException("TabListDropdownButton not found in TabControl template.");
 
+            _tabListDropdownButton.ContextMenu = _tabListContextMenu;
+
             _leftScrollButton.Click += LeftScrollButton_Click;
             _rightScrollButton.Click += RightScrollButton_Click;
             _tabListDropdownButton.Click += TabListDropdownButton_Click;
             _tabItemsScrollViewer.ScrollChanged += TabItemsScrollViewer_ScrollChanged;
 
-            var contextMenu = _ownerWindow.TryFindResource("TabListContextMenu") as ContextMenu;
-            if (contextMenu != null)
-            {
-                _tabListDropdownButton.ContextMenu = contextMenu;
-            }
-
             LoadPersistedTabOverflowMode();
-
             UpdateScrollButtonVisibility();
             UpdateMenuCheckedStates();
         }
@@ -76,14 +78,9 @@ namespace Reader.Business
             {
                 if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))
                 {
-                    // Use the property setter to ensure all related logic (save, UI updates) is triggered
-                    // if the loaded mode is different from the initial default _currentTabOverflowMode.
                     CurrentTabOverflowMode = mode;
                 }
-                // else: log error about invalid mode string if desired
             }
-            // If no persisted setting, it will use the default value set in the _currentTabOverflowMode field initializer.
-            // If that default is different from what would be set by CurrentTabOverflowMode = default, then the setter logic runs.
         }
 
         private void SaveCurrentOverflowModeSetting()
@@ -95,7 +92,7 @@ namespace Reader.Business
 
         public void SetOverflowMode(TabOverflowMode mode)
         {
-            CurrentTabOverflowMode = mode; // This will trigger the setter logic including saving and UI updates
+            CurrentTabOverflowMode = mode;
         }
 
         private void UpdateScrollButtonVisibility()
@@ -120,7 +117,6 @@ namespace Reader.Business
             if (_tabItemsScrollViewer != null)
             {
                 _tabItemsScrollViewer.LineLeft();
-                // UpdateScrollButtonVisibility(); // Already called by ScrollChanged
             }
         }
 
@@ -129,7 +125,6 @@ namespace Reader.Business
             if (_tabItemsScrollViewer != null)
             {
                 _tabItemsScrollViewer.LineRight();
-                // UpdateScrollButtonVisibility(); // Already called by ScrollChanged
             }
         }
 
@@ -141,13 +136,7 @@ namespace Reader.Business
             ContextMenu contextMenu = _tabListDropdownButton.ContextMenu;
             contextMenu.Items.Clear();
 
-            // Need access to MainTab and MainTabHeaderTextBlock from MainWindow.
-            // This is a bit tricky. For now, let's assume MainTab is identifiable by Name or Type.
-            // And MainTabHeaderTextBlock is also named.
-            // A cleaner way would be for MainWindow to pass these or a delegate to get them.
-            // For now, let's try finding MainTabHeaderTextBlock from _ownerWindow if possible, or make assumptions.
-            TextBlock? mainTabHeaderTextBlock = _ownerWindow.FindName("MainTabHeaderTextBlock") as TextBlock; // Made nullable
-
+            TextBlock? currentMainTabHeaderTextBlock = _mainTabHeaderTextBlock; // Use the field passed from constructor
 
             foreach (object item in _tabControl.Items)
             {
@@ -156,15 +145,13 @@ namespace Reader.Business
                     if (tabItem.Name == "AddTabButtonTab" && tabItem.Header is Button) continue;
 
                     MenuItem menuItem = new MenuItem();
-                    string? headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString(); // Made nullable
+                    string? headerText = (tabItem.Header is TextBlock tb) ? tb.Text : tabItem.Header?.ToString();
 
-                    // Attempt to get the header text for the main tab specifically
-                    // This relies on MainTab having a specific name or being the first tab.
-                    // The original code used `tabItem == MainTab` which is not possible here directly.
-                    // If the main tab's header is complex, this might need adjustment or a delegate.
-                    if (string.IsNullOrEmpty(headerText) && tabItem == _tabControl.Items.OfType<TabItem>().FirstOrDefault() && mainTabHeaderTextBlock != null)
+                    if (string.IsNullOrEmpty(headerText) &&
+                        tabItem == _tabControl.Items.OfType<TabItem>().FirstOrDefault() &&
+                        currentMainTabHeaderTextBlock != null) // Check _mainTabHeaderTextBlock before use
                     {
-                         headerText = mainTabHeaderTextBlock.Text;
+                         headerText = currentMainTabHeaderTextBlock.Text;
                     }
 
                     menuItem.Header = headerText ?? "Unnamed Tab";
@@ -190,6 +177,8 @@ namespace Reader.Business
 
                 if (_tabItemsScrollViewer != null && tabItem.IsVisible)
                 {
+                    // It's important that BringIntoView is called after the tab is selected and visible.
+                    // Dispatcher ensures it runs after layout updates.
                     tabItem.Dispatcher.BeginInvoke(new Action(() => {
                         tabItem.BringIntoView();
                     }), System.Windows.Threading.DispatcherPriority.Background);
