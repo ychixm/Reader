@@ -1,7 +1,7 @@
 using System.Windows; 
 using Utils;
 
-namespace Reader.Business
+namespace Utils
 {
     public static class ThemeManager
     {
