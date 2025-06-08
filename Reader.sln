@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reader", "Reader.csproj", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{65B858B0-FA7C-8D60-ADB1-EB168B88825D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assistant", "Assistant\Assistant.csproj", "{66D8339F-4CD4-4D78-A3BF-F02B60E25AEA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,8 +23,15 @@ Global
 		{65B858B0-FA7C-8D60-ADB1-EB168B88825D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65B858B0-FA7C-8D60-ADB1-EB168B88825D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65B858B0-FA7C-8D60-ADB1-EB168B88825D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66D8339F-4CD4-4D78-A3BF-F02B60E25AEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66D8339F-4CD4-4D78-A3BF-F02B60E25AEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66D8339F-4CD4-4D78-A3BF-F02B60E25AEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66D8339F-4CD4-4D78-A3BF-F02B60E25AEA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EEB44408-70D8-464E-BE51-C124E24FEDBD}
 	EndGlobalSection
 EndGlobal

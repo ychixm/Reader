@@ -1,7 +1,10 @@
 using System.Windows;
-using Reader.Business; // For ThemeManager
+using Reader.UserControls;
+using Reader.Business;
+using Reader;
+using Utils;
 
-namespace Reader
+namespace Assitant
 {
     /// <summary>
     /// Interaction logic for MainFrame.xaml
