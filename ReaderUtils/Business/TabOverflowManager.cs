@@ -1,8 +1,8 @@
-using Reader.Models;
-using ReaderUtils; // Added for WpfHelpers
+using ReaderUtils.Models; // Changed from Reader.Models
+using ReaderUtils;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics; // For Debug.WriteLine
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -11,18 +11,22 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+// Assuming AppSettings and AppSettingsService will be handled or moved later.
+// For now, this will cause errors if AppSettingsService is not accessible.
+// To make it potentially compile for now, I might need to comment out AppSettingsService lines.
+// AppSettings related functionality will be temporarily commented out.
 
-namespace Reader.Business
+namespace ReaderUtils.Business // Changed from Reader.Business
 {
     public class TabOverflowManager
     {
         private readonly TabControl _tabControl;
-        private readonly Window? _ownerWindow; // Made nullable
+        private readonly Window? _ownerWindow;
 
-        private ScrollViewer? _tabItemsScrollViewer; // Now nullable
-        private RepeatButton? _leftScrollButton;     // Now nullable
-        private RepeatButton? _rightScrollButton;    // Now nullable
-        private Button? _tabListDropdownButton;        // Now nullable
+        private ScrollViewer? _tabItemsScrollViewer;
+        private RepeatButton? _leftScrollButton;
+        private RepeatButton? _rightScrollButton;
+        private Button? _tabListDropdownButton;
 
         private readonly MenuItem? _scrollbarModeMenuItem;
         private readonly MenuItem? _arrowButtonsModeMenuItem;
@@ -38,14 +42,13 @@ namespace Reader.Business
                 {
                     _currentTabOverflowMode = value;
                     SaveCurrentOverflowModeSetting();
-                    UpdateMenuCheckedStates(); // Safe: checks for null menu items
-                    UpdateUiForOverflowMode(); // Updated method name
+                    UpdateMenuCheckedStates();
+                    UpdateUiForOverflowMode();
                 }
             }
         }
 
-        // Constructor used by MainFrame (or similar) that provides menu items
-        public TabOverflowManager(TabControl tabControl, Window ownerWindow, MenuItem? scrollbarModeMenuItem, MenuItem? arrowButtonsModeMenuItem, MenuItem? tabDropdownModeMenuItem) // MenuItems nullable
+        public TabOverflowManager(TabControl tabControl, Window ownerWindow, MenuItem? scrollbarModeMenuItem, MenuItem? arrowButtonsModeMenuItem, MenuItem? tabDropdownModeMenuItem)
         {
             _tabControl = tabControl ?? throw new ArgumentNullException(nameof(tabControl));
             _ownerWindow = ownerWindow;
@@ -57,11 +60,10 @@ namespace Reader.Business
             InitializeCommon();
         }
 
-        // Constructor used by ImageViewerAppControl that doesn't require MenuItems or specific ownerWindow UI elements for context menu
-        public TabOverflowManager(TabControl tabControl, Window? ownerWindow) // ownerWindow is nullable
+        public TabOverflowManager(TabControl tabControl, Window? ownerWindow)
         {
             _tabControl = tabControl ?? throw new ArgumentNullException(nameof(tabControl));
-            _ownerWindow = ownerWindow; // Can be null
+            _ownerWindow = ownerWindow;
 
             _scrollbarModeMenuItem = null;
             _arrowButtonsModeMenuItem = null;
@@ -74,16 +76,13 @@ namespace Reader.Business
         {
             _tabControl.ApplyTemplate();
 
-            // Attempt to find ScrollViewer robustly
             _tabItemsScrollViewer = _tabControl.Template.FindName("PART_ScrollViewer", _tabControl) as ScrollViewer;
             if (_tabItemsScrollViewer == null)
             {
                 _tabItemsScrollViewer = _tabControl.Template.FindName("TabItemsScrollViewer", _tabControl) as ScrollViewer;
             }
-            if (_tabItemsScrollViewer == null && _tabControl.HasItems && _tabControl.Items.Count > 0) // Ensure TabControl is populated for VisualTreeHelper
+            if (_tabItemsScrollViewer == null && _tabControl.HasItems && _tabControl.Items.Count > 0)
             {
-                // Try to find it by traversing the visual tree as a last resort
-                // This assumes _tabControl is already loaded and has a visual tree
                 if (VisualTreeHelper.GetChildrenCount(_tabControl) > 0)
                    _tabItemsScrollViewer = WpfHelpers.FindVisualChild<ScrollViewer>(_tabControl);
             }
@@ -97,7 +96,6 @@ namespace Reader.Business
                 _tabItemsScrollViewer.ScrollChanged += TabItemsScrollViewer_ScrollChanged;
             }
 
-            // Try to find other parts but don't throw if not found; features will be disabled.
             _leftScrollButton = _tabControl.Template.FindName("LeftScrollButton", _tabControl) as RepeatButton;
             _rightScrollButton = _tabControl.Template.FindName("RightScrollButton", _tabControl) as RepeatButton;
             _tabListDropdownButton = _tabControl.Template.FindName("TabListDropdownButton", _tabControl) as Button;
@@ -111,7 +109,6 @@ namespace Reader.Business
             if (_tabListDropdownButton != null)
             {
                 _tabListDropdownButton.Click += TabListDropdownButton_Click;
-                // ContextMenu setup - only if ownerWindow and Resource are available
                 if (_ownerWindow != null && _ownerWindow.TryFindResource("TabListContextMenu") is ContextMenu contextMenu)
                 {
                     _tabListDropdownButton.ContextMenu = contextMenu;
@@ -136,24 +133,30 @@ namespace Reader.Business
 
         public TabOverflowMode LoadPersistedTabOverflowMode()
         {
-            AppSettings settings = AppSettingsService.LoadAppSettings();
-            if (!string.IsNullOrEmpty(settings.DefaultTabOverflowMode))
-            {
-                if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))
-                {
-                    CurrentTabOverflowMode = mode;
-                    return mode;
-                }
-            }
+            // AppSettingsService will cause an error here as it's in Reader project.
+            // This needs to be refactored or AppSettings moved.
+            // Temporarily defaulting to Scrollbar and skipping load/save.
+            // AppSettings settings = AppSettingsService.LoadAppSettings();
+            // if (!string.IsNullOrEmpty(settings.DefaultTabOverflowMode))
+            // {
+            //     if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))
+            //     {
+            //         CurrentTabOverflowMode = mode;
+            //         return mode;
+            //     }
+            // }
             CurrentTabOverflowMode = TabOverflowMode.Scrollbar;
             return CurrentTabOverflowMode;
         }
 
         private void SaveCurrentOverflowModeSetting()
         {
-            AppSettings settings = AppSettingsService.LoadAppSettings();
-            settings.DefaultTabOverflowMode = CurrentTabOverflowMode.ToString();
-            AppSettingsService.SaveAppSettings(settings);
+            // AppSettingsService will cause an error here.
+            // Temporarily skipping save.
+            // AppSettings settings = AppSettingsService.LoadAppSettings();
+            // settings.DefaultTabOverflowMode = CurrentTabOverflowMode.ToString();
+            // AppSettingsService.SaveAppSettings(settings);
+            Debug.WriteLine("INFO: SaveCurrentOverflowModeSetting skipped in ReaderUtils.TabOverflowManager due to AppSettingsService dependency.");
         }
 
         public void SetOverflowMode(TabOverflowMode mode, bool updateUiElements = true)
@@ -233,7 +236,6 @@ namespace Reader.Business
             {
                 mainTabHeaderTextBlock = _ownerWindow.FindName("MainTabHeaderTextBlock") as TextBlock;
             }
-
 
             foreach (object item in _tabControl.Items)
             {

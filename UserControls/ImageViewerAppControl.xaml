@@ -5,11 +5,25 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Reader.UserControls"
              xmlns:models="clr-namespace:Reader.Models"
-             xmlns:business="clr-namespace:Reader.Business"
+             xmlns:readerUtils="clr-namespace:ReaderUtils;assembly=ReaderUtils"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800">
     <Grid>
-        <TabControl x:Name="InternalTabControl" Margin="0,30,0,0" MouseDown="InternalTabControl_MouseDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- For TabOverflowOptionsControl -->
+            <RowDefinition Height="*"/>    <!-- For InternalTabControl -->
+        </Grid.RowDefinitions>
+
+        <readerUtils:TabOverflowOptionsControl
+            Grid.Row="0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Margin="5"
+            TargetTabControl="{Binding ElementName=InternalTabControl}"/>
+
+        <TabControl x:Name="InternalTabControl"
+                    Grid.Row="1"
+                    MouseDown="InternalTabControl_MouseDown">
             <TabControl.Resources>
                  <Style TargetType="TabItem">
                      <Setter Property="Background" Value="{DynamicResource TabItemBackgroundBrush}"/>
@@ -40,13 +54,5 @@
                 </Grid>
             </TabItem>
         </TabControl>
-         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Height="25">
-             <TextBlock Text="Tab Overflow:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-             <ComboBox x:Name="TabOverflowModeComboBox" SelectedIndex="0" VerticalAlignment="Center" Width="120" SelectionChanged="TabOverflowModeComboBox_SelectionChanged">
-                 <ComboBoxItem Content="Scrollbar"/>
-                 <ComboBoxItem Content="ArrowButtons"/>
-                 <ComboBoxItem Content="TabDropdown"/>
-             </ComboBox>
-         </StackPanel>
     </Grid>
 </UserControl>

@@ -1,4 +1,4 @@
-using Reader.Models; // For NavigationMethod enum
+using ReaderUtils.Models; // For NavigationMethod enum
 
 namespace Reader.Models
 {

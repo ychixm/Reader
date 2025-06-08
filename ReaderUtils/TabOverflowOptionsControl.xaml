@@ -1,0 +1,21 @@
+<UserControl x:Class="ReaderUtils.TabOverflowOptionsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="30" d:DesignWidth="200">
+    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Text="Tab Overflow:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+        <ComboBox x:Name="OverflowModeComboBox"
+                  SelectedIndex="0"
+                  VerticalAlignment="Center"
+                  Width="120"
+                  SelectionChanged="OverflowModeComboBox_SelectionChanged"
+                  IsEnabled="False"> <!-- Initially disabled until TargetTabControl is set -->
+            <ComboBoxItem Content="Scrollbar"/>
+            <ComboBoxItem Content="ArrowButtons"/>
+            <ComboBoxItem Content="TabDropdown"/>
+        </ComboBox>
+    </StackPanel>
+</UserControl>

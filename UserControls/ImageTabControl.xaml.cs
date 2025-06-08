@@ -15,8 +15,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Reader.Models;
-using Reader.Business;
+using Reader.Models; // For AppSettings
+using Reader.Business; // For AppSettingsService
+using ReaderUtils.Models; // For NavigationMethod
 
 namespace Reader.UserControls
 {

@@ -1,4 +1,6 @@
-namespace Reader.Models // Or Reader.Enums if preferred
+using System; // Added for [Flags] attribute
+
+namespace ReaderUtils.Models // Changed from Reader.Models
 {
     public enum TabOverflowMode
     {

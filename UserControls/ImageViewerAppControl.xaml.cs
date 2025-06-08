@@ -8,19 +8,21 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input; // Added for MouseButtonEventArgs
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Reader.Business;
-using Reader.Models;
-using ReaderUtils; // Added for WpfHelpers
+using Reader.Business; // For AppSettingsService
+using Reader.Models;   // For ChapterOpenRequestedEventArgs, AppSettings (if not fully qualified)
+// TabOverflowManager and TabOverflowMode are now in ReaderUtils
+using ReaderUtils;     // For WpfHelpers, FileSystemHelpers (if used directly)
+// using ReaderUtils.Business; // No longer directly using TabOverflowManager here
+// using ReaderUtils.Models;   // No longer directly using TabOverflowMode enum here
 
 namespace Reader.UserControls
 {
     public partial class ImageViewerAppControl : UserControl, INotifyPropertyChanged, IDisposable
     {
-        private AppSettings _settings;
-        private TabOverflowManager? _tabOverflowManager;
+        private Reader.Models.AppSettings _settings; // Fully qualify if needed, or ensure correct using
 
         private static readonly HashSet<string> SupportedImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -39,42 +41,27 @@ namespace Reader.UserControls
 
             try
             {
+                // AppSettingsService is in Reader.Business
                 _settings = AppSettingsService.LoadAppSettings();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading AppSettings: {ex.Message}");
-                _settings = new AppSettings();
+                _settings = new Reader.Models.AppSettings(); // Fully qualify
             }
 
             ChaptersGrid.ItemsSource = Views;
             _ = LoadChapterListAsync();
 
+            // Loaded and Unloaded events are still relevant for this UserControl's lifecycle
             this.Loaded += ImageViewerAppControl_Loaded;
             this.Unloaded += ImageViewerAppControl_Unloaded;
-            // Ensure the MouseDown event is wired up if not done in XAML (it is in current XAML for InternalTabControl)
-            // InternalTabControl.MouseDown += InternalTabControl_MouseDown; // Already in XAML
         }
 
         private void ImageViewerAppControl_Loaded(object sender, RoutedEventArgs e)
         {
-            if (InternalTabControl != null)
-            {
-                _tabOverflowManager = new TabOverflowManager(InternalTabControl, WpfHelpers.FindParent<Window>(this));
-
-                var persistedMode = _tabOverflowManager.LoadPersistedTabOverflowMode();
-
-                if (TabOverflowModeComboBox != null)
-                {
-                    TabOverflowModeComboBox.SelectedIndex = (int)persistedMode;
-                }
-                _tabOverflowManager.SetOverflowMode(persistedMode, updateUiElements: true);
-                OnPropertyChanged(nameof(CurrentTabOverflowMode));
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("ImageViewerAppControl_Loaded: InternalTabControl is null.");
-            }
+            // TabOverflowManager and ComboBox logic is now encapsulated in TabOverflowOptionsControl.
+            // No specific initialization needed here for it anymore.
         }
 
         private void ImageViewerAppControl_Unloaded(object sender, RoutedEventArgs e)
@@ -82,32 +69,8 @@ namespace Reader.UserControls
             Dispose();
         }
 
-        public TabOverflowMode CurrentTabOverflowMode
-        {
-            get => _tabOverflowManager?.CurrentTabOverflowMode ?? TabOverflowMode.Scrollbar;
-            set
-            {
-                if (_tabOverflowManager != null && _tabOverflowManager.CurrentTabOverflowMode != value)
-                {
-                    _tabOverflowManager.SetOverflowMode(value, updateUiElements: true);
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        private void TabOverflowModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_tabOverflowManager != null && TabOverflowModeComboBox.SelectedItem is ComboBoxItem selectedItem)
-            {
-                if (selectedItem.Content is string contentString && Enum.TryParse<TabOverflowMode>(contentString, out var mode))
-                {
-                    if (CurrentTabOverflowMode != mode)
-                    {
-                        CurrentTabOverflowMode = mode;
-                    }
-                }
-            }
-        }
+        // CurrentTabOverflowMode property is removed.
+        // TabOverflowModeComboBox_SelectionChanged method is removed.
 
         private async Task LoadChapterListAsync()
         {
@@ -124,10 +87,12 @@ namespace Reader.UserControls
                 {
                     effectivePath = AppDomain.CurrentDomain.BaseDirectory;
                 }
-                List<DirectoryInfo> chapters = await Task.Run(() => FileSystemHelpers.GetDirectories(effectivePath));
+                // FileSystemHelpers is in ReaderUtils
+                List<DirectoryInfo> chapters = await Task.Run(() => ReaderUtils.FileSystemHelpers.GetDirectories(effectivePath));
                 foreach (var directory in chapters)
                 {
                     if (_isDisposed || Application.Current == null) break;
+                    // ChapterOpenRequestedEventArgs is in Reader.Models
                     await ProcessChapterDirectoryAsync(directory);
                 }
             }
@@ -166,11 +131,13 @@ namespace Reader.UserControls
             await Application.Current.Dispatcher.InvokeAsync(() => Views.Add(chapterListElement));
             try
             {
-                var imageSourceUri = await Task.Run(() => FileSystemHelpers.GetFirstFileByExtensions(directory, SupportedImageExtensions));
+                // FileSystemHelpers is in ReaderUtils
+                var imageSourceUri = await Task.Run(() => ReaderUtils.FileSystemHelpers.GetFirstFileByExtensions(directory, SupportedImageExtensions));
                 if (imageSourceUri != null)
                 {
+                    // FileSystemHelpers is in ReaderUtils
                     BitmapImage? finalThumbnail = await Task.Run(() => {
-                        var (width, height) = FileSystemHelpers.GetImageDimensions(imageSourceUri.LocalPath);
+                        var (width, height) = ReaderUtils.FileSystemHelpers.GetImageDimensions(imageSourceUri.LocalPath);
                         BitmapImage thumbnail = new BitmapImage();
                         thumbnail.BeginInit();
                         thumbnail.UriSource = imageSourceUri;
@@ -194,7 +161,8 @@ namespace Reader.UserControls
             }
         }
 
-        private void HandleChapterOpenRequested(object? sender, ChapterOpenRequestedEventArgs e)
+        // ChapterOpenRequestedEventArgs is in Reader.Models
+        private void HandleChapterOpenRequested(object? sender, Reader.Models.ChapterOpenRequestedEventArgs e)
         {
             if (_isDisposed) return;
             AddImageTab(e.DirectoryPath, e.ImagePaths, e.SwitchToTab);
@@ -210,7 +178,8 @@ namespace Reader.UserControls
                 if (switchToTab) InternalTabControl.SelectedItem = existingTab;
                 return;
             }
-            var imageTabControl = new ImageTabControl(imagePaths);
+            // ImageTabControl is in Reader.UserControls
+            var imageTabControl = new Reader.UserControls.ImageTabControl(imagePaths);
             string? tabTitle = Path.GetFileName(directoryPath);
             if (tabTitle != null && tabTitle.Length > MaxTitleLength)
             {
@@ -234,8 +203,8 @@ namespace Reader.UserControls
         {
             if (e.ChangedButton == MouseButton.Middle && InternalTabControl != null)
             {
-                // Call the helper method from WpfHelpers
-                WpfHelpers.HandleTabMiddleClickClose(InternalTabControl, e.OriginalSource, new[] { "Chapters" });
+                // WpfHelpers is in ReaderUtils
+                ReaderUtils.WpfHelpers.HandleTabMiddleClickClose(InternalTabControl, e.OriginalSource, new[] { "Chapters" });
             }
         }
 
@@ -250,16 +219,14 @@ namespace Reader.UserControls
             if (_isDisposed) return;
             if (disposing)
             {
-                _isDisposed = true; // Set early to stop async operations
-                if (_tabOverflowManager != null) _tabOverflowManager = null;
+                _isDisposed = true;
                 this.Loaded -= ImageViewerAppControl_Loaded;
                 this.Unloaded -= ImageViewerAppControl_Unloaded;
                 if (Views != null)
                 {
-                    foreach(var view in Views.ToList()) // ToList for safe removal during iteration if needed by event handlers
+                    foreach(var view in Views.ToList())
                     {
                         view.ChapterOpenRequested -= HandleChapterOpenRequested;
-                        // If ChapterListElement itself becomes IDisposable, dispose it here.
                     }
                     Views.Clear();
                 }
@@ -268,12 +235,11 @@ namespace Reader.UserControls
                     foreach (var item in InternalTabControl.Items.OfType<TabItem>().ToList())
                     {
                         if (item.Content is IDisposable disposableContent) disposableContent.Dispose();
-                        // ImageTabControl cleans up on Unloaded
                     }
-                    InternalTabControl.Items.Clear(); // Clear all tabs
+                    InternalTabControl.Items.Clear();
                 }
             }
-            _isDisposed = true;
+            _isDisposed = true; // Ensure it's set even if disposing is false (from finalizer)
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
