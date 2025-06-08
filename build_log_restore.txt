@@ -1,0 +1,3 @@
+  Determining projects to restore...
+  Restored /app/ReaderUtils/ReaderUtils.csproj (in 318 ms).
+  Restored /app/Reader.csproj (in 336 ms).

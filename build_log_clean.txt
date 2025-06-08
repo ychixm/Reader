@@ -1,0 +1,59 @@
+Build started 06/08/2025 10:44:44.
+     1>Project "/app/Reader.sln" on node 1 (Clean target(s)).
+     1>ValidateSolutionConfiguration:
+         Building solution configuration "Debug|Any CPU".
+     1>Project "/app/Reader.sln" (1) is building "/app/Reader.csproj" (2) on node 2 (Clean target(s)).
+     2>CoreClean:
+         Deleting file "/app/bin/Debug/net9.0-windows/Ressources/NoImage.png".
+         Deleting file "/app/bin/Debug/net9.0-windows/appsettings.json".
+         Deleting file "/app/bin/Debug/net9.0-windows/Reader.deps.json".
+         Deleting file "/app/bin/Debug/net9.0-windows/Reader.dll".
+         Deleting file "/app/bin/Debug/net9.0-windows/Reader.pdb".
+         Deleting file "/app/bin/Debug/net9.0-windows/ReaderUtils.dll".
+         Deleting file "/app/bin/Debug/net9.0-windows/ReaderUtils.pdb".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.csproj.AssemblyReference.cache".
+         Deleting file "/app/obj/Debug/net9.0-windows/UserControls/ImageTabControl.baml".
+         Deleting file "/app/obj/Debug/net9.0-windows/UserControls/OptionsTabContentControl.baml".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.MainHost/App.g.cs".
+         Deleting file "/app/obj/Debug/net9.0-windows/UserControls/ChapterListElement.g.cs".
+         Deleting file "/app/obj/Debug/net9.0-windows/UserControls/ImageTabControl.g.cs".
+         Deleting file "/app/obj/Debug/net9.0-windows/UserControls/ImageViewerAppControl.g.cs".
+         Deleting file "/app/obj/Debug/net9.0-windows/UserControls/OptionsTabContentControl.g.cs".
+         Deleting file "/app/obj/Debug/net9.0-windows/WpfToolkit/Controls/GridDetailsView.g.cs".
+         Deleting file "/app/obj/Debug/net9.0-windows/GeneratedInternalTypeHelper.g.cs".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.g.resources".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.GeneratedMSBuildEditorConfig.editorconfig".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.csproj.CoreCompileInputs.cache".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.sourcelink.json".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.csproj.Up2Date".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.dll".
+         Deleting file "/app/obj/Debug/net9.0-windows/refint/Reader.dll".
+         Deleting file "/app/obj/Debug/net9.0-windows/Reader.pdb".
+         Deleting file "/app/obj/Debug/net9.0-windows/ref/Reader.dll".
+     1>Project "/app/Reader.sln" (1) is building "/app/ReaderUtils/ReaderUtils.csproj" (3) on node 1 (Clean target(s)).
+     3>CoreClean:
+         Deleting file "/app/ReaderUtils/bin/Debug/net9.0-windows/ReaderUtils.deps.json".
+         Deleting file "/app/ReaderUtils/bin/Debug/net9.0-windows/ReaderUtils.dll".
+         Deleting file "/app/ReaderUtils/bin/Debug/net9.0-windows/ReaderUtils.pdb".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.GeneratedMSBuildEditorConfig.editorconfig".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.AssemblyInfoInputs.cache".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.AssemblyInfo.cs".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.csproj.CoreCompileInputs.cache".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.sourcelink.json".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.dll".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/refint/ReaderUtils.dll".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.pdb".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ref/ReaderUtils.dll".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/TabOverflowOptionsControl.baml".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/TabOverflowOptionsControl.g.cs".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils_MarkupCompile.cache".
+         Deleting file "/app/ReaderUtils/obj/Debug/net9.0-windows/ReaderUtils.g.resources".
+     3>Done Building Project "/app/ReaderUtils/ReaderUtils.csproj" (Clean target(s)).
+     2>Done Building Project "/app/Reader.csproj" (Clean target(s)).
+     1>Done Building Project "/app/Reader.sln" (Clean target(s)).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.77

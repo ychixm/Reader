@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework> <!-- Assuming net9.0-windows is appropriate -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion> -->
+    <!-- If generating assembly info, ensure it does not clash with other projects if they are linked -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup><!-- MainFrame.xaml and App.xaml will be included by default by SDK -->
+    <!-- ProjectReference to Reader project will be added in a later step -->
+
+    <ProjectReference Include="..\Reader.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fluent.Ribbon" Version="9.0.4" />
+  </ItemGroup>
+
+</Project>

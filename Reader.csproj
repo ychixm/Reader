@@ -2,13 +2,13 @@
 
   <PropertyGroup>
 	  <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <!-- <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion> --> <!-- No longer needed if targeting general net9.0-windows -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- Suppress most SDK attributes -->
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute> <!-- Explicitly suppress this too -->
   </PropertyGroup>

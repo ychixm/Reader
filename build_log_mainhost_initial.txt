@@ -1,0 +1,39 @@
+Build started 06/08/2025 10:28:34.
+     1>Project "/app/Reader.MainHost/Reader.MainHost.csproj" on node 1 (Restore target(s)).
+     1>_GetAllRestoreProjectPathItems:
+         Determining projects to restore...
+       Restore:
+         X.509 certificate chain validation will use the fallback certificate bundle at '/home/jules/.dotnet/sdk/9.0.300/trustedroots/codesignctl.pem'.
+         X.509 certificate chain validation will use the fallback certificate bundle at '/home/jules/.dotnet/sdk/9.0.300/trustedroots/timestampctl.pem'.
+         Restoring packages for /app/Reader.MainHost/Reader.MainHost.csproj...
+           GET https://api.nuget.org/v3/vulnerabilities/index.json
+           OK https://api.nuget.org/v3/vulnerabilities/index.json 15ms
+           GET https://api.nuget.org/v3-vulnerabilities/2025.06.05.05.42.46/vulnerability.base.json
+           GET https://api.nuget.org/v3-vulnerabilities/2025.06.05.05.42.46/2025.06.07.17.42.52/vulnerability.update.json
+           OK https://api.nuget.org/v3-vulnerabilities/2025.06.05.05.42.46/vulnerability.base.json 17ms
+           OK https://api.nuget.org/v3-vulnerabilities/2025.06.05.05.42.46/2025.06.07.17.42.52/vulnerability.update.json 43ms
+         Generating MSBuild file /app/Reader.MainHost/obj/Reader.MainHost.csproj.nuget.g.props.
+         Generating MSBuild file /app/Reader.MainHost/obj/Reader.MainHost.csproj.nuget.g.targets.
+         Writing assets file to disk. Path: /app/Reader.MainHost/obj/project.assets.json
+         Restored /app/Reader.MainHost/Reader.MainHost.csproj (in 660 ms).
+
+         NuGet Config files used:
+             /home/swebot/.nuget/NuGet/NuGet.Config
+
+         Feeds used:
+             https://api.nuget.org/v3/index.json
+     1>Done Building Project "/app/Reader.MainHost/Reader.MainHost.csproj" (Restore target(s)).
+   1:7>Project "/app/Reader.MainHost/Reader.MainHost.csproj" on node 1 (default targets).
+     1>/home/jules/.dotnet/sdk/9.0.300/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.TargetFrameworkInference.targets(230,5): error NETSDK1135: SupportedOSPlatformVersion 10.0.17763.0 cannot be higher than TargetPlatformVersion 7.0. [/app/Reader.MainHost/Reader.MainHost.csproj]
+     1>Done Building Project "/app/Reader.MainHost/Reader.MainHost.csproj" (default targets) -- FAILED.
+
+Build FAILED.
+
+       "/app/Reader.MainHost/Reader.MainHost.csproj" (default target) (1:7) ->
+       (_CheckForSupportedOSPlatformVersionHigherThanTargetPlatformVersion target) ->
+         /home/jules/.dotnet/sdk/9.0.300/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.TargetFrameworkInference.targets(230,5): error NETSDK1135: SupportedOSPlatformVersion 10.0.17763.0 cannot be higher than TargetPlatformVersion 7.0. [/app/Reader.MainHost/Reader.MainHost.csproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:03.11

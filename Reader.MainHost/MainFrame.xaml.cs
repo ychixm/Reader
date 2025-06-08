@@ -1,12 +1,12 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Reader.UserControls; // Required for OptionsTabContentControl and ImageViewerAppControl
-using ReaderUtils;
+using Reader.UserControls; // For ImageViewerAppControl, OptionsTabContentControl
+using ReaderUtils;         // For WpfHelpers
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Reader
+namespace Reader.MainHost
 {
     public partial class MainFrame : Window
     {
@@ -19,11 +19,8 @@ namespace Reader
             }
             Loaded += (s, e) => {
                 EnsureOptionsTabIsLast();
-                // Initial update for Options tab if it's selected by default (it's not currently)
-                // or if other tabs are loaded before it becomes visible.
                 UpdateOptionsTabIfNeeded();
             };
-            // MainAppTabControl_SelectionChanged is wired in XAML
         }
 
         private void LaunchReaderAppButton_Click(object sender, RoutedEventArgs e)
@@ -47,7 +44,7 @@ namespace Reader
                 MainAppTabControl.SelectedItem = readerTab;
             }
             EnsureOptionsTabIsLast();
-            UpdateOptionsTabIfNeeded(); // Update if Options tab is selected
+            UpdateOptionsTabIfNeeded();
         }
 
         private void MainAppTabControl_MouseDown(object sender, MouseButtonEventArgs e)
@@ -60,20 +57,18 @@ namespace Reader
                 {
                     nonClosableHeaders.Add(optionsTab.Header.ToString()!);
                 }
-
                 bool tabClosed = WpfHelpers.HandleTabMiddleClickClose(MainAppTabControl, e.OriginalSource, nonClosableHeaders);
-
                 if (tabClosed)
                 {
                     EnsureOptionsTabIsLast();
-                    UpdateOptionsTabIfNeeded(); // Update if Options tab is selected
+                    UpdateOptionsTabIfNeeded();
                 }
             }
         }
 
         private void MainAppTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.Source is TabControl tc && tc.Name == "MainAppTabControl") // Ensure it's our main TabControl
+            if (e.Source is TabControl tc && tc.Name == "MainAppTabControl")
             {
                 UpdateOptionsTabIfNeeded();
             }
@@ -84,6 +79,7 @@ namespace Reader
             TabItem? optionsTab = FindOptionsTabByName();
             if (optionsTab != null && MainAppTabControl.SelectedItem == optionsTab)
             {
+                // Ensure MyOptionsContentControl is resolved correctly. It's defined in MainFrame.xaml.
                 if (this.FindName("MyOptionsContentControl") is OptionsTabContentControl optionsContent)
                 {
                     optionsContent.UpdateDisplayedOptions(MainAppTabControl, new[] { "Modules", "Options" });
@@ -101,7 +97,6 @@ namespace Reader
                     object? selectedItem = MainAppTabControl.SelectedItem;
                     MainAppTabControl.Items.Remove(optionsTab);
                     MainAppTabControl.Items.Add(optionsTab);
-
                     if (selectedItem != null && selectedItem != optionsTab) {
                          MainAppTabControl.SelectedItem = selectedItem;
                     } else if (MainAppTabControl.Items.Count > 0 && MainAppTabControl.SelectedItem == null) {
