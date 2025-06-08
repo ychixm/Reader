@@ -4,11 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Reader"
+        xmlns:userControls="clr-namespace:Reader.UserControls"
         mc:Ignorable="d"
         Title="MainFrame" Height="768" Width="1024">
     <Grid>
         <!-- The MainAppTabControl now takes up the entire grid -->
-        <TabControl x:Name="MainAppTabControl" SelectedIndex="0">
+        <TabControl x:Name="MainAppTabControl" SelectedIndex="0" MouseDown="MainAppTabControl_MouseDown" SelectionChanged="MainAppTabControl_SelectionChanged">
             <TabItem Header="Modules">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <StackPanel Margin="5">
@@ -16,6 +17,9 @@
                         <!-- Other app launcher buttons can be added here in the future -->
                     </StackPanel>
                 </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Options" x:Name="OptionsTab">
+                <userControls:OptionsTabContentControl x:Name="MyOptionsContentControl"/>
             </TabItem>
             <!-- Other tabs for different apps will be added here by MainFrame.xaml.cs -->
         </TabControl>
