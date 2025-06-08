@@ -128,9 +128,7 @@
 
         <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top" >
             <Menu DockPanel.Dock="Top" >
-                <MenuItem Header="_File">
-                    <MenuItem Header="_New" />
-                    <MenuItem Header="_Open" />
+                <MenuItem Header="_Menu">
                     <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" PreviewMouseUp="RandomChapterButton_PreviewMouseUp" />
                     <Separator />
                     <MenuItem Header="_OptionsPageSwap">
@@ -139,13 +137,11 @@
                         <MenuItem Header="_Visible Buttons" IsCheckable="True" x:Name="VisibleButtonsOption"/>
                     </MenuItem>
                     <Separator />
-                    <MenuItem Header="_Options">
+                    <MenuItem Header="_OptionsScroll">
                         <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>
                         <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/>
                         <MenuItem x:Name="TabDropdownModeMenuItem" Header="_Tab Dropdown Mode" IsCheckable="True" Click="SetOverflowMode_Dropdown_Click"/>
                     </MenuItem>
-                    <Separator />
-                    <MenuItem Header="_Exit" />
                 </MenuItem>
                 
             </Menu>
