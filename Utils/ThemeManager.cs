@@ -1,4 +1,4 @@
-using System.Windows; 
+using System.Windows;
 using Utils;
 
 namespace Utils
@@ -22,6 +22,20 @@ namespace Utils
                 Application.Current.Resources["MenuBackgroundBrush"] = Application.Current.Resources["MenuBackground_Dark"];
                 Application.Current.Resources["MenuItemForegroundBrush"] = Application.Current.Resources["MenuItemForeground_Dark"];
                 Application.Current.Resources["MenuSeparatorBackgroundBrush"] = Application.Current.Resources["MenuSeparatorBackground_Dark"];
+                // Button Brushes
+                Application.Current.Resources["ButtonBackgroundBrush"] = Application.Current.Resources["ButtonBackground_Dark"];
+                Application.Current.Resources["ButtonForegroundBrush"] = Application.Current.Resources["ButtonForeground_Dark"];
+                Application.Current.Resources["ButtonBorderBrush"] = Application.Current.Resources["ButtonBorder_Dark"];
+                Application.Current.Resources["ButtonBackgroundHoverBrush"] = Application.Current.Resources["ButtonBackgroundHover_Dark"];
+                // ListItem Brushes
+                Application.Current.Resources["ListItemBackgroundBrush"] = Application.Current.Resources["ListItemBackground_Dark"];
+                Application.Current.Resources["ListItemForegroundBrush"] = Application.Current.Resources["ListItemForeground_Dark"];
+                Application.Current.Resources["ListItemBackgroundHoverBrush"] = Application.Current.Resources["ListItemBackgroundHover_Dark"];
+                Application.Current.Resources["ListItemBackgroundSelectedBrush"] = Application.Current.Resources["ListItemBackgroundSelected_Dark"];
+                Application.Current.Resources["ListItemForegroundSelectedBrush"] = Application.Current.Resources["ListItemForegroundSelected_Dark"];
+                // ScrollViewer Brushes
+                Application.Current.Resources["ScrollBarThumbFillBrush"] = Application.Current.Resources["ScrollBarThumbFill_Dark"];
+                Application.Current.Resources["ScrollBarTrackBackgroundBrush"] = Application.Current.Resources["ScrollBarTrackBackground_Dark"];
             }
             else
             {
@@ -36,6 +50,20 @@ namespace Utils
                 Application.Current.Resources["MenuBackgroundBrush"] = Application.Current.Resources["MenuBackground_Light"];
                 Application.Current.Resources["MenuItemForegroundBrush"] = Application.Current.Resources["MenuItemForeground_Light"];
                 Application.Current.Resources["MenuSeparatorBackgroundBrush"] = Application.Current.Resources["MenuSeparatorBackground_Light"];
+                // Button Brushes
+                Application.Current.Resources["ButtonBackgroundBrush"] = Application.Current.Resources["ButtonBackground_Light"];
+                Application.Current.Resources["ButtonForegroundBrush"] = Application.Current.Resources["ButtonForeground_Light"];
+                Application.Current.Resources["ButtonBorderBrush"] = Application.Current.Resources["ButtonBorder_Light"];
+                Application.Current.Resources["ButtonBackgroundHoverBrush"] = Application.Current.Resources["ButtonBackgroundHover_Light"];
+                // ListItem Brushes
+                Application.Current.Resources["ListItemBackgroundBrush"] = Application.Current.Resources["ListItemBackground_Light"];
+                Application.Current.Resources["ListItemForegroundBrush"] = Application.Current.Resources["ListItemForeground_Light"];
+                Application.Current.Resources["ListItemBackgroundHoverBrush"] = Application.Current.Resources["ListItemBackgroundHover_Light"];
+                Application.Current.Resources["ListItemBackgroundSelectedBrush"] = Application.Current.Resources["ListItemBackgroundSelected_Light"];
+                Application.Current.Resources["ListItemForegroundSelectedBrush"] = Application.Current.Resources["ListItemForegroundSelected_Light"];
+                // ScrollViewer Brushes
+                Application.Current.Resources["ScrollBarThumbFillBrush"] = Application.Current.Resources["ScrollBarThumbFill_Light"];
+                Application.Current.Resources["ScrollBarTrackBackgroundBrush"] = Application.Current.Resources["ScrollBarTrackBackground_Light"];
             }
         }
     }

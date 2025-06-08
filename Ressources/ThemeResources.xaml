@@ -34,11 +34,41 @@
     <SolidColorBrush x:Key="MenuItemForeground_Dark">#FFF1F1F1</SolidColorBrush>
     <SolidColorBrush x:Key="MenuSeparatorBackground_Dark">#FF555555</SolidColorBrush>
 
+    <!-- Button Brushes -->
+    <SolidColorBrush x:Key="ButtonBackground_Dark">#FF3E3E42</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonForeground_Dark">#FFF1F1F1</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonBorder_Dark">#FF555555</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonBackgroundHover_Dark">#FF555555</SolidColorBrush>
+    <!-- ListItem Brushes -->
+    <SolidColorBrush x:Key="ListItemBackground_Dark">Transparent</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemForeground_Dark">#FFF1F1F1</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemBackgroundHover_Dark">#FF454545</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemBackgroundSelected_Dark">#FF505050</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemForegroundSelected_Dark">#FFFFFFFF</SolidColorBrush>
+    <!-- ScrollViewer Brushes -->
+    <SolidColorBrush x:Key="ScrollBarThumbFill_Dark">#FF686868</SolidColorBrush>
+    <SolidColorBrush x:Key="ScrollBarTrackBackground_Dark">#FF3E3E42</SolidColorBrush>
+
     <!-- Light Theme Brushes for Panels and Menus -->
     <SolidColorBrush x:Key="PanelBackground_Light">#FFF0F0F0</SolidColorBrush>
     <SolidColorBrush x:Key="MenuBackground_Light">#FFEAEAEA</SolidColorBrush>
     <SolidColorBrush x:Key="MenuItemForeground_Light">#FF1E1E1E</SolidColorBrush>
     <SolidColorBrush x:Key="MenuSeparatorBackground_Light">#FFD0D0D0</SolidColorBrush>
+
+    <!-- Button Brushes -->
+    <SolidColorBrush x:Key="ButtonBackground_Light">#FFF0F0F0</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonForeground_Light">#FF1E1E1E</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonBorder_Light">#FFABADB3</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonBackgroundHover_Light">#FFDADADA</SolidColorBrush>
+    <!-- ListItem Brushes -->
+    <SolidColorBrush x:Key="ListItemBackground_Light">Transparent</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemForeground_Light">#FF1E1E1E</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemBackgroundHover_Light">#FFE5E5E5</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemBackgroundSelected_Light">#FFCDE8FF</SolidColorBrush>
+    <SolidColorBrush x:Key="ListItemForegroundSelected_Light">#FF000000</SolidColorBrush>
+    <!-- ScrollViewer Brushes -->
+    <SolidColorBrush x:Key="ScrollBarThumbFill_Light">#FFCDCDCD</SolidColorBrush>
+    <SolidColorBrush x:Key="ScrollBarTrackBackground_Light">#FFF0F0F0</SolidColorBrush>
 
     <!-- Generic Theme-Aware Brush Keys (Placeholders to be populated by ThemeManager) -->
     <SolidColorBrush x:Key="TabItemBackgroundBrush"/>
@@ -52,6 +82,17 @@
     <SolidColorBrush x:Key="MenuBackgroundBrush"/>
     <SolidColorBrush x:Key="MenuItemForegroundBrush"/>
     <SolidColorBrush x:Key="MenuSeparatorBackgroundBrush"/>
+    <SolidColorBrush x:Key="ButtonBackgroundBrush"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush"/>
+    <SolidColorBrush x:Key="ButtonBackgroundHoverBrush"/>
+    <SolidColorBrush x:Key="ListItemBackgroundBrush"/>
+    <SolidColorBrush x:Key="ListItemForegroundBrush"/>
+    <SolidColorBrush x:Key="ListItemBackgroundHoverBrush"/>
+    <SolidColorBrush x:Key="ListItemBackgroundSelectedBrush"/>
+    <SolidColorBrush x:Key="ListItemForegroundSelectedBrush"/>
+    <SolidColorBrush x:Key="ScrollBarThumbFillBrush"/>
+    <SolidColorBrush x:Key="ScrollBarTrackBackgroundBrush"/>
 
     <!-- TextBlock Styles -->
     <Style x:Key="DarkModeTextBlockStyle" TargetType="TextBlock"><Setter Property="Foreground" Value="White"/></Style>

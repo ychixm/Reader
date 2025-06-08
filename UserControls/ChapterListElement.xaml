@@ -4,13 +4,28 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Reader.UserControls"
-             Background="Transparent">
-    <Grid Margin="0,0,0,0">
+             Background="{DynamicResource ListItemBackgroundBrush}"
+             Foreground="{DynamicResource ListItemForegroundBrush}">
+    <VisualStateManager.VisualStateGroups>
+        <VisualStateGroup x:Name="CommonStates">
+            <VisualState x:Name="Normal" />
+            <VisualState x:Name="MouseOver">
+                <Storyboard>
+                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                        <DiscreteObjectKeyFrame KeyTime="0" Value="{DynamicResource ListItemBackgroundHoverBrush}"/>
+                    </ObjectAnimationUsingKeyFrames>
+                </Storyboard>
+            </VisualState>
+            <!-- Add Disabled, Selected states later if needed -->
+        </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+    <Grid x:Name="RootGrid" Margin="0,0,0,0"> <!-- Give the Grid a name to be targeted by VSM -->
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Image x:Name="ChapterImage" HorizontalAlignment="Center" VerticalAlignment="center" Margin="0,0,0,0" Grid.Row="0" />
         <TextBlock Padding="5,0,5,0" x:Name="ChapterLabel" Text="" HorizontalAlignment="Center" Margin="0,0,0,0" VerticalAlignment="Bottom" Height="100" TextWrapping="Wrap" Grid.Row="1"/>
+        <!-- TextBlock will inherit Foreground from UserControl -->
     </Grid>
 </UserControl>
