@@ -111,6 +111,18 @@
         <ContextMenu x:Key="TabListContextMenu">
             <!-- Items will be added here from code-behind -->
         </ContextMenu>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource MenuItemForegroundBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource MenuBackgroundBrush}"/>
+            <!-- Add setters for hover, selected states later if needed -->
+        </Style>
+
+        <Style TargetType="Separator">
+            <Setter Property="Background" Value="{DynamicResource MenuSeparatorBackgroundBrush}"/>
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Margin" Value="4,5,4,5"/> <!-- Typical vertical margin for separators in menus -->
+        </Style>
     </UserControl.Resources>
 
     <Grid x:Name="MainFrameGrid">
@@ -123,8 +135,8 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top" >
-            <Menu DockPanel.Dock="Top" >
+        <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top" Background="{DynamicResource PanelBackgroundBrush}">
+            <Menu DockPanel.Dock="Top" Background="{DynamicResource MenuBackgroundBrush}">
                 <MenuItem Header="_Menu">
                     <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" PreviewMouseUp="RandomChapterButton_PreviewMouseUp" />
                     <Separator />

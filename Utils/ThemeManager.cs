@@ -18,6 +18,10 @@ namespace Utils
                 Application.Current.Resources["TabItemForeground_SelectedBrush"] = Application.Current.Resources["TabItemForeground_Selected_Dark"];
                 Application.Current.Resources["TabItemBackground_MouseOverBrush"] = Application.Current.Resources["TabItemBackground_MouseOver_Dark"];
                 Application.Current.Resources["TabControlContentBackgroundBrush"] = Application.Current.Resources["TabControlContentBackground_Dark"];
+                Application.Current.Resources["PanelBackgroundBrush"] = Application.Current.Resources["PanelBackground_Dark"];
+                Application.Current.Resources["MenuBackgroundBrush"] = Application.Current.Resources["MenuBackground_Dark"];
+                Application.Current.Resources["MenuItemForegroundBrush"] = Application.Current.Resources["MenuItemForeground_Dark"];
+                Application.Current.Resources["MenuSeparatorBackgroundBrush"] = Application.Current.Resources["MenuSeparatorBackground_Dark"];
             }
             else
             {
@@ -28,6 +32,10 @@ namespace Utils
                 Application.Current.Resources["TabItemForeground_SelectedBrush"] = Application.Current.Resources["TabItemForeground_Selected_Light"];
                 Application.Current.Resources["TabItemBackground_MouseOverBrush"] = Application.Current.Resources["TabItemBackground_MouseOver_Light"];
                 Application.Current.Resources["TabControlContentBackgroundBrush"] = Application.Current.Resources["TabControlContentBackground_Light"];
+                Application.Current.Resources["PanelBackgroundBrush"] = Application.Current.Resources["PanelBackground_Light"];
+                Application.Current.Resources["MenuBackgroundBrush"] = Application.Current.Resources["MenuBackground_Light"];
+                Application.Current.Resources["MenuItemForegroundBrush"] = Application.Current.Resources["MenuItemForeground_Light"];
+                Application.Current.Resources["MenuSeparatorBackgroundBrush"] = Application.Current.Resources["MenuSeparatorBackground_Light"];
             }
         }
     }

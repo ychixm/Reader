@@ -28,6 +28,18 @@
     <SolidColorBrush x:Key="TabItemBackground_MouseOver_Dark">#FF454545</SolidColorBrush>
     <SolidColorBrush x:Key="TabControlContentBackground_Dark">#FF252525</SolidColorBrush>
 
+    <!-- Dark Theme Brushes for Panels and Menus -->
+    <SolidColorBrush x:Key="PanelBackground_Dark">#FF2D2D30</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuBackground_Dark">#FF3E3E42</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuItemForeground_Dark">#FFF1F1F1</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuSeparatorBackground_Dark">#FF555555</SolidColorBrush>
+
+    <!-- Light Theme Brushes for Panels and Menus -->
+    <SolidColorBrush x:Key="PanelBackground_Light">#FFF0F0F0</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuBackground_Light">#FFEAEAEA</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuItemForeground_Light">#FF1E1E1E</SolidColorBrush>
+    <SolidColorBrush x:Key="MenuSeparatorBackground_Light">#FFD0D0D0</SolidColorBrush>
+
     <!-- Generic Theme-Aware Brush Keys (Placeholders to be populated by ThemeManager) -->
     <SolidColorBrush x:Key="TabItemBackgroundBrush"/>
     <SolidColorBrush x:Key="TabItemBorderBrush"/>
@@ -36,6 +48,10 @@
     <SolidColorBrush x:Key="TabItemForeground_SelectedBrush"/>
     <SolidColorBrush x:Key="TabItemBackground_MouseOverBrush"/>
     <SolidColorBrush x:Key="TabControlContentBackgroundBrush"/>
+    <SolidColorBrush x:Key="PanelBackgroundBrush"/>
+    <SolidColorBrush x:Key="MenuBackgroundBrush"/>
+    <SolidColorBrush x:Key="MenuItemForegroundBrush"/>
+    <SolidColorBrush x:Key="MenuSeparatorBackgroundBrush"/>
 
     <!-- TextBlock Styles -->
     <Style x:Key="DarkModeTextBlockStyle" TargetType="TextBlock"><Setter Property="Foreground" Value="White"/></Style>
