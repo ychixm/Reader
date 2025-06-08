@@ -1,17 +1,10 @@
-using System.Windows; // Required for Application.Current
-// using Microsoft.Win32; // No longer needed
-// using System; // No longer needed for Exception
-using ReaderUtils; // Changed from Reader.Utils
+using System.Windows; 
+using Utils;
 
 namespace Reader.Business
 {
     public static class ThemeManager
     {
-        // private static bool _isDarkModeInitialized = false; // Removed CS0414
-        // private static bool _cachedIsDarkMode; // Removed CS0169
-
-        // GetCurrentSystemIsDarkMode method removed.
-
         public static void ApplyTheme()
         {
             bool isDarkMode = WindowsThemeHelpers.GetCurrentSystemIsDarkMode();

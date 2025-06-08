@@ -1,14 +1,7 @@
 using Reader.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives; // For RepeatButton, PlacementMode
-using System.Windows.Input; // For MouseButtonEventArgs (if needed, ContextMenuItem_Click uses RoutedEventArgs)
-using System.Windows.Media; // For VisualTreeHelper (if needed, though template finding is primary)
-using System.Windows.Threading; // For DispatcherPriority
+using System.Windows.Controls.Primitives; 
 
 namespace Reader.Business
 {
@@ -31,7 +24,7 @@ namespace Reader.Business
         public TabOverflowMode CurrentTabOverflowMode
         {
             get => _currentTabOverflowMode;
-            private set // Make setter private, controlled by SetOverflowMode method
+            private set
             {
                 if (_currentTabOverflowMode != value)
                 {

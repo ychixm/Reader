@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
     <EnableWindowsTargeting>true</EnableWindowsTargeting> <!-- Added this line -->
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>

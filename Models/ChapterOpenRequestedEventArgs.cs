@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Reader.Models
 {
     public class ChapterOpenRequestedEventArgs : EventArgs

@@ -3,7 +3,7 @@ using Microsoft.Win32;
 using System.Diagnostics; // For Debug.WriteLine, if used in catch block
 using System.Runtime.Versioning; // For SupportedOSPlatform attribute
 
-namespace ReaderUtils // Changed namespace
+namespace Utils // Changed namespace
 {
     public static class WindowsThemeHelpers
     {

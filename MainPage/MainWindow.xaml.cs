@@ -1,23 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives; // For RepeatButton
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-// Removed: using System.Xml.Linq;
 using Reader.Business;
 using Reader.UserControls;
-using System;
-using System.Threading.Tasks; // Added for Task
-using System.Windows.Threading; // For DispatcherPriority
-using System.ComponentModel; // For INotifyPropertyChanged
-using System.Runtime.CompilerServices; // For CallerMemberName
-using Reader.Models; // For TabOverflowMode
-using ReaderUtils; // Changed from Reader.Utils
+using Reader.Models;
+using Utils;
 
 namespace Reader
 {
@@ -46,16 +37,8 @@ namespace Reader
         public MainWindow()
         {
             InitializeComponent();
-            // this.DataContext = this;
-
-            // Initialize _settings directly here as LoadNavigationOptionStates uses it.
-            _settings = AppSettingsService.LoadAppSettings(); // Initialize _settings
-            // LoadNavigationOptionStates will also call LoadAppSettings, but _settings needs to be non-null before that.
-            // Or, ensure LoadNavigationOptionStates handles a potentially null _settings or is called after _settings is set.
-            // The existing LoadNavigationOptionStates re-assigns _settings.
-
-            // LoadPersistedTabOverflowMode(); // Moved to TabOverflowManager
-            LoadNavigationOptionStates(); // Load and apply navigation states. This will set _settings.
+            _settings = AppSettingsService.LoadAppSettings(); 
+            LoadNavigationOptionStates();
 
             // Attach event handlers for navigation options
             KeyboardArrowsOption.Checked += NavigationOption_Changed;
@@ -67,9 +50,6 @@ namespace Reader
 
             LoadChapterListAsync(); // Existing method
         }
-
-        // LoadPersistedTabOverflowMode MOVED to TabOverflowManager
-        // SaveCurrentOverflowModeSetting MOVED to TabOverflowManager
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
         {
@@ -224,7 +204,7 @@ namespace Reader
             get
             {
                 // Ensure _tabOverflowManager is initialized before accessing, provide a default if not.
-                return _tabOverflowManager != null ? _tabOverflowManager.CurrentTabOverflowMode : default(TabOverflowMode);
+                return _tabOverflowManager != null ? _tabOverflowManager.CurrentTabOverflowMode : default;
             }
             set
             {
@@ -235,7 +215,7 @@ namespace Reader
                                                                     // The manager's setter should handle saving and internal UI updates.
                     OnPropertyChanged(); // Notify XAML that this MainWindow property changed
                 }
-                else if (_tabOverflowManager == null && value != default(TabOverflowMode))
+                else if (_tabOverflowManager == null && value != default)
                 {
                     // This case might occur if XAML tries to set a value before MainTabControl_Loaded initializes _tabOverflowManager.
                     // Depending on desired behavior, could queue the value, log, or ignore.
@@ -352,7 +332,7 @@ namespace Reader
                 return;
             }
 
-            List<string> imagePaths = null;
+            List<string>? imagePaths = null;
             try
             {
                 imagePaths = await Task.Run(() => Directory.EnumerateFiles(chapterDirectoryInfo.FullName)
@@ -369,7 +349,7 @@ namespace Reader
                 return;
             }
 
-            if (imagePaths != null && imagePaths.Any())
+            if (imagePaths != null && imagePaths.Count != 0)
             {
                 AddImageTab(chapterDirectoryInfo.FullName, imagePaths, switchToTab);
             }

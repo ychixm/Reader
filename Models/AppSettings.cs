@@ -1,5 +1,3 @@
-using Reader.Models; // For NavigationMethod enum
-
 namespace Reader.Models
 {
     public class AppSettings

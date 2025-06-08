@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace ReaderUtils // Changed namespace
+namespace Utils // Changed namespace
 {
     public static class WpfHelpers
     {

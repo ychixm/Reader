@@ -3,21 +3,25 @@
   <PropertyGroup>
 	  <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>10.0.26100.0</SupportedOSPlatformVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- Suppress most SDK attributes -->
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute> <!-- Explicitly suppress this too -->
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="ReaderUtils\**" />
+    <Compile Remove="Utils\**" />
     <EmbeddedResource Remove="ReaderUtils\**" />
+    <EmbeddedResource Remove="Utils\**" />
     <None Remove="ReaderUtils\**" />
+    <None Remove="Utils\**" />
     <Page Remove="ReaderUtils\**" />
+    <Page Remove="Utils\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,7 +57,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="ReaderUtils/ReaderUtils.csproj" />
+    <ProjectReference Include="Utils\Utils.csproj" />
   </ItemGroup>
 
 </Project>

@@ -102,7 +102,6 @@ namespace Reader.UserControls
         {
             InitializeComponent();
             EnsureErrorPlaceholderLoaded();
-            this.Unloaded += UserControl_Unloaded; // Ensure unsubscription handler is attached
 
             _settings = AppSettingsService.LoadAppSettings(); // Load settings
             AppSettingsService.SettingsChanged += HandleAppSettingsChanged; // Subscribe to settings changes

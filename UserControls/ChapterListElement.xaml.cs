@@ -1,21 +1,10 @@
-﻿using System;
-using System.Collections.Generic; // Keep for List<string>
-using System.IO;
-using System.Linq; // Needed for .Where and .ToList in OpenImageTab
-using System.Threading.Tasks; // Needed for Task.Run
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Reader.Models; // Keep for DirectoryData, and now for ChapterOpenRequestedEventArgs
-// Removed Windows.UI.ViewManagement as UISettings is not defined in this snippet.
-// If UISettings is a custom class in that namespace, it should be kept or its usage re-evaluated.
-// For now, assuming SetLabelColorBasedOnTheme might be simplified or its dependency managed elsewhere if an error occurs.
-// Re-adding for now as it was in original - if it causes build error, it's an external type.
-// using Windows.UI.ViewManagement; // No longer needed here
-// using Reader.Business; // No longer needed for ThemeManager directly, if WindowsThemeHelpers is used.
-using ReaderUtils; // Changed from Reader.Utils
+using Reader.Models;
+using Utils; 
 
 
 namespace Reader.UserControls
@@ -35,7 +24,7 @@ namespace Reader.UserControls
         public static readonly double DesignHeight = 350.0;
         public static readonly double DesignWidth = 199.0;
 
-        public static readonly Size DesignSize = new Size(DesignWidth, DesignHeight); // Add this line
+        public static readonly Size DesignSize = new Size(DesignWidth, DesignHeight);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ChapterListElement"/> class.
@@ -49,7 +38,7 @@ namespace Reader.UserControls
             this.MinHeight = DesignHeight;
             InitializeComponent();
             ChapterImage.MaxWidth = DesignWidth;
-            ChapterImage.MaxHeight = ImageHeight; // This is int, MaxHeight is double, implicit conversion is fine.
+            ChapterImage.MaxHeight = ImageHeight;
             _directory = new DirectoryData(directoryInfo);
 
             this.MouseDown += ChapterListElement_MouseDown;
@@ -112,12 +101,11 @@ namespace Reader.UserControls
                     .ToList());
             }
 
-            if (_imagePaths != null && _imagePaths.Any()) // Ensure there are images before raising event
+            if (_imagePaths != null && _imagePaths.Count != 0) // Ensure there are images before raising event
             {
                 var args = new ChapterOpenRequestedEventArgs(_directory.DirectoryInfo.FullName, _imagePaths, switchToTab);
                 ChapterOpenRequested?.Invoke(this, args);
             }
-            // Optional: else, handle the case where no images were found (e.g., log, show message)
         }
 
         private void SetLabelColorBasedOnTheme()

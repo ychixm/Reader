@@ -1,4 +1,4 @@
-namespace Reader.Models // Or Reader.Enums if preferred
+namespace Reader.Models
 {
     public enum TabOverflowMode
     {
