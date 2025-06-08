@@ -14,9 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Reader.MainHost\**" />
     <Compile Remove="ReaderUtils\**" />
+    <EmbeddedResource Remove="Reader.MainHost\**" />
     <EmbeddedResource Remove="ReaderUtils\**" />
+    <None Remove="Reader.MainHost\**" />
     <None Remove="ReaderUtils\**" />
+    <Page Remove="Reader.MainHost\**" />
     <Page Remove="ReaderUtils\**" />
   </ItemGroup>
 
