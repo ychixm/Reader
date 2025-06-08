@@ -7,19 +7,17 @@
         mc:Ignorable="d"
         Title="MainFrame" Height="768" Width="1024">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- For app launcher area -->
-            <RowDefinition Height="*"/>    <!-- For MainAppTabControl -->
-        </Grid.RowDefinitions>
-
-        <!-- Placeholder for app launcher items -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-            <Button x:Name="LaunchReaderAppButton" Content="Open Reader App" Margin="5" Padding="5" Click="LaunchReaderAppButton_Click"/>
-        </StackPanel>
-
-        <!-- MainAppTabControl for hosting applications -->
-        <TabControl x:Name="MainAppTabControl" Grid.Row="1">
-            <!-- Tabs for different apps will be added here -->
+        <!-- The MainAppTabControl now takes up the entire grid -->
+        <TabControl x:Name="MainAppTabControl" SelectedIndex="0">
+            <TabItem Header="Modules">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <StackPanel Margin="5">
+                        <Button x:Name="LaunchReaderAppButton" Content="Open Reader App" Margin="5" Padding="5" Click="LaunchReaderAppButton_Click"/>
+                        <!-- Other app launcher buttons can be added here in the future -->
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <!-- Other tabs for different apps will be added here by MainFrame.xaml.cs -->
         </TabControl>
     </Grid>
 </Window>
