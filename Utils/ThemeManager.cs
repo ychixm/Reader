@@ -36,6 +36,10 @@ namespace Utils
                 // ScrollViewer Brushes
                 Application.Current.Resources["ScrollBarThumbFillBrush"] = Application.Current.Resources["ScrollBarThumbFill_Dark"];
                 Application.Current.Resources["ScrollBarTrackBackgroundBrush"] = Application.Current.Resources["ScrollBarTrackBackground_Dark"];
+                // New TextBlock and GroupBox Brushes
+                Application.Current.Resources["DefaultForegroundBrush"] = Application.Current.Resources["DefaultForeground_Dark"];
+                Application.Current.Resources["GroupBoxBorderBrush"] = Application.Current.Resources["GroupBoxBorder_Dark"];
+                Application.Current.Resources["GroupBoxHeaderForegroundBrush"] = Application.Current.Resources["GroupBoxHeaderForeground_Dark"];
             }
             else
             {
@@ -64,6 +68,10 @@ namespace Utils
                 // ScrollViewer Brushes
                 Application.Current.Resources["ScrollBarThumbFillBrush"] = Application.Current.Resources["ScrollBarThumbFill_Light"];
                 Application.Current.Resources["ScrollBarTrackBackgroundBrush"] = Application.Current.Resources["ScrollBarTrackBackground_Light"];
+                // New TextBlock and GroupBox Brushes
+                Application.Current.Resources["DefaultForegroundBrush"] = Application.Current.Resources["DefaultForeground_Light"];
+                Application.Current.Resources["GroupBoxBorderBrush"] = Application.Current.Resources["GroupBoxBorder_Light"];
+                Application.Current.Resources["GroupBoxHeaderForegroundBrush"] = Application.Current.Resources["GroupBoxHeaderForeground_Light"];
             }
         }
     }

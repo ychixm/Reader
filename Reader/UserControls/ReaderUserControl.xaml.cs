@@ -19,9 +19,9 @@ using System.Threading.Tasks; // Added for Task
 namespace Reader.UserControls
 {
     /// <summary>
-    /// Interaction logic for MainUserControl.xaml
+    /// Interaction logic for ReaderUserControl.xaml
     /// </summary>
-    public partial class MainUserControl : UserControl, INotifyPropertyChanged
+    public partial class ReaderUserControl : UserControl, INotifyPropertyChanged
     {
         private AppSettings _settings; // Initialized in constructor.
         private TabOverflowManager? _tabOverflowManager; // Initialized in MainTabControl_Loaded
@@ -36,7 +36,7 @@ namespace Reader.UserControls
         public ObservableCollection<ChapterListElement> Views { get; } = new ObservableCollection<ChapterListElement>();
         private const int MaxTitleLength = 40;
 
-        public MainUserControl()
+        public ReaderUserControl()
         {
             InitializeComponent();
             _settings = AppSettingsService.LoadAppSettings();

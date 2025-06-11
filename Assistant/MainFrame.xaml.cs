@@ -3,17 +3,22 @@ using Reader.UserControls;
 using Reader.Business;
 using Reader;
 using Utils;
+using Reader.Models; // Added using statement
 
-namespace Assitant
+namespace Assistant
 {
     /// <summary>
     /// Interaction logic for MainFrame.xaml
     /// </summary>
     public partial class MainFrame : Window
     {
+        public TabOverflowMode CurrentTabOverflowMode { get; set; } // Added property
+
         public MainFrame()
         {
             InitializeComponent();
+            this.CurrentTabOverflowMode = TabOverflowMode.Scrollbar; // Added line
+            this.DataContext = this; // Added line
         }
 
         private void MainFrame_Loaded(object sender, RoutedEventArgs e)
