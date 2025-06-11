@@ -3,7 +3,8 @@ using Reader.UserControls;
 using Reader.Business;
 using Reader;
 using Utils;
-using Reader.Models; // Added using statement
+using Reader.Models;
+using Utils.Models; // Added using statement
 
 namespace Assistant
 {

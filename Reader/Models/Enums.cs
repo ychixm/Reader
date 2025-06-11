@@ -1,11 +1,5 @@
 namespace Reader.Models
 {
-    public enum TabOverflowMode
-    {
-        Scrollbar,
-        ArrowButtons,
-        TabDropdown
-    }
 
     [Flags]
     public enum NavigationMethod
