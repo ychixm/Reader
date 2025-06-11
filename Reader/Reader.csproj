@@ -9,23 +9,27 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SupportedOSPlatformVersion>10.0.26100.0</SupportedOSPlatformVersion>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo> <!-- Suppress most SDK attributes -->
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute> <!-- Explicitly suppress this too -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ReaderUtils\**" />
+    <Compile Remove="Assistant\**" />
     <Compile Remove="Utils\**" />
-    <EmbeddedResource Remove="ReaderUtils\**" />
+    <EmbeddedResource Remove="Assistant\**" />
     <EmbeddedResource Remove="Utils\**" />
-    <None Remove="ReaderUtils\**" />
+    <None Remove="Assistant\**" />
     <None Remove="Utils\**" />
-    <Page Remove="ReaderUtils\**" />
+    <Page Remove="Assistant\**" />
     <Page Remove="Utils\**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Ressources\NoImage.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="Ressources\ThemeResources.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,7 +61,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="Utils\Utils.csproj" />
+    <ProjectReference Include="..\Utils\Utils.csproj" />
   </ItemGroup>
 
 </Project>

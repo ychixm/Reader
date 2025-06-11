@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
-namespace Reader
+namespace Utils
 {
     public class BaseWindow : Window, INotifyPropertyChanged
     {

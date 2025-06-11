@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,16 +6,22 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Reader.Business;
-using Reader.UserControls;
+using Reader.UserControls; // This using might seem redundant if the namespace is Reader.UserControls, but it's good for clarity with other UserControls
 using Reader.Models;
 using Utils;
+using System.ComponentModel; // Required for INotifyPropertyChanged
+using System.Runtime.CompilerServices; // Required for CallerMemberName
+using System; // Added for System.Random and System.StringComparer, System.HashSet, System.Exception
+using System.Linq; // Added for Enumerable.OfType and Enumerable.Any
+using System.Collections.Generic; // Added for List and HashSet
+using System.Threading.Tasks; // Added for Task
 
-namespace Reader
+namespace Reader.UserControls
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for ReaderUserControl.xaml
     /// </summary>
-    public partial class MainWindow : BaseWindow
+    public partial class ReaderUserControl : UserControl, INotifyPropertyChanged
     {
         private AppSettings _settings; // Initialized in constructor.
         private TabOverflowManager? _tabOverflowManager; // Initialized in MainTabControl_Loaded
@@ -25,22 +31,21 @@ namespace Reader
             ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"
         };
 
-        private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
+        private const string PlaceholderImageRelativePath = "Ressources/NoImage.png"; // Make sure this path is accessible from the new location or adjust as needed. For now, assume it's relative to app execution dir.
 
-        /// <summary>
-        /// Gets the collection of ChapterListElement items to be displayed.
-        /// This collection is bound to the ItemsControl in the XAML.
-        /// </summary>
         public ObservableCollection<ChapterListElement> Views { get; } = new ObservableCollection<ChapterListElement>();
         private const int MaxTitleLength = 40;
 
-        public MainWindow()
+        public ReaderUserControl()
         {
             InitializeComponent();
-            _settings = AppSettingsService.LoadAppSettings(); 
+            _settings = AppSettingsService.LoadAppSettings();
             LoadNavigationOptionStates();
 
             // Attach event handlers for navigation options
+            // These names (e.g., KeyboardArrowsOption) are x:Name in XAML. Ensure they are accessible.
+            // If XAML elements are not found, it might be due to loading sequence or access levels.
+            // However, these are typically found after InitializeComponent.
             KeyboardArrowsOption.Checked += NavigationOption_Changed;
             KeyboardArrowsOption.Unchecked += NavigationOption_Changed;
             GridClickOption.Checked += NavigationOption_Changed;
@@ -48,7 +53,7 @@ namespace Reader
             VisibleButtonsOption.Checked += NavigationOption_Changed;
             VisibleButtonsOption.Unchecked += NavigationOption_Changed;
 
-            LoadChapterListAsync(); // Existing method
+            LoadChapterListAsync();
         }
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
@@ -58,7 +63,7 @@ namespace Reader
                 BorderBrush = Brushes.DarkGray,
                 BorderThickness = new Thickness(1),
             };
-            chapterListElement.ChapterOpenRequested += HandleChapterOpenRequested; // Subscribe to the event
+            chapterListElement.ChapterOpenRequested += HandleChapterOpenRequested;
 
             chapterListElement.SetLabelText(directory.Name);
             string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PlaceholderImageRelativePath);
@@ -66,12 +71,12 @@ namespace Reader
 
             Views.Add(chapterListElement);
 
-            var imageSourceUri = await Task.Run(() => FileSystemHelpers.GetFirstFileByExtensions(directory, SupportedImageExtensions)); // Changed to FileSystemHelpers
+            var imageSourceUri = await Task.Run(() => FileSystemHelpers.GetFirstFileByExtensions(directory, SupportedImageExtensions));
 
             if (imageSourceUri != null)
             {
                 BitmapImage? finalThumbnail = await Task.Run(() => {
-                    var (width, height) = FileSystemHelpers.GetImageDimensions(imageSourceUri.LocalPath); // Changed to FileSystemHelpers
+                    var (width, height) = FileSystemHelpers.GetImageDimensions(imageSourceUri.LocalPath);
                     BitmapImage thumbnail = new BitmapImage();
                     thumbnail.BeginInit();
                     thumbnail.UriSource = imageSourceUri;
@@ -106,7 +111,7 @@ namespace Reader
                     effectivePath = AppDomain.CurrentDomain.BaseDirectory;
                 }
 
-                List<DirectoryInfo> chapters = await Task.Run(() => FileSystemHelpers.GetDirectories(effectivePath)); // Changed to FileSystemHelpers
+                List<DirectoryInfo> chapters = await Task.Run(() => FileSystemHelpers.GetDirectories(effectivePath));
 
                 foreach (var directory in chapters)
                 {
@@ -114,23 +119,12 @@ namespace Reader
                 }
                 MainTabHeaderTextBlock.Text += " (Loaded)";
             }
-            catch (Exception) // CS0168: ex not used
+            catch (Exception)
             {
                 // System.Diagnostics.Debug.WriteLine($"LoadChapterListAsync - An error occurred: {ex.Message}");
-                // Optionally, update the UI to show an error message
-                // Or handle exception more gracefully
             }
         }
 
-        // Deleted ChapterListElement_Loaded method
-
-        /// <summary>
-        /// Adds a new tab for displaying images from a specified directory path,
-        /// or selects an existing tab if one for the directory already exists.
-        /// </summary>
-        /// <param name="directoryPath">The full path to the directory containing images.</param>
-        /// <param name="imagePaths">A list of full paths to the images within the directory.</param>
-        /// <param name="switchToTab">True to select the tab after adding/finding it; false otherwise.</param>
         public void AddImageTab(string directoryPath, List<string> imagePaths, bool switchToTab)
         {
             var existingTab = MainTabControl.Items.OfType<TabItem>()
@@ -145,7 +139,7 @@ namespace Reader
                 return;
             }
 
-            var imageTabControl = new ImageTabControl(imagePaths);
+            var imageTabControl = new ImageTabControl(imagePaths); // Assuming ImageTabControl is accessible
             string tabTitle = Path.GetFileName(directoryPath);
 
             if (tabTitle.Length > MaxTitleLength)
@@ -172,7 +166,7 @@ namespace Reader
             if (e.ChangedButton == MouseButton.Middle)
             {
                 var tabItem = WpfHelpers.FindParent<TabItem>((DependencyObject)e.OriginalSource);
-                if (tabItem != null && tabItem != MainTab)
+                if (tabItem != null && tabItem != MainTab) // MainTab is x:Name in XAML
                 {
                     MainTabControl.Items.Remove(tabItem);
                 }
@@ -181,58 +175,53 @@ namespace Reader
 
         private void MainTabControl_Loaded(object sender, RoutedEventArgs e)
         {
-            // Instantiate TabOverflowManager. It will handle finding template parts and subscribing to events.
-            _tabOverflowManager = new TabOverflowManager(MainTabControl, this, ScrollbarModeMenuItem, ArrowButtonsModeMenuItem, TabDropdownModeMenuItem);
+            // The 'this' reference for TabOverflowManager context might need careful review.
+            // If TabOverflowManager expects a Window or specific properties from BaseWindow, this could be an issue.
+            // For now, we pass 'this' (MainUserControl instance).
+            // The MenuItem parameters (ScrollbarModeMenuItem etc.) are x:Names from XAML.
+            // _tabOverflowManager = new TabOverflowManager(MainTabControl, this, ScrollbarModeMenuItem, ArrowButtonsModeMenuItem, TabDropdownModeMenuItem);
 
-            // The DataContext for CurrentTabOverflowMode binding might need to be set to _tabOverflowManager if XAML binds to it.
-            // If MainWindow still needs to expose it, it should be a pass-through to _tabOverflowManager.CurrentTabOverflowMode.
-            // For now, assuming direct calls to _tabOverflowManager.SetOverflowMode() from UI event handlers.
-            // If XAML bindings like <DataTrigger Binding="{Binding CurrentTabOverflowMode}" ...> are used,
-            // then MainWindow might need to expose CurrentTabOverflowMode and delegate to _tabOverflowManager,
-            // or the DataContext of the TabControl or relevant parent needs to be set to _tabOverflowManager.
-            // For simplicity of this refactoring step, we'll assume XAML event handlers call manager's methods.
-            // The XAML currently has: <DataTrigger Binding="{Binding CurrentTabOverflowMode}" Value="Scrollbar">
-            // This means `this.DataContext = this;` should be kept, and MainWindow needs to expose CurrentTabOverflowMode.
+            var tabListContextMenu = (ContextMenu)this.Resources["TabListContextMenu"];
+            if (tabListContextMenu == null)
+            {
+                throw new InvalidOperationException("TabListContextMenu not found in UserControl resources.");
+            }
 
-            // Re-instating DataContext and CurrentTabOverflowMode property that delegates to the manager.
-            this.DataContext = this;
+            // MainTabHeaderTextBlock, ScrollbarModeMenuItem, ArrowButtonsModeMenuItem, TabDropdownModeMenuItem are x:Name defined in XAML for this UserControl
+            _tabOverflowManager = new TabOverflowManager(
+                MainTabControl,
+                tabListContextMenu,
+                MainTabHeaderTextBlock, // This is the x:Name of the TextBlock
+                ScrollbarModeMenuItem,
+                ArrowButtonsModeMenuItem,
+                TabDropdownModeMenuItem
+            );
+            this.DataContext = this; // Set DataContext for bindings like {Binding CurrentTabOverflowMode}
         }
 
-        // Expose CurrentTabOverflowMode for XAML binding, delegating to the manager
         public TabOverflowMode CurrentTabOverflowMode
         {
             get
             {
-                // Ensure _tabOverflowManager is initialized before accessing, provide a default if not.
                 return _tabOverflowManager != null ? _tabOverflowManager.CurrentTabOverflowMode : default;
             }
             set
             {
-                // Check if manager exists and if the value is actually changing
                 if (_tabOverflowManager != null && _tabOverflowManager.CurrentTabOverflowMode != value)
                 {
-                    _tabOverflowManager.SetOverflowMode(value); // Call the public method
-                                                                    // The manager's setter should handle saving and internal UI updates.
-                    OnPropertyChanged(); // Notify XAML that this MainWindow property changed
+                    _tabOverflowManager.SetOverflowMode(value);
+                    OnPropertyChanged();
                 }
                 else if (_tabOverflowManager == null && value != default)
                 {
-                    // This case might occur if XAML tries to set a value before MainTabControl_Loaded initializes _tabOverflowManager.
-                    // Depending on desired behavior, could queue the value, log, or ignore.
-                    // For now, this path does nothing if manager isn't ready.
-                    // Consider if default(TabOverflowMode) (which is Scrollbar) is the right default if manager is null.
-                    // The getter already defaults to Scrollbar if manager is null (as TabOverflowMode.Scrollbar is 0).
-                    // If the XAML binding sets a different initial value before manager is ready, this could be an issue.
-                    // However, the manager loads the persisted value on init, which should then propagate.
+                    // Handle case where manager is not yet initialized.
                 }
             }
         }
 
-
         private void LoadNavigationOptionStates()
         {
             _settings = AppSettingsService.LoadAppSettings();
-            // Ensure _settings is not null, though LoadAppSettings should return new AppSettings() if file is missing/corrupt
             if (_settings == null) _settings = new AppSettings();
 
             KeyboardArrowsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows);
@@ -244,10 +233,8 @@ namespace Reader
         {
             if (_settings == null)
             {
-                // This could happen if event fires before _settings is initialized, though unlikely with constructor setup.
-                // Load settings as a fallback.
                 _settings = AppSettingsService.LoadAppSettings();
-                if (_settings == null) _settings = new AppSettings(); // Ensure not null
+                if (_settings == null) _settings = new AppSettings();
             }
 
             NavigationMethod currentMethods = NavigationMethod.None;
@@ -255,30 +242,18 @@ namespace Reader
             if (GridClickOption.IsChecked) currentMethods |= NavigationMethod.GridClick;
             if (VisibleButtonsOption.IsChecked) currentMethods |= NavigationMethod.VisibleButtons;
 
-            // "At least one" rule
             if (currentMethods == NavigationMethod.None)
             {
                 if (sender is MenuItem menuItem)
                 {
-                    menuItem.IsChecked = true; // Re-check the item that was just unchecked
+                    menuItem.IsChecked = true;
                 }
-                // Optional: MessageBox.Show("At least one page navigation method must be selected.", "Options Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return; // Prevent saving NavigationMethod.None
+                return;
             }
 
             _settings.EnabledNavigationMethods = currentMethods;
             AppSettingsService.SaveAppSettings(_settings);
-
-            // If ImageTabControl instances need to be updated dynamically, an eventing mechanism would be needed here.
-            // For now, new ImageTabControls will pick up the new settings upon creation.
         }
-
-        // LeftScrollButton_Click MOVED to TabOverflowManager
-        // RightScrollButton_Click MOVED to TabOverflowManager
-        // UpdateScrollButtonVisibility MOVED to TabOverflowManager
-        // TabItemsScrollViewer_ScrollChanged MOVED to TabOverflowManager
-        // TabListDropdownButton_Click MOVED to TabOverflowManager
-        // ContextMenuItem_Click MOVED to TabOverflowManager
 
         private void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
         {
@@ -287,7 +262,6 @@ namespace Reader
                 _tabOverflowManager.SetOverflowMode(TabOverflowMode.Scrollbar);
                 OnPropertyChanged(nameof(CurrentTabOverflowMode));
             }
-            // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
         private void SetOverflowMode_Arrows_Click(object sender, RoutedEventArgs e)
@@ -297,7 +271,6 @@ namespace Reader
                 _tabOverflowManager.SetOverflowMode(TabOverflowMode.ArrowButtons);
                 OnPropertyChanged(nameof(CurrentTabOverflowMode));
             }
-            // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
 
         private void SetOverflowMode_Dropdown_Click(object sender, RoutedEventArgs e)
@@ -307,15 +280,14 @@ namespace Reader
                 _tabOverflowManager.SetOverflowMode(TabOverflowMode.TabDropdown);
                 OnPropertyChanged(nameof(CurrentTabOverflowMode));
             }
-            // UpdateMenuCheckedStates(); // TabOverflowManager handles this
         }
-
-        // UpdateMenuCheckedStates MOVED to TabOverflowManager
 
         private async Task OpenRandomChapter(bool switchToTab)
         {
             if (Views == null || !Views.Any())
             {
+                // Consider how to show MessageBox from a UserControl.
+                // Typically, it's fine, but if this control is hosted in a non-standard way, it might be an issue.
                 MessageBox.Show("No chapters loaded to choose from.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -336,20 +308,16 @@ namespace Reader
             try
             {
                 imagePaths = await Task.Run(() => Directory.EnumerateFiles(chapterDirectoryInfo.FullName)
-                    .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+                    .Where(f => SupportedImageExtensions.Contains(Path.GetExtension(f))) // More robust check using HashSet
                     .ToList());
             }
-            catch (Exception ex) // Restore ex for MessageBox
+            catch (Exception ex)
             {
                 MessageBox.Show($"Error reading images from directory {chapterDirectoryInfo.FullName}: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            if (imagePaths != null && imagePaths.Count != 0)
+            if (imagePaths != null && imagePaths.Any()) // Changed from Count != 0 to Any()
             {
                 AddImageTab(chapterDirectoryInfo.FullName, imagePaths, switchToTab);
             }
@@ -372,9 +340,17 @@ namespace Reader
             }
         }
 
-        private void HandleChapterOpenRequested(object? sender, ChapterOpenRequestedEventArgs e) // Made sender nullable
+        private void HandleChapterOpenRequested(object? sender, ChapterOpenRequestedEventArgs e)
         {
             AddImageTab(e.DirectoryPath, e.ImagePaths, e.SwitchToTab);
+        }
+
+        // INotifyPropertyChanged implementation
+        public event PropertyChangedEventHandler? PropertyChanged; // Nullable for modern C#
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) // Nullable for modern C#
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
