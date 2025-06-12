@@ -11,7 +11,6 @@ namespace Assistant
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-            System.Windows.Application.EnableVisualStyles();
             base.OnStartup(e);
         }
     }

@@ -11,7 +11,6 @@ namespace Reader
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-            System.Windows.Application.EnableVisualStyles();
             base.OnStartup(e); // Call base implementation first
 
         }
