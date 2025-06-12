@@ -78,7 +78,8 @@
                                                           ContentSource="Header"
                                                           HorizontalAlignment="Center"
                                                           VerticalAlignment="Center"
-                                                          Margin="12,2,12,2"/>
+                                                          Margin="12,2,12,2"
+                                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                                     </Border>
                                 </Grid>
                                 <ControlTemplate.Triggers>
