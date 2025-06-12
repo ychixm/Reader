@@ -12,10 +12,72 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Button x:Name="LeftArrow" Content="&lt;" Width="100" VerticalAlignment="Stretch" Click="LeftArrow_Click"
-                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                BorderThickness="1" Padding="5,2">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="contentPresenter"
+                                          Focusable="False"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <!-- Removed: Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonBackgroundHoverBrush}" -->
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <!-- Removed: Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" -->
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Opacity" Value="0.56"/>
+                            <Setter Property="Foreground" Value="#FF888888"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
         <Image x:Name="DisplayedImage" Grid.Column="1" Stretch="Uniform"/>
         <TextBlock x:Name="LoadingIndicator" Grid.Column="1" Text="Loading..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" Visibility="Collapsed"/>
         <Button x:Name="RightArrow" Content="&gt;" Width="100" VerticalAlignment="Stretch" Grid.Column="2" Click="RightArrow_Click"
-                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                BorderThickness="1" Padding="5,2">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="contentPresenter"
+                                          Focusable="False"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <!-- Removed: Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonBackgroundHoverBrush}" -->
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <!-- Removed: Setter TargetName="border" Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" -->
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Opacity" Value="0.56"/>
+                            <Setter Property="Foreground" Value="#FF888888"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
     </Grid>
 </UserControl>

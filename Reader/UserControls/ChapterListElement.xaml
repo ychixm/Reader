@@ -3,9 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Reader.UserControls"
-             Background="{DynamicResource ListItemBackgroundBrush}"
-             Foreground="{DynamicResource ListItemForegroundBrush}">
+             xmlns:local="clr-namespace:Reader.UserControls">
     <Grid x:Name="RootGrid" Margin="0,0,0,0"> <!-- Give the Grid a name to be targeted by VSM -->
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />

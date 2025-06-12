@@ -1,7 +1,6 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
-using Utils;
 
 namespace Assistant
 {
@@ -12,8 +11,8 @@ namespace Assistant
     {
         protected override void OnStartup(StartupEventArgs e)
         {
+            System.Windows.Application.EnableVisualStyles();
             base.OnStartup(e);
-            ThemeManager.ApplyTheme();
         }
     }
 
