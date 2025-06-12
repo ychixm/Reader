@@ -22,7 +22,7 @@
 
         <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top">
             <customCtrl:TabOverflowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
-            <Menu DockPanel.Dock="Top">
+            <Menu DockPanel.Dock="Top" Style="{StaticResource {x:Type Menu}}">
                 <MenuItem Header="_Menu">
                     <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" PreviewMouseUp="RandomChapterButton_PreviewMouseUp"
                             BorderThickness="1" Padding="5,2">
