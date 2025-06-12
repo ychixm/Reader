@@ -1,7 +1,6 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
-using Utils; // Added for ThemeManager
 
 namespace Reader
 {
@@ -14,7 +13,6 @@ namespace Reader
         {
             base.OnStartup(e); // Call base implementation first
 
-            ThemeManager.ApplyTheme(); // Apply the theme
         }
     }
 

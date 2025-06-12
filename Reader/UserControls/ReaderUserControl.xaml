@@ -20,32 +20,132 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top" Background="{DynamicResource PanelBackgroundBrush}">
+        <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top">
             <customCtrl:TabOverflowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
-            <Menu DockPanel.Dock="Top" Background="{DynamicResource MenuBackgroundBrush}">
+            <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_Menu">
-                    <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" PreviewMouseUp="RandomChapterButton_PreviewMouseUp" />
-                    <Separator />
+                    <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" PreviewMouseUp="RandomChapterButton_PreviewMouseUp"
+                            BorderThickness="1" Padding="5,2">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="border"
+                                        SnapsToDevicePixels="true">
+                                    <ContentPresenter x:Name="contentPresenter"
+                                                      Focusable="False"
+                                                      RecognizesAccessKey="True"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                     </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                          </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter TargetName="border" Property="Opacity" Value="0.56"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Separator Height="1" Margin="4,5,4,5"/>
                     <MenuItem Header="_OptionsPageSwap">
                         <MenuItem Header="_Keyboard Arrows" IsCheckable="True" x:Name="KeyboardArrowsOption"/>
                         <MenuItem Header="_Grid Click" IsCheckable="True" x:Name="GridClickOption"/>
                         <MenuItem Header="_Visible Buttons" IsCheckable="True" x:Name="VisibleButtonsOption"/>
                     </MenuItem>
-                    <Separator />
+                    <Separator Height="1" Margin="4,5,4,5"/>
                     <MenuItem Header="_OptionsScroll">
                         <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>
                         <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/>
                         <MenuItem x:Name="TabDropdownModeMenuItem" Header="_Tab Dropdown Mode" IsCheckable="True" Click="SetOverflowMode_Dropdown_Click"/>
                     </MenuItem>
                 </MenuItem>
-
             </Menu>
         </DockPanel>
 
         <TabControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" x:Name="MainTabControl" MouseDown="MainTabControl_MouseDown"
-                    ItemContainerStyle="{StaticResource ModernTabItemStyle}"
-                    Style="{StaticResource ScrollableTabControlStyle}"
                     Loaded="MainTabControl_Loaded">
+                <TabControl.Template>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid KeyboardNavigation.TabNavigation="Local">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Height="30">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <RepeatButton x:Name="LeftScrollButton" Grid.Column="0" Content="&lt;" VerticalAlignment="Center" Focusable="False" Visibility="Collapsed" />
+                            <ScrollViewer x:Name="TabItemsScrollViewer" Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <ItemsPresenter x:Name="PART_ItemsHolder" Margin="2,2,0,0" />
+                            </ScrollViewer>
+                            <RepeatButton x:Name="RightScrollButton" Grid.Column="2" Content="&gt;" VerticalAlignment="Center" Focusable="False" Visibility="Collapsed" />
+                            <Button x:Name="TabListDropdownButton" Grid.Column="3" Content="v" VerticalAlignment="Center" Focusable="False" Width="25" Visibility="Collapsed"/>
+                        </Grid>
+                        <Border Grid.Row="1">
+                            <ContentPresenter x:Name="PART_SelectedContentHost"
+                                              ContentSource="SelectedContent"/>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding CurrentTabOverflowMode}" Value="Scrollbar">
+                            <Setter TargetName="LeftScrollButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="RightScrollButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="TabListDropdownButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="TabItemsScrollViewer" Property="HorizontalScrollBarVisibility" Value="Auto"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentTabOverflowMode}" Value="ArrowButtons">
+                            <Setter TargetName="LeftScrollButton" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="RightScrollButton" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="TabListDropdownButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="TabItemsScrollViewer" Property="HorizontalScrollBarVisibility" Value="Hidden"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentTabOverflowMode}" Value="TabDropdown">
+                            <Setter TargetName="LeftScrollButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="RightScrollButton" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="TabListDropdownButton" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="TabItemsScrollViewer" Property="HorizontalScrollBarVisibility" Value="Hidden"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </TabControl.Template>
+            <TabControl.ItemContainerStyle>
+                <Style TargetType="TabItem">
+                      <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <Grid x:Name="templateRoot">
+                                    <Border x:Name="TabBorder"
+                                            BorderThickness="1,1,1,0"
+                                            CornerRadius="5,5,0,0">
+                                           <ContentPresenter x:Name="ContentSite"
+                                                          ContentSource="Header"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          Margin="12,2,12,2"/>
+                                    </Border>
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Panel.ZIndex" Value="1"/>
+                                       </Trigger>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsMouseOver" Value="True"/>
+                                            <Condition Property="IsSelected" Value="False"/>
+                                        </MultiTrigger.Conditions>
+                                         </MultiTrigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TabControl.ItemContainerStyle>
             <TabControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid IsItemsHost="True" Rows="1"/>
