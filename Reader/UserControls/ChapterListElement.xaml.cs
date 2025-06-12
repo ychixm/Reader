@@ -52,7 +52,6 @@ namespace Reader.UserControls
         public void SetLabelText(string text)
         {
             ChapterLabel.Text = text;
-            SetLabelColorBasedOnTheme();
         }
 
         /// <summary>
@@ -105,20 +104,6 @@ namespace Reader.UserControls
             {
                 var args = new ChapterOpenRequestedEventArgs(_directory.DirectoryInfo.FullName, _imagePaths, switchToTab);
                 ChapterOpenRequested?.Invoke(this, args);
-            }
-        }
-
-        private void SetLabelColorBasedOnTheme()
-        {
-            bool isDarkMode = WindowsThemeHelpers.GetCurrentSystemIsDarkMode(); // Changed to WindowsThemeHelpers
-
-            if (isDarkMode)
-            {
-                ChapterLabel.Style = (Style)Application.Current.Resources["DarkModeTextBlockStyle"];
-            }
-            else
-            {
-                ChapterLabel.Style = (Style)Application.Current.Resources["LightModeTextBlockStyle"];
             }
         }
     }

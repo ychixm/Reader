@@ -11,7 +11,7 @@
         Width="800"
         Height="600"
         Loaded="MainFrame_Loaded">
-    <Grid>
+    <Grid >
         <TabControl>
             <TabControl.Template>
                 <ControlTemplate TargetType="TabControl">
@@ -78,8 +78,7 @@
                                                           ContentSource="Header"
                                                           HorizontalAlignment="Center"
                                                           VerticalAlignment="Center"
-                                                          Margin="12,2,12,2"
-                                                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                                                          Margin="12,2,12,2"/>
                                     </Border>
                                 </Grid>
                                 <ControlTemplate.Triggers>
