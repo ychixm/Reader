@@ -102,7 +102,7 @@ namespace Reader.UserControls
 
                 _randomChapterElement = new ChapterListElement(randomChapterDirInfo)
                 {
-                    BorderBrush = Brushes.DarkCyan, // Example of different styling
+                    BorderBrush = Brushes.DarkGray,
                     BorderThickness = new Thickness(1),
                     IsSpecialRandomElement = true // Mark this as the special random element
                 };
