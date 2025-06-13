@@ -6,6 +6,7 @@ using System.Windows.Input; // Added back
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Reader.Business;
+using Utils.Interfaces; // Added for IOptionsProvider
 // using Reader.UserControls; // Optional, if no other UserControls from same namespace are used.
 using Reader.Models; // Still needed for AppSettings, NavigationMethod etc.
 using Utils.Controls; // Changed from Reader.Controls
@@ -20,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Reader.UserControls
 {
-    public partial class ReaderUserControl : UserControl, INotifyPropertyChanged
+    public partial class ReaderUserControl : UserControl, INotifyPropertyChanged, IOptionsProvider // Implement IOptionsProvider
     {
         private AppSettings _settings;
         private TabOverflowManagementControl? _tabOverflowManagementCtrl;
@@ -335,6 +336,12 @@ namespace Reader.UserControls
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        // Implementation of IOptionsProvider
+        public FrameworkElement OptionsControl
+        {
+            get { return new ReaderOptionsControl(); }
         }
     }
 }

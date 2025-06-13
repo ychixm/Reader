@@ -20,11 +20,12 @@
         </ResourceDictionary>
     </Window.Resources>
     <Grid >
-        <TabControl Template="{StaticResource SharedTabControlTemplate}"
+        <TabControl x:Name="MainTabControl" <!-- Added x:Name -->
+                    Template="{StaticResource SharedTabControlTemplate}"
                     ItemContainerStyle="{StaticResource SharedTabItemStyle}"
                     ItemsPanel="{StaticResource SharedTabItemsPanelTemplate}">
             <TabItem Header="Options">
-                <assistant:OptionsUserControl />
+                <assistant:OptionsUserControl x:Name="MyOptionsUserControl" /> <!-- Added x:Name -->
             </TabItem>
             <TabItem Header="ReaderUserControl">
                 <ReaderUC:ReaderUserControl x:Name="ReaderUserControl" />
