@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using System.Windows.Input; // Added back
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Reader.Business;
@@ -32,6 +32,7 @@ namespace Reader.UserControls
         private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
         public ObservableCollection<ChapterListElement> Views { get; } = new ObservableCollection<ChapterListElement>();
         private const int MaxTitleLength = 40;
+        private ChapterListElement? _randomChapterElement; // Field to hold the random chapter element
 
         public ReaderUserControl()
         {
@@ -94,6 +95,40 @@ namespace Reader.UserControls
         {
             try
             {
+                // Create and add the "Random Chapter" element
+                string randomChapterPlaceholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RandomChapterPlaceholder");
+                Directory.CreateDirectory(randomChapterPlaceholderPath); // Ensure directory exists
+                DirectoryInfo randomChapterDirInfo = new DirectoryInfo(randomChapterPlaceholderPath);
+
+                _randomChapterElement = new ChapterListElement(randomChapterDirInfo)
+                {
+                    BorderBrush = Brushes.DarkCyan, // Example of different styling
+                    BorderThickness = new Thickness(1),
+                    IsSpecialRandomElement = true // Mark this as the special random element
+                };
+                _randomChapterElement.SetLabelText("Random Chapter");
+                // Image will use default placeholder logic in ChapterListElement or set explicitly if needed
+                // string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PlaceholderImageRelativePath);
+                // _randomChapterElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
+
+
+                _randomChapterElement.MouseLeftButtonUp += async (s, e) =>
+                {
+                    if (e.ChangedButton == MouseButton.Left)
+                    {
+                        await OpenRandomChapter(true);
+                    }
+                };
+                _randomChapterElement.MouseDown += async (s, e) =>
+                {
+                    if (e.ChangedButton == MouseButton.Middle)
+                    {
+                        await OpenRandomChapter(false);
+                    }
+                };
+
+                Views.Insert(0, _randomChapterElement);
+
                 string effectivePath;
                 // Use _settings field which is loaded in constructor
                 if (!string.IsNullOrEmpty(_settings.DefaultPath))
@@ -109,13 +144,19 @@ namespace Reader.UserControls
 
                 foreach (var directory in chapters)
                 {
+                    // Skip the placeholder directory if it's listed among chapters (it shouldn't be if DefaultPath is different)
+                    if (directory.FullName.Equals(randomChapterDirInfo.FullName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
                     await ProcessChapterDirectoryAsync(directory);
                 }
                 MainTabHeaderTextBlock.Text += " (Loaded)";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log error
+                // Log error, e.g., using a logging framework or MessageBox
+                MessageBox.Show($"Error loading chapter list: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -239,14 +280,17 @@ namespace Reader.UserControls
 
         private async Task OpenRandomChapter(bool switchToTab)
         {
-            if (Views == null || !Views.Any())
+            // Exclude the "Random Chapter" element itself from being chosen
+            var actualChapterElements = Views.Where(v => v != _randomChapterElement).ToList();
+
+            if (actualChapterElements == null || !actualChapterElements.Any())
             {
-                MessageBox.Show("No chapters loaded to choose from.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("No actual chapters loaded to choose from.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             Random random = new Random();
-            int randomIndex = random.Next(Views.Count);
-            ChapterListElement selectedChapterElement = Views[randomIndex];
+            int randomIndex = random.Next(actualChapterElements.Count);
+            ChapterListElement selectedChapterElement = actualChapterElements[randomIndex];
             DirectoryInfo chapterDirectoryInfo = selectedChapterElement.ChapterDirectory;
 
             if (chapterDirectoryInfo == null)
@@ -254,6 +298,13 @@ namespace Reader.UserControls
                 MessageBox.Show("Selected chapter element does not have directory information.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+            // Check if the selected directory is the placeholder, which should not happen if filtered correctly
+            if (chapterDirectoryInfo.Name == "RandomChapterPlaceholder")
+            {
+                MessageBox.Show("Cannot open the placeholder as a chapter.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             List<string>? imagePaths = null;
             try
             {
@@ -276,11 +327,6 @@ namespace Reader.UserControls
             }
         }
 
-        private async void RandomChapterButton_Click(object sender, RoutedEventArgs e) => await OpenRandomChapter(true);
-        private async void RandomChapterButton_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton == MouseButton.Middle) await OpenRandomChapter(false);
-        }
         private void HandleChapterOpenRequested(object? sender, ChapterOpenRequestedEventArgs e) => AddImageTab(e.DirectoryPath, e.ImagePaths, e.SwitchToTab);
 
         public event PropertyChangedEventHandler? PropertyChanged;

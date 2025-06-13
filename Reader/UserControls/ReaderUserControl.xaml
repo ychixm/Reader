@@ -32,28 +32,6 @@
             <customCtrl:TabOverflowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
             <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_Menu">
-                    <Button x:Name="RandomChapterButton" Content="_Random Chapter" Click="RandomChapterButton_Click" PreviewMouseUp="RandomChapterButton_PreviewMouseUp"
-                            BorderThickness="1" Padding="5,2">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="border"
-                                        SnapsToDevicePixels="true">
-                                    <ContentPresenter x:Name="contentPresenter"
-                                                      Focusable="False"
-                                                      RecognizesAccessKey="True"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                     </Trigger>
-                                    <Trigger Property="IsPressed" Value="True">
-                                          </Trigger>
-                                    <Trigger Property="IsEnabled" Value="False">
-                                        <Setter TargetName="border" Property="Opacity" Value="0.56"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
                     <Separator Height="1" Margin="4,5,4,5"/>
                     <MenuItem Header="_OptionsPageSwap">
                         <MenuItem Header="_Keyboard Arrows" IsCheckable="True" x:Name="KeyboardArrowsOption"/>
