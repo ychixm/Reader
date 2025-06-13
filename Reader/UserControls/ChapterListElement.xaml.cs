@@ -3,8 +3,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Media; // Added for Typeface, FormattedText
 using Reader.Models;
-using Utils; 
+using Utils;
 
 
 namespace Reader.UserControls
@@ -15,6 +16,7 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
+        private string _originalChapterText = string.Empty; // Added this line
         public event EventHandler<ChapterOpenRequestedEventArgs>? ChapterOpenRequested;
 
         private DirectoryData _directory { get; } // Made getter-only
@@ -37,6 +39,7 @@ namespace Reader.UserControls
             this.Height = DesignHeight;
             this.MinHeight = DesignHeight;
             InitializeComponent();
+            ChapterLabel.SizeChanged += ChapterLabel_SizeChanged; // Add this line
             ChapterImage.MaxWidth = DesignWidth;
             ChapterImage.MaxHeight = ImageHeight;
             _directory = new DirectoryData(directoryInfo);
@@ -45,13 +48,135 @@ namespace Reader.UserControls
             this.MouseLeftButtonUp += ChapterListElement_MouseLeftButtonUp;
         }
 
+        private void ChapterLabel_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateChapterLabelText();
+        }
+
         /// <summary>
         /// Sets the display text for the chapter's label.
         /// </summary>
         /// <param name="text">The text to display as the chapter title.</param>
         public void SetLabelText(string text)
         {
-            ChapterLabel.Text = text;
+            _originalChapterText = text;
+            UpdateChapterLabelText();
+        }
+
+        private void UpdateChapterLabelText()
+        {
+            if (string.IsNullOrEmpty(_originalChapterText) || ChapterLabel.ActualHeight == 0)
+            {
+                ChapterLabel.Text = _originalChapterText;
+                return;
+            }
+
+            // Use a copy of ChapterLabel's properties for FormattedText
+            var typeface = new System.Windows.Media.Typeface(
+                ChapterLabel.FontFamily,
+                ChapterLabel.FontStyle,
+                ChapterLabel.FontWeight,
+                ChapterLabel.FontStretch);
+
+            // Estimate line height if not directly available or to be more precise
+            double estimatedLineHeight = ChapterLabel.FontSize * typeface.FontFamily.LineSpacing;
+            if (estimatedLineHeight <= 0) estimatedLineHeight = ChapterLabel.FontSize * 1.2; // Fallback
+
+            double availableHeight = ChapterLabel.ActualHeight;
+            // ChapterLabel has a fixed Height="100", so ActualHeight should be 100 unless layout forces otherwise.
+            // Using ActualHeight is more robust.
+
+            if (availableHeight <= 0)
+            {
+                ChapterLabel.Text = _originalChapterText; // Cannot calculate if no height
+                return;
+            }
+
+            int maxLines = (int)Math.Max(1, Math.Floor(availableHeight / estimatedLineHeight));
+
+            System.Windows.Media.FormattedText formattedText = new System.Windows.Media.FormattedText(
+                _originalChapterText,
+                System.Globalization.CultureInfo.CurrentCulture,
+                System.Windows.FlowDirection.LeftToRight,
+                typeface,
+                ChapterLabel.FontSize,
+                ChapterLabel.Foreground,
+                System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+            formattedText.MaxTextWidth = ChapterLabel.ActualWidth > 0 ? ChapterLabel.ActualWidth : ChapterLabel.Width; // Use ActualWidth if available
+            formattedText.MaxTextHeight = availableHeight; // Max height for the text
+            formattedText.Trimming = TextTrimming.None; // We do our own trimming for the last line
+
+            if (formattedText.Height > availableHeight || formattedText.LineCount > maxLines)
+            {
+                string ellipsis = "...";
+                // string currentText = string.Empty; // This variable is not used
+                string textToDisplay = _originalChapterText;
+
+                // Iterate backwards to find suitable truncation point
+                for (int i = _originalChapterText.Length - 1; i >= 0; i--)
+                {
+                    string prospectiveText = _originalChapterText.Substring(0, i) + ellipsis;
+                    formattedText = new System.Windows.Media.FormattedText(
+                        prospectiveText,
+                        System.Globalization.CultureInfo.CurrentCulture,
+                        System.Windows.FlowDirection.LeftToRight,
+                        typeface,
+                        ChapterLabel.FontSize,
+                        ChapterLabel.Foreground,
+                        System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+                    formattedText.MaxTextWidth = ChapterLabel.ActualWidth > 0 ? ChapterLabel.ActualWidth : ChapterLabel.Width;
+
+                    // Check if this prospective text (with ellipsis) fits
+                    if (formattedText.Height <= availableHeight && formattedText.LineCount <= maxLines)
+                    {
+                        textToDisplay = prospectiveText;
+                        break;
+                    }
+                    // If even a single char + ellipsis doesn't fit, then just put ellipsis or first few chars
+                    if (i == 0) {
+                        // Try to fit just the ellipsis or a very short string
+                        string minimalText = ellipsis;
+                         formattedText = new System.Windows.Media.FormattedText(
+                            minimalText,
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            System.Windows.FlowDirection.LeftToRight,
+                            typeface,
+                            ChapterLabel.FontSize,
+                            ChapterLabel.Foreground,
+                            System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        formattedText.MaxTextWidth = ChapterLabel.ActualWidth > 0 ? ChapterLabel.ActualWidth : ChapterLabel.Width;
+                        if(formattedText.Height <= availableHeight && formattedText.LineCount <= maxLines) {
+                             textToDisplay = minimalText;
+                        } else {
+                            // Fallback: try to show just the beginning of the original text without ellipsis if ellipsis itself is too big
+                            // This part might need more refinement based on desired behavior for extremely small spaces
+                            string emergencyText = _originalChapterText.Substring(0, Math.Min(_originalChapterText.Length, 5)); // show first 5 chars
+                             formattedText = new System.Windows.Media.FormattedText(
+                                emergencyText,
+                                System.Globalization.CultureInfo.CurrentCulture,
+                                System.Windows.FlowDirection.LeftToRight,
+                                typeface,
+                                ChapterLabel.FontSize,
+                                ChapterLabel.Foreground,
+                                System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                            formattedText.MaxTextWidth = ChapterLabel.ActualWidth > 0 ? ChapterLabel.ActualWidth : ChapterLabel.Width;
+                            if(formattedText.Height <= availableHeight && formattedText.LineCount <= maxLines) {
+                               textToDisplay = emergencyText;
+                            } else {
+                               textToDisplay = ""; // Nothing fits
+                            }
+                        }
+                        break;
+                    }
+                }
+                ChapterLabel.Text = textToDisplay;
+            }
+            else
+            {
+                ChapterLabel.Text = _originalChapterText;
+            }
         }
 
         /// <summary>

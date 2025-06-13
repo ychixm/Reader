@@ -10,6 +10,6 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Image x:Name="ChapterImage" HorizontalAlignment="Center" VerticalAlignment="center" Margin="0,0,0,0" Grid.Row="0" />
-        <TextBlock Padding="5,0,5,0" x:Name="ChapterLabel" Text="" HorizontalAlignment="Center" Margin="0,0,0,0" VerticalAlignment="Bottom" Height="100" TextWrapping="Wrap" Grid.Row="1"/>
+        <TextBlock Padding="5,0,5,0" x:Name="ChapterLabel" Text="" HorizontalAlignment="Center" Margin="0,0,0,0" VerticalAlignment="Bottom" Height="100" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Grid.Row="1"/>
     </Grid>
 </UserControl>
