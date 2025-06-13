@@ -40,14 +40,15 @@ namespace Reader.UserControls
             InitializeComponent();
             _settings = AppSettingsService.LoadAppSettings();
             _tabOverflowManagementCtrl = this.TabOverflowControl; // Name from XAML
-            LoadNavigationOptionStates();
+            // LoadNavigationOptionStates(); // States now managed by ReaderOptionsControl or need new sync logic
 
-            KeyboardArrowsOption.Checked += NavigationOption_Changed;
-            KeyboardArrowsOption.Unchecked += NavigationOption_Changed;
-            GridClickOption.Checked += NavigationOption_Changed;
-            GridClickOption.Unchecked += NavigationOption_Changed;
-            VisibleButtonsOption.Checked += NavigationOption_Changed;
-            VisibleButtonsOption.Unchecked += NavigationOption_Changed;
+            // Event handlers for these options are now effectively managed by ReaderOptionsControl
+            // KeyboardArrowsOption.Checked += NavigationOption_Changed;
+            // KeyboardArrowsOption.Unchecked += NavigationOption_Changed;
+            // GridClickOption.Checked += NavigationOption_Changed;
+            // GridClickOption.Unchecked += NavigationOption_Changed;
+            // VisibleButtonsOption.Checked += NavigationOption_Changed;
+            // VisibleButtonsOption.Unchecked += NavigationOption_Changed;
 
             LoadChapterListAsync();
         }
@@ -202,15 +203,23 @@ namespace Reader.UserControls
                     Enum.TryParse<Utils.Models.TabOverflowMode>(_settings.DefaultTabOverflowMode, out initialMode);
                 }
 
-                _tabOverflowManagementCtrl.InitializeManager(
-                    MainTabControl,
-                    MainTabHeaderTextBlock,
-                    ScrollbarModeMenuItem,
-                    ArrowButtonsModeMenuItem,
-                    TabDropdownModeMenuItem,
-                    initialMode
-                );
-                _tabOverflowManagementCtrl.ModeChanged += TabOverflowManagementCtrl_ModeChanged;
+                // _tabOverflowManagementCtrl.InitializeManager(
+                //     MainTabControl,
+                //     MainTabHeaderTextBlock,
+                //     ScrollbarModeMenuItem, // These MenuItems are removed
+                //     ArrowButtonsModeMenuItem, // These MenuItems are removed
+                //     TabDropdownModeMenuItem, // These MenuItems are removed
+                //     initialMode
+                // );
+                // TODO: Refactor TabOverflowManagementControl initialization
+                // For now, ensure ModeChanged handler is still attached if manager is used elsewhere or for CurrentTabOverflowMode property
+                if (_tabOverflowManagementCtrl != null) // Check if _tabOverflowManagementCtrl itself is not null
+                {
+                     _tabOverflowManagementCtrl.ModeChanged += TabOverflowManagementCtrl_ModeChanged;
+                     // Manually set initial mode as InitializeManager is commented.
+                     // This might not update UI indicators if they were part of MenuItems.
+                     _tabOverflowManagementCtrl.SetOverflowMode(initialMode);
+                }
             }
             this.DataContext = this;
         }
@@ -240,43 +249,57 @@ namespace Reader.UserControls
 
         private void LoadNavigationOptionStates()
         {
-            if (_settings == null) _settings = new AppSettings(); // Should be loaded by constructor
-
-            KeyboardArrowsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows);
-            GridClickOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick);
-            VisibleButtonsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
+            // if (_settings == null) _settings = new AppSettings(); // Should be loaded by constructor
+            // This logic needs to be adapted for ReaderOptionsControl if initial state setting is desired there
+            // KeyboardArrowsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows);
+            // GridClickOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick);
+            // VisibleButtonsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
         }
 
-        private void NavigationOption_Changed(object sender, RoutedEventArgs e)
+        // This method is now effectively orphaned as the MenuItems are gone.
+        // Its logic needs to be triggered by changes in ReaderOptionsControl's CheckBoxes.
+        public void UpdateNavigationOptions(NavigationMethod newMethods) // Made public, accept new state
         {
-            if (_settings == null) _settings = AppSettingsService.LoadAppSettings(); // Ensure settings are loaded
+            if (_settings == null) _settings = AppSettingsService.LoadAppSettings();
 
-            NavigationMethod currentMethods = NavigationMethod.None;
-            if (KeyboardArrowsOption.IsChecked) currentMethods |= NavigationMethod.KeyboardArrows;
-            if (GridClickOption.IsChecked) currentMethods |= NavigationMethod.GridClick;
-            if (VisibleButtonsOption.IsChecked) currentMethods |= NavigationMethod.VisibleButtons;
+            // Ensure at least one option is selected if current is None (this logic might need refinement depending on UI interaction)
+            // if (newMethods == NavigationMethod.None) {
+            //     // Re-check the last active one or a default? This needs UX decision.
+            //     // For now, allow None, or let ReaderOptionsControl handle "at least one" logic.
+            // }
 
-            if (currentMethods == NavigationMethod.None && sender is MenuItem menuItem)
-            {
-                menuItem.IsChecked = true; // Prevent unchecking the last option
-                return;
-            }
-
-            _settings.EnabledNavigationMethods = currentMethods;
+            _settings.EnabledNavigationMethods = newMethods;
             AppSettingsService.SaveAppSettings(_settings);
         }
 
-        private void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
+        // Example of how NavigationOption_Changed might be refactored if called from ReaderOptionsControl:
+        // public void ProcessNavigationOptionChange(bool isKeyboardEnabled, bool isGridClickEnabled, bool isVisibleButtonsEnabled)
+        // {
+        //     if (_settings == null) _settings = AppSettingsService.LoadAppSettings();
+        //     NavigationMethod currentMethods = NavigationMethod.None;
+        //     if (isKeyboardEnabled) currentMethods |= NavigationMethod.KeyboardArrows;
+        //     if (isGridClickEnabled) currentMethods |= NavigationMethod.GridClick;
+        //     if (isVisibleButtonsEnabled) currentMethods |= NavigationMethod.VisibleButtons;
+        //
+        //     // Add logic here to prevent unchecking the last option if needed,
+        //     // though this is better handled in ReaderOptionsControl UI logic.
+        //
+        //     _settings.EnabledNavigationMethods = currentMethods;
+        //     AppSettingsService.SaveAppSettings(_settings);
+        // }
+
+
+        public void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
         {
             _tabOverflowManagementCtrl?.SetOverflowMode(Utils.Models.TabOverflowMode.Scrollbar);
         }
 
-        private void SetOverflowMode_Arrows_Click(object sender, RoutedEventArgs e)
+        public void SetOverflowMode_Arrows_Click(object sender, RoutedEventArgs e)
         {
             _tabOverflowManagementCtrl?.SetOverflowMode(Utils.Models.TabOverflowMode.ArrowButtons);
         }
 
-        private void SetOverflowMode_Dropdown_Click(object sender, RoutedEventArgs e)
+        public void SetOverflowMode_Dropdown_Click(object sender, RoutedEventArgs e)
         {
             _tabOverflowManagementCtrl?.SetOverflowMode(Utils.Models.TabOverflowMode.TabDropdown);
         }
@@ -341,7 +364,13 @@ namespace Reader.UserControls
         // Implementation of IOptionsProvider
         public FrameworkElement OptionsControl
         {
-            get { return new ReaderOptionsControl(); }
+            get
+            {
+                var optionsCtrl = new ReaderOptionsControl();
+                optionsCtrl.ParentReaderUserControl = this; // Pass 'this' instance
+                // optionsCtrl.InitializeStates(); // Call this to set initial checkbox states
+                return optionsCtrl;
+            }
         }
     }
 }
