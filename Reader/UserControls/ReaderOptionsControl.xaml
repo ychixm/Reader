@@ -7,9 +7,9 @@
              d:DesignHeight="300" d:DesignWidth="400">
     <StackPanel Margin="10">
         <TextBlock Text="Page Swap Options" FontWeight="Bold" Margin="0,0,0,5"/>
-        <CheckBox x:Name="KeyboardArrowsOptionCheckBox" Content="Keyboard Arrows for Page Swap" Margin="5,2"/>
-        <CheckBox x:Name="GridClickOptionCheckBox" Content="Grid Click for Page Swap" Margin="5,2"/>
-        <CheckBox x:Name="VisibleButtonsOptionCheckBox" Content="Visible Buttons for Page Swap" Margin="5,2"/>
+        <CheckBox x:Name="KeyboardArrowsOptionCheckBox" Content="Keyboard Arrows for Page Swap" Margin="5,2" Checked="PageSwapOption_Changed" Unchecked="PageSwapOption_Changed"/>
+        <CheckBox x:Name="GridClickOptionCheckBox" Content="Grid Click for Page Swap" Margin="5,2" Checked="PageSwapOption_Changed" Unchecked="PageSwapOption_Changed"/>
+        <CheckBox x:Name="VisibleButtonsOptionCheckBox" Content="Visible Buttons for Page Swap" Margin="5,2" Checked="PageSwapOption_Changed" Unchecked="PageSwapOption_Changed"/>
 
         <Separator Margin="0,10"/>
 

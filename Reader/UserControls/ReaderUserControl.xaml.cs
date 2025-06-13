@@ -288,6 +288,20 @@ namespace Reader.UserControls
         //     AppSettingsService.SaveAppSettings(_settings);
         // }
 
+        public bool IsKeyboardArrowsNavigationEnabled
+        {
+            get { return _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows); }
+        }
+
+        public bool IsGridClickNavigationEnabled
+        {
+            get { return _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick); }
+        }
+
+        public bool IsVisibleButtonsNavigationEnabled
+        {
+            get { return _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons); }
+        }
 
         public void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
         {
@@ -367,8 +381,8 @@ namespace Reader.UserControls
             get
             {
                 var optionsCtrl = new ReaderOptionsControl();
-                optionsCtrl.ParentReaderUserControl = this; // Pass 'this' instance
-                // optionsCtrl.InitializeStates(); // Call this to set initial checkbox states
+                optionsCtrl.ParentReaderUserControl = this;
+                optionsCtrl.LoadSettings(); // Call LoadSettings here
                 return optionsCtrl;
             }
         }
