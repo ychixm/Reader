@@ -111,11 +111,16 @@ namespace Reader.UserControls
                 // string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PlaceholderImageRelativePath);
                 // _randomChapterElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
+                // Explicitly setting event handlers as per subtask
+                // Note: Previous handlers were already correct. This ensures they are set as specified.
+                _randomChapterElement.MouseLeftButtonUp -= HandleRandomChapterLeftClick; // Remove if previously added with named method
+                _randomChapterElement.MouseDown -= HandleRandomChapterMiddleClick; // Remove if previously added with named method
 
                 _randomChapterElement.MouseLeftButtonUp += async (s, e) =>
                 {
                     if (e.ChangedButton == MouseButton.Left)
                     {
+                        // No need to check IsSpecialRandomElement here as this handler is specific to _randomChapterElement
                         await OpenRandomChapter(true);
                     }
                 };
@@ -123,6 +128,7 @@ namespace Reader.UserControls
                 {
                     if (e.ChangedButton == MouseButton.Middle)
                     {
+                        // No need to check IsSpecialRandomElement here as this handler is specific to _randomChapterElement
                         await OpenRandomChapter(false);
                     }
                 };
