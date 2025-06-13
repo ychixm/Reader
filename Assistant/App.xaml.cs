@@ -16,7 +16,7 @@ namespace Assistant
     {
         private ResourceDictionary? _currentTextBlockThemeDictionary = null;
 
-        private void LoadThemeSpecificTextBlockStyles(System.Windows.Controls.ThemeMode themeMode)
+        private void LoadThemeSpecificTextBlockStyles(System.Windows.ThemeMode themeMode)
         {
             var mergedDictionaries = Application.Current.Resources.MergedDictionaries;
 
@@ -42,7 +42,7 @@ namespace Assistant
             // For example, SystemColors.WindowBrush.ToString() could be compared.
             // But for loading OUR dictionaries, we rely on the ThemeMode value directly.
 
-            if (themeMode == System.Windows.Controls.ThemeMode.System)
+            if (themeMode == System.Windows.ThemeMode.System)
             {
                 // For ThemeMode.System, we need to determine if the system is currently in dark mode.
                 // A common way is to check a known system color.
@@ -55,18 +55,15 @@ namespace Assistant
                 // Let's keep this simple: if ThemeMode is Dark, use Dark. Otherwise, use Light.
                 // This means ThemeMode.System will use TextBlockLight.xaml unless we enhance detection.
                 // User specifically wants their "white text" for "dark theme".
-                 if (Microsoft.Win32.SystemEvents.UserPreferenceChanging != null) // trick to get Microsoft.Win32 assembly loaded for SystemParameters
-                {
-                     try {
-                        var currentWindowsTheme = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", "1");
+                try {
+                    var currentWindowsTheme = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", "1");
                         if (currentWindowsTheme != null && currentWindowsTheme.ToString() == "0") {
                             isSystemDark = true;
                         }
                      } catch {} // Registry access might fail
-                }
             }
 
-            if (themeMode == System.Windows.Controls.ThemeMode.Dark || (themeMode == System.Windows.Controls.ThemeMode.System && isSystemDark))
+            if (themeMode == System.Windows.ThemeMode.Dark || (themeMode == System.Windows.ThemeMode.System && isSystemDark))
             {
                 dictionaryUriString = "pack://application:,,,/Assistant;component/Styles/TextBlockDark.xaml";
             }
@@ -97,7 +94,7 @@ namespace Assistant
 
             // Determine the initial ThemeMode.
             // The ThemeMode property on Application is set from XAML before OnStartup if defined there.
-            System.Windows.Controls.ThemeMode currentMode = Application.Current.ThemeMode;
+            System.Windows.ThemeMode currentMode = Application.Current.ThemeMode;
             LoadThemeSpecificTextBlockStyles(currentMode);
 
             // Optional: Add handler for theme changes if you build a mechanism for runtime ThemeMode changes.
