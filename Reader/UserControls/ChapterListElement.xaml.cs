@@ -17,6 +17,7 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
+        public bool IsSpecialRandomElement { get; set; } = false; // Added for Random Chapter element
         private string _originalChapterText = string.Empty; // Added this line
         public event EventHandler<ChapterOpenRequestedEventArgs>? ChapterOpenRequested;
 
@@ -85,6 +86,7 @@ namespace Reader.UserControls
 
         private void ChapterListElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if (IsSpecialRandomElement) return; // Prevent default action for special element
             if (e.ChangedButton == MouseButton.Left)
             {
                 OpenImageTab(true);
@@ -93,6 +95,7 @@ namespace Reader.UserControls
 
         private void ChapterListElement_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsSpecialRandomElement) return; // Prevent default action for special element
             if (e.ChangedButton == MouseButton.Middle)
             {
                 OpenImageTab(false);
