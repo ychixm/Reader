@@ -3,8 +3,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Media; // Added for Typeface, FormattedText
 using Reader.Models;
-using Utils; 
+using Utils;
+using Utils.Wpf; // Added for TextBlockUtils
 
 
 namespace Reader.UserControls
@@ -15,6 +17,7 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
+        private string _originalChapterText = string.Empty; // Added this line
         public event EventHandler<ChapterOpenRequestedEventArgs>? ChapterOpenRequested;
 
         private DirectoryData _directory { get; } // Made getter-only
@@ -37,6 +40,7 @@ namespace Reader.UserControls
             this.Height = DesignHeight;
             this.MinHeight = DesignHeight;
             InitializeComponent();
+            ChapterLabel.SizeChanged += ChapterLabel_SizeChanged; // Add this line
             ChapterImage.MaxWidth = DesignWidth;
             ChapterImage.MaxHeight = ImageHeight;
             _directory = new DirectoryData(directoryInfo);
@@ -45,14 +49,22 @@ namespace Reader.UserControls
             this.MouseLeftButtonUp += ChapterListElement_MouseLeftButtonUp;
         }
 
+        private void ChapterLabel_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            TextBlockUtils.ApplyTruncationWithEllipsis(this.ChapterLabel, _originalChapterText);
+        }
+
         /// <summary>
         /// Sets the display text for the chapter's label.
         /// </summary>
         /// <param name="text">The text to display as the chapter title.</param>
         public void SetLabelText(string text)
         {
-            ChapterLabel.Text = text;
+            _originalChapterText = text;
+            TextBlockUtils.ApplyTruncationWithEllipsis(this.ChapterLabel, _originalChapterText);
         }
+
+        // UpdateChapterLabelText has been removed and its functionality moved to TextBlockUtils.ApplyTruncationWithEllipsis
 
         /// <summary>
         /// Sets the image source for the chapter's thumbnail.
