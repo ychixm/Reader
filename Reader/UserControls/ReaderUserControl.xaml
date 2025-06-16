@@ -32,18 +32,21 @@
             <customCtrl:TabOverflowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
             <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_Menu">
-                    <Separator Height="1" Margin="4,5,4,5"/>
-                    <MenuItem Header="_OptionsPageSwap">
-                        <MenuItem Header="_Keyboard Arrows" IsCheckable="True" x:Name="KeyboardArrowsOption"/>
-                        <MenuItem Header="_Grid Click" IsCheckable="True" x:Name="GridClickOption"/>
-                        <MenuItem Header="_Visible Buttons" IsCheckable="True" x:Name="VisibleButtonsOption"/>
-                    </MenuItem>
-                    <Separator Height="1" Margin="4,5,4,5"/>
-                    <MenuItem Header="_OptionsScroll">
-                        <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/>
-                        <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/>
-                        <MenuItem x:Name="TabDropdownModeMenuItem" Header="_Tab Dropdown Mode" IsCheckable="True" Click="SetOverflowMode_Dropdown_Click"/>
-                    </MenuItem>
+                    <!-- Navigation and Tab Overflow options are now in ReaderOptionsView -->
+                    <!-- <Separator Height="1" Margin="4,5,4,5"/> -->
+                    <!-- <MenuItem Header="_OptionsPageSwap"> -->
+                        <!-- <MenuItem Header="_Keyboard Arrows" IsCheckable="True" x:Name="KeyboardArrowsOption"/> -->
+                        <!-- <MenuItem Header="_Grid Click" IsCheckable="True" x:Name="GridClickOption"/> -->
+                        <!-- <MenuItem Header="_Visible Buttons" IsCheckable="True" x:Name="VisibleButtonsOption"/> -->
+                    <!-- </MenuItem> -->
+                    <!-- <Separator Height="1" Margin="4,5,4,5"/> -->
+                    <!-- <MenuItem Header="_OptionsScroll"> -->
+                        <!-- <MenuItem x:Name="ScrollbarModeMenuItem" Header="_Scrollbar Mode" IsCheckable="True" Click="SetOverflowMode_Scrollbar_Click"/> -->
+                        <!-- <MenuItem x:Name="ArrowButtonsModeMenuItem" Header="_Arrow Buttons Mode" IsCheckable="True" Click="SetOverflowMode_Arrows_Click"/> -->
+                        <!-- <MenuItem x:Name="TabDropdownModeMenuItem" Header="_Tab Dropdown Mode" IsCheckable="True" Click="SetOverflowMode_Dropdown_Click"/> -->
+                    <!-- </MenuItem> -->
+                    <Separator Height="1" Margin="4,5,4,5"/> <!-- This separator can remain or be removed if no items follow -->
+                    <MenuItem Header="Placeholder for other menu items if any"/>
                 </MenuItem>
             </Menu>
         </DockPanel>

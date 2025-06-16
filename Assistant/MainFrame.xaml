@@ -20,7 +20,7 @@
         </ResourceDictionary>
     </Window.Resources>
     <Grid >
-        <TabControl Template="{StaticResource SharedTabControlTemplate}"
+        <TabControl x:Name="MainAppTabControl" Template="{StaticResource SharedTabControlTemplate}"
                     ItemContainerStyle="{StaticResource SharedTabItemStyle}"
                     ItemsPanel="{StaticResource SharedTabItemsPanelTemplate}">
             <TabItem Header="Options">

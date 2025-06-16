@@ -19,9 +19,9 @@ namespace Utils.Controls
         private ContextMenu? _tabListContextMenu;
         private TextBlock? _mainTabHeaderTextBlock;
 
-        private MenuItem? _scrollbarModeMenuItem;
-        private MenuItem? _arrowButtonsModeMenuItem;
-        private MenuItem? _tabDropdownModeMenuItem;
+        // private MenuItem? _scrollbarModeMenuItem; // No longer managed here
+        // private MenuItem? _arrowButtonsModeMenuItem; // No longer managed here
+        // private MenuItem? _tabDropdownModeMenuItem; // No longer managed here
 
         private TabOverflowMode _currentTabOverflowMode = TabOverflowMode.Scrollbar;
         public TabOverflowMode CurrentTabOverflowMode
@@ -33,7 +33,7 @@ namespace Utils.Controls
                 {
                     _currentTabOverflowMode = value;
                     ModeChanged?.Invoke(_currentTabOverflowMode);
-                    UpdateMenuCheckedStates();
+                    // UpdateMenuCheckedStates(); // External menu items no longer managed here
                     UpdateScrollButtonVisibility();
                 }
             }
@@ -50,22 +50,21 @@ namespace Utils.Controls
             }
         }
 
-        public void InitializeManager(TabControl tabControl, TextBlock mainTabHeaderTextBlock, MenuItem scrollbarModeMenuItem, MenuItem arrowButtonsModeMenuItem, MenuItem tabDropdownModeMenuItem, TabOverflowMode initialMode)
+        // Modified InitializeManager to remove direct dependency on external MenuItems
+        public void InitializeManager(TabControl tabControl, TextBlock mainTabHeaderTextBlock, TabOverflowMode initialMode)
         {
             _tabControl = tabControl ?? throw new ArgumentNullException(nameof(tabControl));
             _mainTabHeaderTextBlock = mainTabHeaderTextBlock;
 
-            _scrollbarModeMenuItem = scrollbarModeMenuItem ?? throw new ArgumentNullException(nameof(scrollbarModeMenuItem));
-            _arrowButtonsModeMenuItem = arrowButtonsModeMenuItem ?? throw new ArgumentNullException(nameof(arrowButtonsModeMenuItem));
-            _tabDropdownModeMenuItem = tabDropdownModeMenuItem ?? throw new ArgumentNullException(nameof(tabDropdownModeMenuItem));
+            // _scrollbarModeMenuItem = scrollbarModeMenuItem ?? throw new ArgumentNullException(nameof(scrollbarModeMenuItem)); // Removed
+            // _arrowButtonsModeMenuItem = arrowButtonsModeMenuItem ?? throw new ArgumentNullException(nameof(arrowButtonsModeMenuItem)); // Removed
+            // _tabDropdownModeMenuItem = tabDropdownModeMenuItem ?? throw new ArgumentNullException(nameof(tabDropdownModeMenuItem)); // Removed
 
-            // Set initial mode BEFORE attaching event handlers that might call SetOverflowMode
-            // and cause a premature ModeChanged event during initialization.
             _currentTabOverflowMode = initialMode;
 
-            _scrollbarModeMenuItem.Click += (s, e) => SetOverflowMode(TabOverflowMode.Scrollbar);
-            _arrowButtonsModeMenuItem.Click += (s, e) => SetOverflowMode(TabOverflowMode.ArrowButtons);
-            _tabDropdownModeMenuItem.Click += (s, e) => SetOverflowMode(TabOverflowMode.TabDropdown);
+            // _scrollbarModeMenuItem.Click += (s, e) => SetOverflowMode(TabOverflowMode.Scrollbar); // Removed
+            // _arrowButtonsModeMenuItem.Click += (s, e) => SetOverflowMode(TabOverflowMode.ArrowButtons); // Removed
+            // _tabDropdownModeMenuItem.Click += (s, e) => SetOverflowMode(TabOverflowMode.TabDropdown); // Removed
 
             _tabControl.ApplyTemplate();
 
@@ -86,7 +85,7 @@ namespace Utils.Controls
 
             // CurrentTabOverflowMode is already set, now update UI based on it.
             UpdateScrollButtonVisibility();
-            UpdateMenuCheckedStates();
+            // UpdateMenuCheckedStates(); // External menu items no longer managed here
         }
 
         public void SetOverflowMode(TabOverflowMode mode)
@@ -193,16 +192,17 @@ namespace Utils.Controls
             }
         }
 
-        public void UpdateMenuCheckedStates()
-        {
-            if (_scrollbarModeMenuItem != null)
-                _scrollbarModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.Scrollbar);
-
-            if (_arrowButtonsModeMenuItem != null)
-                _arrowButtonsModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.ArrowButtons);
-
-            if (_tabDropdownModeMenuItem != null)
-                _tabDropdownModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.TabDropdown);
-        }
+        // This method is no longer needed as external menu items are not managed here.
+        // public void UpdateMenuCheckedStates()
+        // {
+        //     if (_scrollbarModeMenuItem != null)
+        //         _scrollbarModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.Scrollbar);
+        //
+        //     if (_arrowButtonsModeMenuItem != null)
+        //         _arrowButtonsModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.ArrowButtons);
+        //
+        //     if (_tabDropdownModeMenuItem != null)
+        //         _tabDropdownModeMenuItem.IsChecked = (CurrentTabOverflowMode == TabOverflowMode.TabDropdown);
+        // }
     }
 }

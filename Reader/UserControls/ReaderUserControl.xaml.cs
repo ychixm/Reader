@@ -39,14 +39,15 @@ namespace Reader.UserControls
             InitializeComponent();
             _settings = AppSettingsService.LoadAppSettings();
             _tabOverflowManagementCtrl = this.TabOverflowControl; // Name from XAML
-            LoadNavigationOptionStates();
+            // LoadNavigationOptionStates(); // Removed - options view model will handle initial state
 
-            KeyboardArrowsOption.Checked += NavigationOption_Changed;
-            KeyboardArrowsOption.Unchecked += NavigationOption_Changed;
-            GridClickOption.Checked += NavigationOption_Changed;
-            GridClickOption.Unchecked += NavigationOption_Changed;
-            VisibleButtonsOption.Checked += NavigationOption_Changed;
-            VisibleButtonsOption.Unchecked += NavigationOption_Changed;
+            // Event handlers for navigation options are removed as these controls are moved
+            // KeyboardArrowsOption.Checked += NavigationOption_Changed;
+            // KeyboardArrowsOption.Unchecked += NavigationOption_Changed;
+            // GridClickOption.Checked += NavigationOption_Changed;
+            // GridClickOption.Unchecked += NavigationOption_Changed;
+            // VisibleButtonsOption.Checked += NavigationOption_Changed;
+            // VisibleButtonsOption.Unchecked += NavigationOption_Changed;
 
             LoadChapterListAsync();
         }
@@ -204,9 +205,9 @@ namespace Reader.UserControls
                 _tabOverflowManagementCtrl.InitializeManager(
                     MainTabControl,
                     MainTabHeaderTextBlock,
-                    ScrollbarModeMenuItem,
-                    ArrowButtonsModeMenuItem,
-                    TabDropdownModeMenuItem,
+                    // ScrollbarModeMenuItem, // Removed as TabOverflowManagementControl no longer manages external menu items
+                    // ArrowButtonsModeMenuItem, // Removed
+                    // TabDropdownModeMenuItem, // Removed
                     initialMode
                 );
                 _tabOverflowManagementCtrl.ModeChanged += TabOverflowManagementCtrl_ModeChanged;
@@ -216,11 +217,8 @@ namespace Reader.UserControls
 
         private void TabOverflowManagementCtrl_ModeChanged(Utils.Models.TabOverflowMode newMode)
         {
-            if (_settings != null)
-            {
-                _settings.DefaultTabOverflowMode = newMode.ToString();
-                AppSettingsService.SaveAppSettings(_settings);
-            }
+            // Saving settings is now centralized in ReaderSubApplication.ApplyOptions()
+            // This handler now only needs to ensure UI consistency if any direct bindings depend on it.
             OnPropertyChanged(nameof(CurrentTabOverflowMode));
         }
 
@@ -237,32 +235,80 @@ namespace Reader.UserControls
             }
         }
 
-        private void LoadNavigationOptionStates()
+        // Removed LoadNavigationOptionStates() - Handled by ReaderOptionsViewModel initialization and ApplyNavigationSettings
+        // private void LoadNavigationOptionStates() { ... }
+
+        // Removed NavigationOption_Changed() - Handled by ReaderOptionsViewModel and ApplyNavigationSettings
+        // private void NavigationOption_Changed(object sender, RoutedEventArgs e) { ... }
+
+        public void ApplyNavigationSettings(NavigationMethod newMethods)
         {
-            if (_settings == null) _settings = new AppSettings(); // Should be loaded by constructor
-
-            KeyboardArrowsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows);
-            GridClickOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick);
-            VisibleButtonsOption.IsChecked = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
-        }
-
-        private void NavigationOption_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_settings == null) _settings = AppSettingsService.LoadAppSettings(); // Ensure settings are loaded
-
-            NavigationMethod currentMethods = NavigationMethod.None;
-            if (KeyboardArrowsOption.IsChecked) currentMethods |= NavigationMethod.KeyboardArrows;
-            if (GridClickOption.IsChecked) currentMethods |= NavigationMethod.GridClick;
-            if (VisibleButtonsOption.IsChecked) currentMethods |= NavigationMethod.VisibleButtons;
-
-            if (currentMethods == NavigationMethod.None && sender is MenuItem menuItem)
+            if (_settings != null)
             {
-                menuItem.IsChecked = true; // Prevent unchecking the last option
-                return;
+                _settings.EnabledNavigationMethods = newMethods;
             }
 
-            _settings.EnabledNavigationMethods = currentMethods;
-            AppSettingsService.SaveAppSettings(_settings);
+            // Iterate through all open tabs that contain an ImageTabControl
+            // and apply the relevant navigation settings to them.
+            // This assumes ImageTabControl has public properties like:
+            // - EnableGridClick (bool)
+            // - ShowNavigationButtons (bool)
+            // - EnableKeyboardNavigation (bool) - though keyboard might be handled more globally
+            if (MainTabControl != null) // Ensure MainTabControl is not null
+            {
+                foreach (var item in MainTabControl.Items)
+                {
+                    if (item is TabItem tabItem && tabItem.Content is ImageTabControl imageTabCtrl)
+                    {
+                        // Apply GridClick setting
+                        if (imageTabCtrl.GetType().GetProperty("EnableGridClick") != null) // Check if property exists
+                        {
+                            imageTabCtrl.GetType().GetProperty("EnableGridClick")
+                                .SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.GridClick));
+                        }
+
+                        // Apply VisibleButtons setting
+                        if (imageTabCtrl.GetType().GetProperty("ShowNavigationButtons") != null) // Check if property exists
+                        {
+                            imageTabCtrl.GetType().GetProperty("ShowNavigationButtons")
+                                .SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.VisibleButtons));
+                        }
+
+                        // Keyboard navigation might be handled at a higher level (e.g., window keydown events)
+                        // or ImageTabControl might also have a property for it.
+                        // If ImageTabControl handles its own keyboard events based on a property:
+                        // if (imageTabCtrl.GetType().GetProperty("EnableKeyboardNavigation") != null)
+                        // {
+                        // imageTabCtrl.GetType().GetProperty("EnableKeyboardNavigation")
+                        // .SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.KeyboardArrows));
+                        // }
+                    }
+                }
+            }
+
+            // Raise PropertyChanged for any properties in ReaderUserControl itself that might be bound
+            // to UI elements reflecting these states (if any such direct bindings exist in ReaderUserControl.xaml).
+            // For instance, if ReaderUserControl had its own global navigation buttons.
+            // OnPropertyChanged(nameof(IsSomeGlobalNavButtonVisible));
+        }
+
+        public void ApplyTabOverflowMode(Utils.Models.TabOverflowMode newMode)
+        {
+            // Apply the mode to the TabOverflowManagementControl if it's still part of this view
+            if (_tabOverflowManagementCtrl != null)
+            {
+                _tabOverflowManagementCtrl.SetOverflowMode(newMode);
+            }
+
+            if (_settings != null)
+            {
+                _settings.DefaultTabOverflowMode = newMode.ToString();
+                // AppSettingsService.SaveAppSettings(_settings); // Saving is now centralized
+            }
+            // The _tabOverflowManagementCtrl.SetOverflowMode call should trigger its own event,
+            // which in turn calls TabOverflowManagementCtrl_ModeChanged, which calls OnPropertyChanged.
+            // If not, or for directness:
+            OnPropertyChanged(nameof(CurrentTabOverflowMode));
         }
 
         private void SetOverflowMode_Scrollbar_Click(object sender, RoutedEventArgs e)
