@@ -3,6 +3,9 @@ using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using Utils; // For IOptionsViewModel
 using Utils.Models; // For TabOverflowMode
+using Reader.Models; // Added for AppSettings, NavigationMethod
+using Reader.Business; // Added for AppSettingsService
+using System; // Added for Enum.TryParse
 
 namespace Reader.ViewModels
 {
@@ -74,13 +77,36 @@ namespace Reader.ViewModels
             return new UserControls.ReaderOptionsView { DataContext = this };
         }
 
+        public void LoadSettings()
+        {
+            var appSettings = AppSettingsService.LoadAppSettings();
+            EnableKeyboardNavigation = appSettings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows);
+            EnableGridClickNavigation = appSettings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick);
+            EnableVisibleButtonsNavigation = appSettings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
+
+            if (Enum.TryParse<TabOverflowMode>(appSettings.DefaultTabOverflowMode, out var mode))
+            {
+                SelectedTabOverflowMode = mode;
+            }
+            else
+            {
+                SelectedTabOverflowMode = TabOverflowMode.Scrollbar; // Default fallback
+            }
+        }
+
         public void Apply()
         {
-            // This method will be used to apply the settings.
-            // For now, it can be empty. We might save settings here
-            // or signal the ReaderSubApplication.
-            // Actual saving to AppSettingsService will likely be coordinated
-            // by ReaderSubApplication.ApplyOptions()
+            var appSettings = AppSettingsService.LoadAppSettings(); // Load current settings to update them
+
+            NavigationMethod updatedMethods = NavigationMethod.None;
+            if (EnableKeyboardNavigation) updatedMethods |= NavigationMethod.KeyboardArrows;
+            if (EnableGridClickNavigation) updatedMethods |= NavigationMethod.GridClick;
+            if (EnableVisibleButtonsNavigation) updatedMethods |= NavigationMethod.VisibleButtons;
+            appSettings.EnabledNavigationMethods = updatedMethods;
+
+            appSettings.DefaultTabOverflowMode = SelectedTabOverflowMode.ToString();
+
+            AppSettingsService.SaveAppSettings(appSettings);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

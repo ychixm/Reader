@@ -42,6 +42,7 @@ namespace Assistant
                     IOptionsViewModel? optionsViewModel = app.GetOptionsViewModel();
                     if (optionsViewModel != null)
                     {
+                        optionsViewModel.LoadSettings(); // Added: Ensure settings are loaded into the ViewModel
                         UserControl? optionView = optionsViewModel.GetView();
                         if (optionView != null)
                         {

@@ -7,6 +7,7 @@ namespace Utils
     {
         string Title { get; }
         UserControl GetView();
+        void LoadSettings();
         void Apply();
     }
 }
