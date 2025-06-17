@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json; // For JsonConvert serialization/deserialization
+// Remove: using Newtonsoft.Json;
+using System.Text.Json; // Added
+// using System.Text.Json.Serialization; // Add if specific attributes are needed later
 
 namespace Utils
 {
@@ -11,13 +13,16 @@ namespace Utils
 
         private static readonly string _settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "application_settings.json");
 
-        // The core service now manages a dictionary of module keys to JSON strings.
         private static readonly JsonSettingsService<Dictionary<string, string>> _dictionaryStorageService = new JsonSettingsService<Dictionary<string, string>>();
 
-        private static JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
+        // Replaced Newtonsoft's JsonSerializerSettings
+        private static JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
-            TypeNameHandling = TypeNameHandling.Auto, // Important for potentially complex objects if not just POCOs
-            Formatting = Formatting.Indented
+            WriteIndented = true, // Equivalent to Formatting.Indented
+            // TypeNameHandling.Auto is not directly supported.
+            // If polymorphism of 'object settings' is critical and types are not known at deserialization point for <T>,
+            // this would require attributes on models or custom converters.
+            // For current usage with LoadModuleSettings<T>, T provides the target type.
         };
 
         public static void SaveModuleSettings(string moduleKey, object? settings)
@@ -38,7 +43,8 @@ namespace Utils
             }
             else
             {
-                string serializedSettings = JsonConvert.SerializeObject(settings, _jsonSerializerSettings);
+                // settings.GetType() is used to ensure the actual type is serialized, not just 'object'.
+                string serializedSettings = JsonSerializer.Serialize(settings, settings.GetType(), _jsonSerializerOptions);
                 settingsDictionary[moduleKey] = serializedSettings;
             }
 
@@ -46,7 +52,7 @@ namespace Utils
             SettingsChanged?.Invoke(null, EventArgs.Empty);
         }
 
-        public static T? LoadModuleSettings<T>(string moduleKey) where T : class // `new()` constraint removed to allow returning null if not found
+        public static T? LoadModuleSettings<T>(string moduleKey) where T : class
         {
             if (string.IsNullOrWhiteSpace(moduleKey))
             {
@@ -61,22 +67,18 @@ namespace Utils
                 {
                     try
                     {
-                        return JsonConvert.DeserializeObject<T>(serializedSettings, _jsonSerializerSettings);
+                        return JsonSerializer.Deserialize<T>(serializedSettings, _jsonSerializerOptions);
                     }
                     catch (JsonException ex)
                     {
-                        // Log error:($"Error deserializing settings for module {moduleKey}: {ex.Message}");
-                        // Optionally, throw or return default/null based on desired error handling.
-                        // For now, let it return null if deserialization fails.
-                        Console.Error.WriteLine($"Error deserializing settings for module {moduleKey}: {ex.Message}");
+                        Console.Error.WriteLine($"Error deserializing settings for module {moduleKey} using System.Text.Json: {ex.Message}");
                         return null;
                     }
                 }
             }
-            return null; // Key not found or serializedSettings is null/empty
+            return null;
         }
 
-        // Optional: A method to load with a default if not found
         public static T LoadModuleSettings<T>(string moduleKey, Func<T> defaultFactory) where T : class
         {
              T? result = LoadModuleSettings<T>(moduleKey);
