@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Reader"
              xmlns:UserControls="clr-namespace:Reader.UserControls"
-             xmlns:customPanels="clr-namespace:WpfToolkit.Controls"
+             xmlns:customPanels="clr-namespace:Reader.WpfToolkit.Controls"
              xmlns:customCtrl="clr-namespace:Utils.Controls;assembly=Utils"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="1200">
@@ -28,7 +28,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <customCtrl:TabOverflowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
+        <customCtrl:TabOverFlowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
       
         <TabControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" x:Name="MainTabControl" MouseDown="MainTabControl_MouseDown"
                     Loaded="MainTabControl_Loaded"

@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-// Remove: using Newtonsoft.Json;
-using System.Text.Json; // Added
-// using System.Text.Json.Serialization; // Add if specific attributes are needed later
+using System.Text.Json;
 
 namespace Utils
 {
@@ -15,14 +13,9 @@ namespace Utils
 
         private static readonly JsonSettingsService<Dictionary<string, string>> _dictionaryStorageService = new JsonSettingsService<Dictionary<string, string>>();
 
-        // Replaced Newtonsoft's JsonSerializerSettings
         private static JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
-            WriteIndented = true, // Equivalent to Formatting.Indented
-            // TypeNameHandling.Auto is not directly supported.
-            // If polymorphism of 'object settings' is critical and types are not known at deserialization point for <T>,
-            // this would require attributes on models or custom converters.
-            // For current usage with LoadModuleSettings<T>, T provides the target type.
+            WriteIndented = true,
         };
 
         public static void SaveModuleSettings(string moduleKey, object? settings)
@@ -32,7 +25,8 @@ namespace Utils
                 throw new ArgumentException("Module key cannot be null or whitespace.", nameof(moduleKey));
             }
 
-            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath, () => new Dictionary<string, string>());
+            // Changed line:
+            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath) ?? new Dictionary<string, string>();
 
             if (settings == null)
             {
@@ -43,7 +37,6 @@ namespace Utils
             }
             else
             {
-                // settings.GetType() is used to ensure the actual type is serialized, not just 'object'.
                 string serializedSettings = JsonSerializer.Serialize(settings, settings.GetType(), _jsonSerializerOptions);
                 settingsDictionary[moduleKey] = serializedSettings;
             }
@@ -59,7 +52,8 @@ namespace Utils
                 throw new ArgumentException("Module key cannot be null or whitespace.", nameof(moduleKey));
             }
 
-            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath, () => new Dictionary<string, string>());
+            // Changed line:
+            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath) ?? new Dictionary<string, string>();
 
             if (settingsDictionary.TryGetValue(moduleKey, out string? serializedSettings))
             {
