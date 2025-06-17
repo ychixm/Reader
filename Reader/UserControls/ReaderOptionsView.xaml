@@ -16,7 +16,7 @@
         <CheckBox Content="Enable Visible Buttons Navigation" IsChecked="{Binding EnableVisibleButtonsNavigation}" Margin="0,0,0,10"/>
 
         <TextBlock Text="Tab Overflow Mode" FontWeight="Bold" Margin="0,0,0,5"/>
-        <ComboBox ItemsSource="{Binding Source={StaticResource TabOverflowModeValues}}"
+        <ComboBox x:Name="TabOverflowComboBox"
                   SelectedItem="{Binding SelectedTabOverflowMode}" Margin="0,0,0,5"/>
     </StackPanel>
 </UserControl>
