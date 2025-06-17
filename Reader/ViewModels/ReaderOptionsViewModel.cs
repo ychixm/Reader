@@ -1,11 +1,12 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
-using Utils; // For IOptionsViewModel
-using Utils.Models; // For TabOverflowMode
-using Reader.Models; // Added for AppSettings, NavigationMethod
-using Reader.Business; // Added for AppSettingsService
-using System; // Added for Enum.TryParse
+using Utils; // For IOptionsViewModel and new AppSettingsService
+using Utils.Models; // For TabOverflowMode and new settings models (ReaderSpecificSettings, NavigationMethod)
+using System; // For Enum.TryParse
+
+// Remove: using Reader.Models;
+// Remove: using Reader.Business;
 
 namespace Reader.ViewModels
 {
@@ -15,6 +16,8 @@ namespace Reader.ViewModels
         private bool _enableGridClickNavigation;
         private bool _enableVisibleButtonsNavigation;
         private TabOverflowMode _selectedTabOverflowMode;
+        // Add DefaultPath if it needs to be exposed by the ViewModel, otherwise it's just saved/loaded.
+        // For this refactor, we'll assume it's not directly bound in ReaderOptionsView.
 
         public string Title => "Reader Options";
 
@@ -72,19 +75,22 @@ namespace Reader.ViewModels
 
         public UserControl GetView()
         {
-            // We will create ReaderOptionsView in the next step.
-            // For now, this will point to it.
+            // We need to ensure ReaderOptionsView XAML/code-behind is updated if its DataContext
+            // or bindings depend on specific types from Reader.Models that are now in Utils.Models.
+            // For now, assume GetView() itself doesn't change, but its view might need to adapt later.
             return new UserControls.ReaderOptionsView { DataContext = this };
         }
 
         public void LoadSettings()
         {
-            var appSettings = AppSettingsService.LoadAppSettings();
-            EnableKeyboardNavigation = appSettings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows);
-            EnableGridClickNavigation = appSettings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick);
-            EnableVisibleButtonsNavigation = appSettings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
+            var allSettings = AppSettingsService.LoadApplicationSettings(); // New Utils.AppSettingsService
+            var readerSettings = allSettings.Reader;
 
-            if (Enum.TryParse<TabOverflowMode>(appSettings.DefaultTabOverflowMode, out var mode))
+            EnableKeyboardNavigation = readerSettings.EnabledNavigationMethods.HasFlag(Utils.Models.NavigationMethod.KeyboardArrows);
+            EnableGridClickNavigation = readerSettings.EnabledNavigationMethods.HasFlag(Utils.Models.NavigationMethod.GridClick);
+            EnableVisibleButtonsNavigation = readerSettings.EnabledNavigationMethods.HasFlag(Utils.Models.NavigationMethod.VisibleButtons);
+
+            if (Enum.TryParse<TabOverflowMode>(readerSettings.DefaultTabOverflowMode, out var mode))
             {
                 SelectedTabOverflowMode = mode;
             }
@@ -96,17 +102,19 @@ namespace Reader.ViewModels
 
         public void Apply()
         {
-            var appSettings = AppSettingsService.LoadAppSettings(); // Load current settings to update them
+            var allSettings = AppSettingsService.LoadApplicationSettings(); // New Utils.AppSettingsService
 
-            NavigationMethod updatedMethods = NavigationMethod.None;
-            if (EnableKeyboardNavigation) updatedMethods |= NavigationMethod.KeyboardArrows;
-            if (EnableGridClickNavigation) updatedMethods |= NavigationMethod.GridClick;
-            if (EnableVisibleButtonsNavigation) updatedMethods |= NavigationMethod.VisibleButtons;
-            appSettings.EnabledNavigationMethods = updatedMethods;
+            Utils.Models.NavigationMethod updatedMethods = Utils.Models.NavigationMethod.None;
+            if (EnableKeyboardNavigation) updatedMethods |= Utils.Models.NavigationMethod.KeyboardArrows;
+            if (EnableGridClickNavigation) updatedMethods |= Utils.Models.NavigationMethod.GridClick;
+            if (EnableVisibleButtonsNavigation) updatedMethods |= Utils.Models.NavigationMethod.VisibleButtons;
 
-            appSettings.DefaultTabOverflowMode = SelectedTabOverflowMode.ToString();
+            allSettings.Reader.EnabledNavigationMethods = updatedMethods;
+            allSettings.Reader.DefaultTabOverflowMode = SelectedTabOverflowMode.ToString();
+            // DefaultPath is not managed by this ViewModel's UI, but it will be preserved if loaded
+            // and saved as part of allSettings.Reader. If it were editable, it would be here too.
 
-            AppSettingsService.SaveAppSettings(appSettings);
+            AppSettingsService.SaveApplicationSettings(allSettings); // New Utils.AppSettingsService
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

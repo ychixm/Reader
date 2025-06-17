@@ -1,6 +1,7 @@
-namespace Reader.Models
-{
+using System; // Required for [Flags] attribute
 
+namespace Utils.Models
+{
     [Flags]
     public enum NavigationMethod
     {
