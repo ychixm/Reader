@@ -58,7 +58,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Grid x:Name="templateRoot">
+                    <Grid x:Name="templateRoot" Background="Transparent">
                         <Border x:Name="TabBorder"
                                 BorderBrush="{DynamicResource TabItemBorderBrush}"
                                 BorderThickness="{DynamicResource TabItemBorderThickness}"
