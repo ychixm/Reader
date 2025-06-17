@@ -60,7 +60,8 @@
                 <ControlTemplate TargetType="TabItem">
                     <Grid x:Name="templateRoot">
                         <Border x:Name="TabBorder"
-                                BorderThickness="1,1,1,0"
+                                BorderBrush="{DynamicResource TabItemBorderBrush}"
+                                BorderThickness="{DynamicResource TabItemBorderThickness}"
                                 CornerRadius="5,5,0,0">
                             <ContentPresenter x:Name="ContentSite"
                                               ContentSource="Header"

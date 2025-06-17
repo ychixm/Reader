@@ -11,4 +11,7 @@
         </Style.Triggers>
         <Setter Property="Foreground" Value="White"/>
     </Style>
+
+    <SolidColorBrush x:Key="TabItemBorderBrush">White</SolidColorBrush>
+    <Thickness x:Key="TabItemBorderThickness">1</Thickness>
 </ResourceDictionary>
