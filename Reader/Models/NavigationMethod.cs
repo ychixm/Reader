@@ -1,6 +1,6 @@
-using System; // Required for [Flags] attribute
+using System; // For [Flags]
 
-namespace Utils.Models
+namespace Reader.Models
 {
     [Flags]
     public enum NavigationMethod

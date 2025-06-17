@@ -1,6 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using Utils.Models; // For AllAppSettings
+using Newtonsoft.Json; // For JsonConvert serialization/deserialization
 
 namespace Utils
 {
@@ -8,31 +9,82 @@ namespace Utils
     {
         public static event EventHandler? SettingsChanged;
 
-        // Define the path for the centralized settings file
         private static readonly string _settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "application_settings.json");
 
-        // Use the existing generic JsonSettingsService, now typed with AllAppSettings
-        private static readonly JsonSettingsService<AllAppSettings> _jsonService = new JsonSettingsService<AllAppSettings>();
+        // The core service now manages a dictionary of module keys to JSON strings.
+        private static readonly JsonSettingsService<Dictionary<string, string>> _dictionaryStorageService = new JsonSettingsService<Dictionary<string, string>>();
 
-        public static AllAppSettings LoadApplicationSettings()
+        private static JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
         {
-            // Load settings; if the file doesn't exist or is invalid,
-            // JsonSettingsService.LoadSettings should return a new instance of AllAppSettings
-            // (assuming JsonSettingsService handles default object creation on error or file not found).
-            // If JsonSettingsService requires a factory for default, that needs to be passed.
-            // For now, assume it returns new T() if file not found.
-            return _jsonService.LoadSettings(_settingsFilePath, () => new AllAppSettings());
-        }
+            TypeNameHandling = TypeNameHandling.Auto, // Important for potentially complex objects if not just POCOs
+            Formatting = Formatting.Indented
+        };
 
-        public static void SaveApplicationSettings(AllAppSettings settings)
+        public static void SaveModuleSettings(string moduleKey, object? settings)
         {
-            if (settings == null)
+            if (string.IsNullOrWhiteSpace(moduleKey))
             {
-                throw new ArgumentNullException(nameof(settings));
+                throw new ArgumentException("Module key cannot be null or whitespace.", nameof(moduleKey));
             }
 
-            _jsonService.SaveSettings(settings, _settingsFilePath);
-            SettingsChanged?.Invoke(null, EventArgs.Empty); // Raise event after saving
+            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath, () => new Dictionary<string, string>());
+
+            if (settings == null)
+            {
+                if (settingsDictionary.ContainsKey(moduleKey))
+                {
+                    settingsDictionary.Remove(moduleKey);
+                }
+            }
+            else
+            {
+                string serializedSettings = JsonConvert.SerializeObject(settings, _jsonSerializerSettings);
+                settingsDictionary[moduleKey] = serializedSettings;
+            }
+
+            _dictionaryStorageService.SaveSettings(settingsDictionary, _settingsFilePath);
+            SettingsChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        public static T? LoadModuleSettings<T>(string moduleKey) where T : class // `new()` constraint removed to allow returning null if not found
+        {
+            if (string.IsNullOrWhiteSpace(moduleKey))
+            {
+                throw new ArgumentException("Module key cannot be null or whitespace.", nameof(moduleKey));
+            }
+
+            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath, () => new Dictionary<string, string>());
+
+            if (settingsDictionary.TryGetValue(moduleKey, out string? serializedSettings))
+            {
+                if (!string.IsNullOrEmpty(serializedSettings))
+                {
+                    try
+                    {
+                        return JsonConvert.DeserializeObject<T>(serializedSettings, _jsonSerializerSettings);
+                    }
+                    catch (JsonException ex)
+                    {
+                        // Log error:($"Error deserializing settings for module {moduleKey}: {ex.Message}");
+                        // Optionally, throw or return default/null based on desired error handling.
+                        // For now, let it return null if deserialization fails.
+                        Console.Error.WriteLine($"Error deserializing settings for module {moduleKey}: {ex.Message}");
+                        return null;
+                    }
+                }
+            }
+            return null; // Key not found or serializedSettings is null/empty
+        }
+
+        // Optional: A method to load with a default if not found
+        public static T LoadModuleSettings<T>(string moduleKey, Func<T> defaultFactory) where T : class
+        {
+             T? result = LoadModuleSettings<T>(moduleKey);
+             if (result == null)
+             {
+                 return defaultFactory();
+             }
+             return result;
         }
     }
 }
