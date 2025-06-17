@@ -1,11 +1,27 @@
-﻿<UserControl x:Class="Assistant.OptionsUserControl"
+<UserControl x:Class="Assistant.OptionsUserControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-        <TextBlock Text="Options User Control Placeholder" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-    </Grid>
+    <DockPanel>
+        <Button x:Name="ApplyOptionsButton" Content="Apply All Options" DockPanel.Dock="Bottom" Margin="10" Padding="10,5"/>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="OptionsItemsControl" Margin="10">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- Ensures that the UserControl itself is rendered -->
+                        <ContentPresenter Content="{Binding}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

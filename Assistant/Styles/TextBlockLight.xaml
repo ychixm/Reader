@@ -3,4 +3,7 @@
     <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
     </Style>
+
+    <SolidColorBrush x:Key="TabItemBorderBrush">Transparent</SolidColorBrush>
+    <Thickness x:Key="TabItemBorderThickness">1,1,1,0</Thickness>
 </ResourceDictionary>
