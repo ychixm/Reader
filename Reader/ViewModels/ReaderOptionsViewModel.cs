@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
-using Utils; // For IOptionsViewModel
-using Utils.Models; // For TabOverflowMode
+using Utils; // For IOptionsViewModel and AppSettingsService
+using Reader.Models; // For ReaderSettings, NavigationMethod
+using Utils.Models; // For TabOverflowMode - assuming this is a shared enum
+using System; // For Enum.TryParse
 
 namespace Reader.ViewModels
 {
@@ -12,6 +14,8 @@ namespace Reader.ViewModels
         private bool _enableGridClickNavigation;
         private bool _enableVisibleButtonsNavigation;
         private TabOverflowMode _selectedTabOverflowMode;
+        // DefaultPath is part of ReaderSettings but not directly bound/edited in this VM's view in this iteration.
+        // It will be loaded and saved as part of the ReaderSettings object.
 
         public string Title => "Reader Options";
 
@@ -69,18 +73,47 @@ namespace Reader.ViewModels
 
         public UserControl GetView()
         {
-            // We will create ReaderOptionsView in the next step.
-            // For now, this will point to it.
             return new UserControls.ReaderOptionsView { DataContext = this };
+        }
+
+        public void LoadSettings()
+        {
+            // Use the overload of LoadModuleSettings that provides a default factory
+            var settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
+
+            EnableKeyboardNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.KeyboardArrows);
+            EnableGridClickNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.GridClick);
+            EnableVisibleButtonsNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.VisibleButtons);
+
+            if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out var mode))
+            {
+                SelectedTabOverflowMode = mode;
+            }
+            else
+            {
+                // If DefaultTabOverflowMode is null/empty or invalid, use a default from ReaderSettings or a hardcoded one
+                SelectedTabOverflowMode = TabOverflowMode.Scrollbar; // Fallback
+            }
         }
 
         public void Apply()
         {
-            // This method will be used to apply the settings.
-            // For now, it can be empty. We might save settings here
-            // or signal the ReaderSubApplication.
-            // Actual saving to AppSettingsService will likely be coordinated
-            // by ReaderSubApplication.ApplyOptions()
+            // It's good practice to load existing settings for the module first if other properties
+            // (not managed by this VM, like DefaultPath) should be preserved.
+            var settingsToSave = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
+            // Or, if this VM is authoritative for ALL ReaderSettings: var settingsToSave = new ReaderSettings();
+
+
+            Reader.Models.NavigationMethod updatedMethods = Reader.Models.NavigationMethod.None;
+            if (EnableKeyboardNavigation) updatedMethods |= Reader.Models.NavigationMethod.KeyboardArrows;
+            if (EnableGridClickNavigation) updatedMethods |= Reader.Models.NavigationMethod.GridClick;
+            if (EnableVisibleButtonsNavigation) updatedMethods |= Reader.Models.NavigationMethod.VisibleButtons;
+
+            settingsToSave.EnabledNavigationMethods = updatedMethods;
+            settingsToSave.DefaultTabOverflowMode = SelectedTabOverflowMode.ToString();
+            // settingsToSave.DefaultPath would be preserved if loaded as above. If this VM controlled it, it'd be set here.
+
+            AppSettingsService.SaveModuleSettings("ReaderModule", settingsToSave);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

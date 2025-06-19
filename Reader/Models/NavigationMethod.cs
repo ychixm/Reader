@@ -1,6 +1,7 @@
+using System; // For [Flags]
+
 namespace Reader.Models
 {
-
     [Flags]
     public enum NavigationMethod
     {

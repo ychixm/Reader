@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 // using System.Diagnostics; // Will be removed
 using System.IO;
@@ -15,17 +15,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Reader.Models;
-using Reader.Business;
+using Reader.Models; // For ReaderSettings, NavigationMethod
+// Remove: using Reader.Business;
+using Utils; // For AppSettingsService
 
 namespace Reader.UserControls
 {
-    /// <summary>
-    /// Interaction logic for ImageTabControl.xaml
-    /// </summary>
     public partial class ImageTabControl : UserControl
     {
-        private AppSettings _settings;
+        private ReaderSettings _settings; // Changed type
         private readonly List<string> _imagePaths;
         private int _currentIndex;
 
@@ -52,24 +50,22 @@ namespace Reader.UserControls
                     bmp.Freeze();
                     _errorPlaceholderImage = bmp;
                 }
-                catch (Exception) // CS0168: ex not used
+                catch (Exception)
                 {
                     // System.Diagnostics.Debug.WriteLine($"Failed to load error placeholder image for ImageTabControl: {ex.Message}");
                 }
             }
         }
 
-        // DisplayedImage_MouseDown method removed as requested
-
         public void Grid_Overall_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            // Ignore clicks on the navigation buttons themselves
             if (e.OriginalSource == LeftArrow || e.OriginalSource == RightArrow)
             {
                 return;
             }
 
-            if (!(_settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick)))
+            // Ensure _settings is not null before accessing it.
+            if (_settings == null || !(_settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick)))
             {
                 return;
             }
@@ -79,7 +75,7 @@ namespace Reader.UserControls
                 return;
             }
 
-            Point position = e.GetPosition(this); // 'this' is the UserControl
+            Point position = e.GetPosition(this);
             double controlWidth = this.ActualWidth;
 
             if (position.X < controlWidth * 0.33)
@@ -92,19 +88,14 @@ namespace Reader.UserControls
             }
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImageTabControl"/> class.
-        /// Displays images from the provided paths and enables navigation, caching, and preloading.
-        /// </summary>
-        /// <param name="imagePaths">A list of absolute string paths to the images to be displayed.</param>
-        /// <exception cref="ArgumentNullException">Thrown if imagePaths is null.</exception>
         public ImageTabControl(List<string> imagePaths)
         {
             InitializeComponent();
             EnsureErrorPlaceholderLoaded();
 
-            _settings = AppSettingsService.LoadAppSettings(); // Load settings
-            AppSettingsService.SettingsChanged += HandleAppSettingsChanged; // Subscribe to settings changes
+            // Changed call:
+            _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
+            AppSettingsService.SettingsChanged += HandleAppSettingsChanged;
 
             _imagePaths = imagePaths ?? throw new ArgumentNullException(nameof(imagePaths));
             _preloadCts = new CancellationTokenSource();
@@ -122,18 +113,15 @@ namespace Reader.UserControls
             this.Focusable = true;
             this.Focus();
 
-            ApplyNavigationSettings(); // Apply settings
+            ApplyNavigationSettings();
         }
 
         private void ApplyNavigationSettings()
         {
             if (_settings == null)
             {
-                // Fallback or log if settings are unexpectedly null
-                // For robustness, one might load default AppSettings here
-                // or ensure _settings is initialized to a default new AppSettings()
-                // if LoadAppSettings could return null (though current AppSettingsService returns new AppSettings()).
-                return;
+                // This case should be less likely now with the default factory in LoadModuleSettings
+                _settings = new ReaderSettings(); // Ensure _settings is not null
             }
 
             bool showButtons = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
@@ -141,7 +129,7 @@ namespace Reader.UserControls
 
             LeftArrow.Visibility = buttonVisibility;
             RightArrow.Visibility = buttonVisibility;
-            this.Focus(); // Set focus to the control
+            // this.Focus(); // Re-evaluate if Focus() is needed here every time settings apply
         }
 
         private static BitmapImage? LoadBitmapImageFromFile(string imagePath, CancellationToken token)
@@ -159,9 +147,8 @@ namespace Reader.UserControls
                 bmp.Freeze();
                 return token.IsCancellationRequested ? null : bmp;
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException )) // Restore ex for when clause
+            catch (Exception ex) when (!(ex is OperationCanceledException || ex is ArgumentException ))
             {
-                // System.Diagnostics.Debug.WriteLine($"Error loading BitmapImage from file {imagePath}: {ex.Message}");
                 return null;
             }
         }
@@ -215,7 +202,7 @@ namespace Reader.UserControls
                         }
                     }
                 }
-                catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
+                catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
                     bitmapToShow = null;
                 }
@@ -272,7 +259,7 @@ namespace Reader.UserControls
             {
                 await Task.WhenAll(preloadTasks);
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
 
             }
@@ -308,7 +295,7 @@ namespace Reader.UserControls
                     }
                 }
             }
-            catch (Exception ex) when (!(ex is OperationCanceledException)) // Restore ex for when clause
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
             }
             finally
@@ -340,11 +327,14 @@ namespace Reader.UserControls
         {
             base.OnKeyDown(e);
 
+            // Ensure _settings is not null
+            if (_settings == null) return;
+
             if (e.Key == Key.Left || e.Key == Key.Right)
             {
                 if (!(_settings.EnabledNavigationMethods.HasFlag(NavigationMethod.KeyboardArrows)))
                 {
-                    e.Handled = true; // Optional: Mark as handled to prevent further processing
+                    e.Handled = true;
                     return;
                 }
 
@@ -372,17 +362,17 @@ namespace Reader.UserControls
                 _currentlyPreloading.Clear();
             }
             DisplayedImage.Source = null;
-            AppSettingsService.SettingsChanged -= HandleAppSettingsChanged; // Unsubscribe
+            AppSettingsService.SettingsChanged -= HandleAppSettingsChanged;
         }
 
         private void HandleAppSettingsChanged(object? sender, EventArgs e)
         {
-            _settings = AppSettingsService.LoadAppSettings(); // Reload settings
+            // Changed call:
+            _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
 
-            // Ensure UI updates run on the UI thread
             if (Dispatcher.CheckAccess())
             {
-                ApplyNavigationSettings(); // Update button visibility
+                ApplyNavigationSettings();
             }
             else
             {

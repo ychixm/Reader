@@ -2,15 +2,14 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input; // Added back
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Reader.Business;
-// using Reader.UserControls; // Optional, if no other UserControls from same namespace are used.
-using Reader.Models; // Still needed for AppSettings, NavigationMethod etc.
-using Utils.Controls; // Changed from Reader.Controls
-using Utils.Models;   // Added for TabOverflowMode
-using Utils; // For WpfHelpers
+// Remove: using Reader.Business;
+using Reader.Models; // For ReaderSettings, NavigationMethod etc.
+using Utils.Controls;
+using Utils.Models;   // For TabOverflowMode
+using Utils; // For WpfHelpers, AppSettingsService
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System;
@@ -22,7 +21,7 @@ namespace Reader.UserControls
 {
     public partial class ReaderUserControl : UserControl, INotifyPropertyChanged
     {
-        private AppSettings _settings;
+        private ReaderSettings _settings; // Changed type to ReaderSettings
         private TabOverflowManagementControl? _tabOverflowManagementCtrl;
 
         private static readonly HashSet<string> SupportedImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -32,23 +31,14 @@ namespace Reader.UserControls
         private const string PlaceholderImageRelativePath = "Ressources/NoImage.png";
         public ObservableCollection<ChapterListElement> Views { get; } = new ObservableCollection<ChapterListElement>();
         private const int MaxTitleLength = 40;
-        private ChapterListElement? _randomChapterElement; // Field to hold the random chapter element
+        private ChapterListElement? _randomChapterElement;
 
         public ReaderUserControl()
         {
             InitializeComponent();
-            _settings = AppSettingsService.LoadAppSettings();
-            _tabOverflowManagementCtrl = this.TabOverflowControl; // Name from XAML
-            // LoadNavigationOptionStates(); // Removed - options view model will handle initial state
-
-            // Event handlers for navigation options are removed as these controls are moved
-            // KeyboardArrowsOption.Checked += NavigationOption_Changed;
-            // KeyboardArrowsOption.Unchecked += NavigationOption_Changed;
-            // GridClickOption.Checked += NavigationOption_Changed;
-            // GridClickOption.Unchecked += NavigationOption_Changed;
-            // VisibleButtonsOption.Checked += NavigationOption_Changed;
-            // VisibleButtonsOption.Unchecked += NavigationOption_Changed;
-
+            // Changed call:
+            _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
+            _tabOverflowManagementCtrl = this.TabOverflowControl;
             LoadChapterListAsync();
         }
 
@@ -96,28 +86,22 @@ namespace Reader.UserControls
         {
             try
             {
-                // Create and add the "Random Chapter" element
                 string randomChapterPlaceholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RandomChapterPlaceholder");
-                Directory.CreateDirectory(randomChapterPlaceholderPath); // Ensure directory exists
+                Directory.CreateDirectory(randomChapterPlaceholderPath);
                 DirectoryInfo randomChapterDirInfo = new DirectoryInfo(randomChapterPlaceholderPath);
 
                 _randomChapterElement = new ChapterListElement(randomChapterDirInfo)
                 {
                     BorderBrush = Brushes.DarkGray,
                     BorderThickness = new Thickness(1),
-                    IsSpecialRandomElement = true // Mark this as the special random element
+                    IsSpecialRandomElement = true
                 };
                 _randomChapterElement.SetLabelText("Random Chapter");
-                // Image will use default placeholder logic in ChapterListElement or set explicitly if needed
-                // string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PlaceholderImageRelativePath);
-                // _randomChapterElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
 
-                // Event handlers for the Random Chapter element
                 _randomChapterElement.MouseLeftButtonUp += async (s, e) =>
                 {
                     if (e.ChangedButton == MouseButton.Left)
                     {
-                        // No need to check IsSpecialRandomElement here as this handler is specific to _randomChapterElement
                         await OpenRandomChapter(true);
                     }
                 };
@@ -125,7 +109,6 @@ namespace Reader.UserControls
                 {
                     if (e.ChangedButton == MouseButton.Middle)
                     {
-                        // No need to check IsSpecialRandomElement here as this handler is specific to _randomChapterElement
                         await OpenRandomChapter(false);
                     }
                 };
@@ -133,8 +116,7 @@ namespace Reader.UserControls
                 Views.Insert(0, _randomChapterElement);
 
                 string effectivePath;
-                // Use _settings field which is loaded in constructor
-                if (!string.IsNullOrEmpty(_settings.DefaultPath))
+                if (_settings != null && !string.IsNullOrEmpty(_settings.DefaultPath))
                 {
                     effectivePath = _settings.DefaultPath;
                 }
@@ -147,7 +129,6 @@ namespace Reader.UserControls
 
                 foreach (var directory in chapters)
                 {
-                    // Skip the placeholder directory if it's listed among chapters (it shouldn't be if DefaultPath is different)
                     if (directory.FullName.Equals(randomChapterDirInfo.FullName, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
@@ -158,7 +139,6 @@ namespace Reader.UserControls
             }
             catch (Exception ex)
             {
-                // Log error, e.g., using a logging framework or MessageBox
                 MessageBox.Show($"Error loading chapter list: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -196,7 +176,7 @@ namespace Reader.UserControls
         {
             if (_tabOverflowManagementCtrl != null)
             {
-                Utils.Models.TabOverflowMode initialMode = Utils.Models.TabOverflowMode.Scrollbar; // Default
+                Utils.Models.TabOverflowMode initialMode = Utils.Models.TabOverflowMode.Scrollbar;
                 if (_settings != null && !string.IsNullOrEmpty(_settings.DefaultTabOverflowMode))
                 {
                     Enum.TryParse<Utils.Models.TabOverflowMode>(_settings.DefaultTabOverflowMode, out initialMode);
@@ -205,9 +185,6 @@ namespace Reader.UserControls
                 _tabOverflowManagementCtrl.InitializeManager(
                     MainTabControl,
                     MainTabHeaderTextBlock,
-                    // ScrollbarModeMenuItem, // Removed as TabOverflowManagementControl no longer manages external menu items
-                    // ArrowButtonsModeMenuItem, // Removed
-                    // TabDropdownModeMenuItem, // Removed
                     initialMode
                 );
                 _tabOverflowManagementCtrl.ModeChanged += TabOverflowManagementCtrl_ModeChanged;
@@ -217,8 +194,6 @@ namespace Reader.UserControls
 
         private void TabOverflowManagementCtrl_ModeChanged(Utils.Models.TabOverflowMode newMode)
         {
-            // Saving settings is now centralized in ReaderSubApplication.ApplyOptions()
-            // This handler now only needs to ensure UI consistency if any direct bindings depend on it.
             OnPropertyChanged(nameof(CurrentTabOverflowMode));
         }
 
@@ -230,71 +205,44 @@ namespace Reader.UserControls
                 if (_tabOverflowManagementCtrl != null && _tabOverflowManagementCtrl.CurrentTabOverflowMode != value)
                 {
                     _tabOverflowManagementCtrl.SetOverflowMode(value);
-                    // OnPropertyChanged() is called by TabOverflowManagementCtrl_ModeChanged via the event flow
                 }
             }
         }
-
-        // Removed LoadNavigationOptionStates() - Handled by ReaderOptionsViewModel initialization and ApplyNavigationSettings
-        // private void LoadNavigationOptionStates() { ... }
-
-        // Removed NavigationOption_Changed() - Handled by ReaderOptionsViewModel and ApplyNavigationSettings
-        // private void NavigationOption_Changed(object sender, RoutedEventArgs e) { ... }
 
         public void ApplyNavigationSettings(NavigationMethod newMethods)
         {
             if (_settings != null)
             {
                 _settings.EnabledNavigationMethods = newMethods;
+                // Note: Settings are not saved here; ReaderSubApplication.ApplyOptions does that via ReaderOptionsViewModel.
             }
 
-            // Iterate through all open tabs that contain an ImageTabControl
-            // and apply the relevant navigation settings to them.
-            // This assumes ImageTabControl has public properties like:
-            // - EnableGridClick (bool)
-            // - ShowNavigationButtons (bool)
-            // - EnableKeyboardNavigation (bool) - though keyboard might be handled more globally
-            if (MainTabControl != null) // Ensure MainTabControl is not null
+            if (MainTabControl != null)
             {
                 foreach (var item in MainTabControl.Items)
                 {
                     if (item is TabItem tabItem && tabItem.Content is ImageTabControl imageTabCtrl)
                     {
-                        // Apply GridClick setting
-                        if (imageTabCtrl.GetType().GetProperty("EnableGridClick") != null) // Check if property exists
+                        // This reflection based approach is a bit fragile.
+                        // Consider an interface or direct method calls if ImageTabControl properties are stable.
+                        var enableGridClickProp = imageTabCtrl.GetType().GetProperty("EnableGridClick");
+                        if (enableGridClickProp != null && enableGridClickProp.CanWrite)
                         {
-                            imageTabCtrl.GetType().GetProperty("EnableGridClick")
-                                .SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.GridClick));
+                            enableGridClickProp.SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.GridClick));
                         }
 
-                        // Apply VisibleButtons setting
-                        if (imageTabCtrl.GetType().GetProperty("ShowNavigationButtons") != null) // Check if property exists
+                        var showNavButtonsProp = imageTabCtrl.GetType().GetProperty("ShowNavigationButtons");
+                        if (showNavButtonsProp != null && showNavButtonsProp.CanWrite)
                         {
-                            imageTabCtrl.GetType().GetProperty("ShowNavigationButtons")
-                                .SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.VisibleButtons));
+                            showNavButtonsProp.SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.VisibleButtons));
                         }
-
-                        // Keyboard navigation might be handled at a higher level (e.g., window keydown events)
-                        // or ImageTabControl might also have a property for it.
-                        // If ImageTabControl handles its own keyboard events based on a property:
-                        // if (imageTabCtrl.GetType().GetProperty("EnableKeyboardNavigation") != null)
-                        // {
-                        // imageTabCtrl.GetType().GetProperty("EnableKeyboardNavigation")
-                        // .SetValue(imageTabCtrl, newMethods.HasFlag(NavigationMethod.KeyboardArrows));
-                        // }
                     }
                 }
             }
-
-            // Raise PropertyChanged for any properties in ReaderUserControl itself that might be bound
-            // to UI elements reflecting these states (if any such direct bindings exist in ReaderUserControl.xaml).
-            // For instance, if ReaderUserControl had its own global navigation buttons.
-            // OnPropertyChanged(nameof(IsSomeGlobalNavButtonVisible));
         }
 
         public void ApplyTabOverflowMode(Utils.Models.TabOverflowMode newMode)
         {
-            // Apply the mode to the TabOverflowManagementControl if it's still part of this view
             if (_tabOverflowManagementCtrl != null)
             {
                 _tabOverflowManagementCtrl.SetOverflowMode(newMode);
@@ -303,11 +251,8 @@ namespace Reader.UserControls
             if (_settings != null)
             {
                 _settings.DefaultTabOverflowMode = newMode.ToString();
-                // AppSettingsService.SaveAppSettings(_settings); // Saving is now centralized
+                // Settings are not saved here; ReaderSubApplication.ApplyOptions does that.
             }
-            // The _tabOverflowManagementCtrl.SetOverflowMode call should trigger its own event,
-            // which in turn calls TabOverflowManagementCtrl_ModeChanged, which calls OnPropertyChanged.
-            // If not, or for directness:
             OnPropertyChanged(nameof(CurrentTabOverflowMode));
         }
 
@@ -328,7 +273,6 @@ namespace Reader.UserControls
 
         private async Task OpenRandomChapter(bool switchToTab)
         {
-            // Exclude the "Random Chapter" element itself from being chosen
             var actualChapterElements = Views.Where(v => v != _randomChapterElement).ToList();
 
             if (actualChapterElements == null || !actualChapterElements.Any())
@@ -346,7 +290,6 @@ namespace Reader.UserControls
                 MessageBox.Show("Selected chapter element does not have directory information.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            // Check if the selected directory is the placeholder, which should not happen if filtered correctly
             if (chapterDirectoryInfo.Name == "RandomChapterPlaceholder")
             {
                 MessageBox.Show("Cannot open the placeholder as a chapter.", "Random Chapter", MessageBoxButton.OK, MessageBoxImage.Warning);
