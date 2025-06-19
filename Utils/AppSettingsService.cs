@@ -9,7 +9,7 @@ namespace Utils
     {
         public static event EventHandler? SettingsChanged;
 
-        private static readonly string _settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "application_settings.json");
+        private static readonly string _settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
 
         private static readonly JsonSettingsService<Dictionary<string, string>> _dictionaryStorageService = new JsonSettingsService<Dictionary<string, string>>();
 
