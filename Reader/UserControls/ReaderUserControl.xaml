@@ -28,7 +28,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <customCtrl:TabOverFlowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
+        <customCtrl:TabOverflowManagementControl x:Name="TabOverflowControl" DockPanel.Dock="Top" Height="0"/>
       
         <TabControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" x:Name="MainTabControl" MouseDown="MainTabControl_MouseDown"
                     Loaded="MainTabControl_Loaded"
