@@ -20,7 +20,7 @@
                             SnapsToDevicePixels="true">
                         <ContentPresenter x:Name="contentPresenter"
                                           Focusable="False"
-                                          RecognizesAccessKey="True"/>
+                                          RecognizesAccessKey="True" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -47,7 +47,7 @@
                             SnapsToDevicePixels="true">
                         <ContentPresenter x:Name="contentPresenter"
                                           Focusable="False"
-                                          RecognizesAccessKey="True"/>
+                                          RecognizesAccessKey="True" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
