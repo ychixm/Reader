@@ -11,7 +11,7 @@ namespace Utils
 
         private static readonly string _settingsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Assistant", "config.json");
 
-        private static readonly JsonSettingsService<Dictionary<string, string>> _dictionaryStorageService = new JsonSettingsService<Dictionary<string, string>>();
+        private static readonly JsonSettingsService<Dictionary<string, object>> _dictionaryStorageService = new JsonSettingsService<Dictionary<string, object>>();
 
         private static JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -26,7 +26,7 @@ namespace Utils
             }
 
             // Changed line:
-            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath) ?? new Dictionary<string, string>();
+            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath) ?? new Dictionary<string, object>();
 
             if (settings == null)
             {
@@ -37,8 +37,7 @@ namespace Utils
             }
             else
             {
-                string serializedSettings = JsonSerializer.Serialize(settings, settings.GetType(), _jsonSerializerOptions);
-                settingsDictionary[moduleKey] = serializedSettings;
+                settingsDictionary[moduleKey] = settings; // Store the object directly
             }
 
             _dictionaryStorageService.SaveSettings(settingsDictionary, _settingsFilePath);
@@ -53,19 +52,24 @@ namespace Utils
             }
 
             // Changed line:
-            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath) ?? new Dictionary<string, string>();
+            var settingsDictionary = _dictionaryStorageService.LoadSettings(_settingsFilePath) ?? new Dictionary<string, object>();
 
-            if (settingsDictionary.TryGetValue(moduleKey, out string? serializedSettings))
+            if (settingsDictionary.TryGetValue(moduleKey, out object? valueAsObject))
             {
-                if (!string.IsNullOrEmpty(serializedSettings))
+                if (valueAsObject != null)
                 {
                     try
                     {
-                        return JsonSerializer.Deserialize<T>(serializedSettings, _jsonSerializerOptions);
+                        // If valueAsObject is a JsonElement, it needs to be re-serialized and then deserialized to T
+                        // This is a common way to convert JsonElement to a POCO.
+                        // Ensure System.Text.Json.JsonSerializer is available.
+                        // Using JsonSerializer.SerializeToUtf8Bytes and then Deserialize is efficient.
+                        var jsonBytes = JsonSerializer.SerializeToUtf8Bytes(valueAsObject, _jsonSerializerOptions);
+                        return JsonSerializer.Deserialize<T>(jsonBytes, _jsonSerializerOptions);
                     }
                     catch (JsonException ex)
                     {
-                        Console.Error.WriteLine($"Error deserializing settings for module {moduleKey} using System.Text.Json: {ex.Message}");
+                        Console.Error.WriteLine($"Error deserializing settings for module {moduleKey} from object to {typeof(T).Name}: {ex.Message}");
                         return null;
                     }
                 }
