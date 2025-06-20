@@ -73,17 +73,26 @@ namespace WpfToolkit.Controls
             {
                 if (_itemsOwner is null)
                 {
-                    /* Use reflection to access internal method because the public
-                     * GetItemsOwner method does always return the itmes control instead
-                     * of the real items owner for example the group item when grouping */
-                    MethodInfo getItemsOwnerInternalMethod = typeof(ItemsControl).GetMethod(
-                        "GetItemsOwnerInternal",
-                        BindingFlags.Static | BindingFlags.NonPublic,
-                        null,
-                        new Type[] { typeof(DependencyObject) },
-                        null
-                    )!;
-                    _itemsOwner = (DependencyObject)getItemsOwnerInternalMethod.Invoke(null, new object[] { this })!;
+                    try
+                    {
+                        /* Use reflection to access internal method because the public
+                         * GetItemsOwner method does always return the itmes control instead
+                         * of the real items owner for example the group item when grouping */
+                        MethodInfo getItemsOwnerInternalMethod = typeof(ItemsControl).GetMethod(
+                            "GetItemsOwnerInternal",
+                            BindingFlags.Static | BindingFlags.NonPublic,
+                            null,
+                            new Type[] { typeof(DependencyObject) },
+                            null
+                        )!;
+                        _itemsOwner = (DependencyObject)getItemsOwnerInternalMethod.Invoke(null, new object[] { this })!;
+                    }
+                    catch (Exception ex_reflect)
+                    {
+                        Utils.LogService.LogError(ex_reflect, "Error getting ItemsOwner via reflection in VirtualizingPanelBase. Falling back to public ItemsControl.");
+                        _itemsOwner = ItemsControl.GetItemsOwner(this);
+                        Utils.LogService.LogWarning("VirtualizingPanelBase: ItemsOwner reflection failed, using public GetItemsOwner as fallback.");
+                    }
                 }
                 return _itemsOwner;
             }

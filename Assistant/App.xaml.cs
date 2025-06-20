@@ -40,9 +40,9 @@ namespace Assistant
                         isSystemDark = true;
                     }
                 }
-                catch 
+                catch (Exception ex_reg)
                 {
-                    // theme par defaut en cas d'erreur de lecture du registre : dark theme.
+                    Utils.LogService.LogError(ex_reg, "Error reading system theme from registry. Defaulting to dark theme.");
                     isSystemDark = true;
                 }
             }
@@ -66,7 +66,7 @@ namespace Assistant
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error loading TextBlock theme dictionary: {ex.Message}");
+                    Utils.LogService.LogError(ex, "Error loading TextBlock theme dictionary for URI {DictionaryUriString}", dictionaryUriString);
                 }
             }
         }

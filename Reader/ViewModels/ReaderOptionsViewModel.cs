@@ -92,44 +92,58 @@ namespace Reader.ViewModels
 
         public void LoadSettings()
         {
-            // Use the overload of LoadModuleSettings that provides a default factory
-            var settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
-
-            EnableKeyboardNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.KeyboardArrows);
-            EnableGridClickNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.GridClick);
-            EnableVisibleButtonsNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.VisibleButtons);
-
-            if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out var mode))
+            try
             {
-                SelectedTabOverflowMode = mode;
+                // Use the overload of LoadModuleSettings that provides a default factory
+                var settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
+
+                EnableKeyboardNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.KeyboardArrows);
+                EnableGridClickNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.GridClick);
+                EnableVisibleButtonsNavigation = settings.EnabledNavigationMethods.HasFlag(Reader.Models.NavigationMethod.VisibleButtons);
+
+                if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out var mode))
+                {
+                    SelectedTabOverflowMode = mode;
+                }
+                else
+                {
+                    // If DefaultTabOverflowMode is null/empty or invalid, use a default from ReaderSettings or a hardcoded one
+                    SelectedTabOverflowMode = TabOverflowMode.Scrollbar; // Fallback
+                }
+                DefaultPath = settings.DefaultPath;
             }
-            else
+            catch (Exception ex_load_settings)
             {
-                // If DefaultTabOverflowMode is null/empty or invalid, use a default from ReaderSettings or a hardcoded one
-                SelectedTabOverflowMode = TabOverflowMode.Scrollbar; // Fallback
+                Utils.LogService.LogError(ex_load_settings, "Error loading reader options settings.");
             }
-            DefaultPath = settings.DefaultPath;
         }
 
         public void Apply()
         {
-            // It's good practice to load existing settings for the module first if other properties
-            // (not managed by this VM, like DefaultPath) should be preserved.
-            var settingsToSave = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
-            // Or, if this VM is authoritative for ALL ReaderSettings: var settingsToSave = new ReaderSettings();
+            try
+            {
+                // It's good practice to load existing settings for the module first if other properties
+                // (not managed by this VM, like DefaultPath) should be preserved.
+                var settingsToSave = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
+                // Or, if this VM is authoritative for ALL ReaderSettings: var settingsToSave = new ReaderSettings();
 
 
-            Reader.Models.NavigationMethod updatedMethods = Reader.Models.NavigationMethod.None;
-            if (EnableKeyboardNavigation) updatedMethods |= Reader.Models.NavigationMethod.KeyboardArrows;
-            if (EnableGridClickNavigation) updatedMethods |= Reader.Models.NavigationMethod.GridClick;
-            if (EnableVisibleButtonsNavigation) updatedMethods |= Reader.Models.NavigationMethod.VisibleButtons;
+                Reader.Models.NavigationMethod updatedMethods = Reader.Models.NavigationMethod.None;
+                if (EnableKeyboardNavigation) updatedMethods |= Reader.Models.NavigationMethod.KeyboardArrows;
+                if (EnableGridClickNavigation) updatedMethods |= Reader.Models.NavigationMethod.GridClick;
+                if (EnableVisibleButtonsNavigation) updatedMethods |= Reader.Models.NavigationMethod.VisibleButtons;
 
-            settingsToSave.EnabledNavigationMethods = updatedMethods;
-            settingsToSave.DefaultTabOverflowMode = SelectedTabOverflowMode.ToString();
-            settingsToSave.DefaultPath = DefaultPath;
-            // settingsToSave.DefaultPath would be preserved if loaded as above. If this VM controlled it, it'd be set here.
+                settingsToSave.EnabledNavigationMethods = updatedMethods;
+                settingsToSave.DefaultTabOverflowMode = SelectedTabOverflowMode.ToString();
+                settingsToSave.DefaultPath = DefaultPath;
+                // settingsToSave.DefaultPath would be preserved if loaded as above. If this VM controlled it, it'd be set here.
 
-            AppSettingsService.SaveModuleSettings("ReaderModule", settingsToSave);
+                AppSettingsService.SaveModuleSettings("ReaderModule", settingsToSave);
+            }
+            catch (Exception ex_apply_settings)
+            {
+                Utils.LogService.LogError(ex_apply_settings, "Error applying reader options settings.");
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

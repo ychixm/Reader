@@ -50,40 +50,55 @@ namespace Reader.UserControls
                 BorderThickness = new Thickness(1),
             };
             chapterListElement.ChapterOpenRequested += HandleChapterOpenRequested;
-
             chapterListElement.SetLabelText(directory.Name);
+
             string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PlaceholderImageRelativePath);
-            chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
+            try
+            {
+                chapterListElement.SetImageSource(new BitmapImage(new Uri(placeholderPath, UriKind.Absolute)));
+            }
+            catch(Exception ex_placeholder)
+            {
+                Utils.LogService.LogError(ex_placeholder, "Failed to load placeholder image for chapter {ChapterName} from {PlaceholderPath}", directory.Name, placeholderPath);
+            }
 
             Views.Add(chapterListElement);
 
-            var imageSourceUri = await Task.Run(() => FileSystemHelpers.GetFirstFileByExtensions(directory, SupportedImageExtensions));
-
-            if (imageSourceUri != null)
+            try
             {
-                BitmapImage? finalThumbnail = await Task.Run(() => {
-                    var (width, height) = FileSystemHelpers.GetImageDimensions(imageSourceUri.LocalPath);
-                    BitmapImage thumbnail = new BitmapImage();
-                    thumbnail.BeginInit();
-                    thumbnail.UriSource = imageSourceUri;
-                    if (width > height) { thumbnail.DecodePixelWidth = (int)ChapterListElement.DesignWidth; }
-                    else { thumbnail.DecodePixelHeight = ChapterListElement.ImageHeight; }
-                    thumbnail.CreateOptions = BitmapCreateOptions.None;
-                    thumbnail.CacheOption = BitmapCacheOption.OnLoad;
-                    thumbnail.EndInit();
-                    thumbnail.Freeze();
-                    return thumbnail;
-                });
+                var imageSourceUri = await Task.Run(() => FileSystemHelpers.GetFirstFileByExtensions(directory, SupportedImageExtensions));
 
-                if (finalThumbnail != null)
+                if (imageSourceUri != null)
                 {
-                    chapterListElement.SetImageSource(finalThumbnail);
+                    BitmapImage? finalThumbnail = await Task.Run(() => {
+                        var (width, height) = FileSystemHelpers.GetImageDimensions(imageSourceUri.LocalPath);
+                        BitmapImage thumbnail = new BitmapImage();
+                        thumbnail.BeginInit();
+                        thumbnail.UriSource = imageSourceUri;
+                        if (width > height) { thumbnail.DecodePixelWidth = (int)ChapterListElement.DesignWidth; }
+                        else { thumbnail.DecodePixelHeight = ChapterListElement.ImageHeight; }
+                        thumbnail.CreateOptions = BitmapCreateOptions.None;
+                        thumbnail.CacheOption = BitmapCacheOption.OnLoad;
+                        thumbnail.EndInit();
+                        thumbnail.Freeze();
+                        return thumbnail;
+                    });
+
+                    if (finalThumbnail != null)
+                    {
+                        chapterListElement.SetImageSource(finalThumbnail);
+                    }
                 }
+            }
+            catch (Exception ex_process_chapter)
+            {
+                Utils.LogService.LogError(ex_process_chapter, "Error processing chapter directory {DirectoryName} for image loading", directory.Name);
             }
         }
 
         private async void LoadChapterListAsync()
         {
+            string effectivePath = string.Empty; // Initialize to ensure it's always assigned before use in catch
             try
             {
                 string randomChapterPlaceholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RandomChapterPlaceholder");
@@ -139,6 +154,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex)
             {
+                Utils.LogService.LogError(ex, "Error loading chapter list. Effective path was {EffectivePath}", effectivePath);
                 MessageBox.Show($"Error loading chapter list: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -305,6 +321,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex)
             {
+                Utils.LogService.LogError(ex, "Error reading images for random chapter from directory {DirectoryFullName}", chapterDirectoryInfo.FullName);
                 MessageBox.Show($"Error reading images from directory {chapterDirectoryInfo.FullName}: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }

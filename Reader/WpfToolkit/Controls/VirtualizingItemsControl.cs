@@ -29,7 +29,15 @@ namespace WpfToolkit.Controls
                     </ScrollViewer>
                 </Border>
             </ControlTemplate>";
-            Template = (ControlTemplate)XamlReader.Parse(template);
+            try
+            {
+                Template = (ControlTemplate)XamlReader.Parse(template);
+            }
+            catch (System.Windows.Markup.XamlParseException ex_xaml)
+            {
+                Utils.LogService.LogError(ex_xaml, "Failed to parse XAML template for VirtualizingItemsControl.");
+                throw;
+            }
 
             ScrollViewer.SetCanContentScroll(this, true);
 

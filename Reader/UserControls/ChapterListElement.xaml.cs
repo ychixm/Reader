@@ -106,13 +106,23 @@ namespace Reader.UserControls
         {
             if (_imagePaths == null)
             {
-                _imagePaths = await Task.Run(() => Directory.EnumerateFiles(_directory.DirectoryInfo.FullName)
-                    .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
-                    .ToList());
+                _imagePaths = await Task.Run(() => {
+                    try
+                    {
+                        return Directory.EnumerateFiles(_directory.DirectoryInfo.FullName)
+                            .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                        f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                        f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
+                                        f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
+                                        f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                    }
+                    catch (Exception ex_io)
+                    {
+                        Utils.LogService.LogError(ex_io, "Error enumerating files in directory {DirectoryFullName}", _directory.DirectoryInfo.FullName);
+                        return new List<string>(); // Return empty list on error
+                    }
+                });
             }
 
             if (_imagePaths != null && _imagePaths.Count != 0) // Ensure there are images before raising event

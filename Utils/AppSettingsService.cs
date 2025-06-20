@@ -81,7 +81,7 @@ namespace Utils
                             }
                             catch (JsonException ex)
                             {
-                                Console.Error.WriteLine($"Error deserializing string-encoded JSON for module {moduleKey} to {typeof(T).Name}: {ex.Message}");
+                                Utils.LogService.LogError(ex, "Error deserializing string-encoded JSON for module {ModuleKey} to {TypeName}", moduleKey, typeof(T).Name);
                                 return null; // Fallback to default
                             }
                         }
@@ -100,7 +100,7 @@ namespace Utils
                     }
                     catch (JsonException ex)
                     {
-                        Console.Error.WriteLine($"Error deserializing settings for module {moduleKey} from object to {typeof(T).Name}: {ex.Message}");
+                        Utils.LogService.LogError(ex, "Error deserializing settings for module {ModuleKey} from object to {TypeName}", moduleKey, typeof(T).Name);
                         return null;
                     }
                 }
