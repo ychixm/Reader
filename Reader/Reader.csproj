@@ -3,7 +3,7 @@
   <PropertyGroup>
 	  <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
     <SupportedOSPlatformVersion>10.0.26100.0</SupportedOSPlatformVersion>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Nullable>enable</Nullable>
@@ -12,17 +12,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="Assistant\**" />
-    <Compile Remove="Utils\**" />
-    <EmbeddedResource Remove="Assistant\**" />
-    <EmbeddedResource Remove="Utils\**" />
-    <None Remove="Assistant\**" />
-    <None Remove="Utils\**" />
-    <Page Remove="Assistant\**" />
-    <Page Remove="Utils\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Remove="Ressources\NoImage.png" />
