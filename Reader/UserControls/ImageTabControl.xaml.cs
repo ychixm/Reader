@@ -39,9 +39,9 @@ namespace Reader.UserControls
         {
             if (_errorPlaceholderImage == null)
             {
+                string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ressources", "NoImage.png"); // Moved declaration
                 try
                 {
-                    string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ressources", "NoImage.png");
                     BitmapImage bmp = new BitmapImage();
                     bmp.BeginInit();
                     bmp.UriSource = new Uri(placeholderPath, UriKind.Absolute);
@@ -149,7 +149,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_load) when (!(ex_load is OperationCanceledException || ex_load is ArgumentException ))
             {
-                Utils.LogService.LogWarning(ex_load, "Failed to load bitmap image from file: {ImagePath}", imagePath);
+                Utils.LogService.LogWarning("Failed to load bitmap image from file {ImagePath}. Exception: {Exception}", imagePath, ex_load);
                 return null;
             }
         }
@@ -205,7 +205,7 @@ namespace Reader.UserControls
                 }
                 catch (Exception ex_display) when (!(ex_display is OperationCanceledException))
                 {
-                    Utils.LogService.LogWarning(ex_display, "Exception during LoadAndDisplayImage for path {ImagePath}", imagePath);
+                    Utils.LogService.LogWarning("Exception during LoadAndDisplayImage for path {ImagePath}. Exception: {Exception}", imagePath, ex_display);
                     bitmapToShow = null;
                 }
             }
@@ -263,7 +263,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_preload_agg) when (!(ex_preload_agg is OperationCanceledException))
             {
-                Utils.LogService.LogWarning(ex_preload_agg, "Exception during PreloadAdjacentImagesAsync Task.WhenAll for current index {CurrentIndex}", currentIndex);
+                Utils.LogService.LogWarning("Exception during PreloadAdjacentImagesAsync Task.WhenAll for current index {CurrentIndex}. Exception: {Exception}", currentIndex, ex_preload_agg);
             }
         }
 
@@ -299,7 +299,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_ensure) when (!(ex_ensure is OperationCanceledException))
             {
-                Utils.LogService.LogWarning(ex_ensure, "Exception during EnsureImageLoadedAsync for path {ImagePath}", imagePath);
+                Utils.LogService.LogWarning("Exception during EnsureImageLoadedAsync for path {ImagePath}. Exception: {Exception}", imagePath, ex_ensure);
             }
             finally
             {

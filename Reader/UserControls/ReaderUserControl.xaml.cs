@@ -130,7 +130,6 @@ namespace Reader.UserControls
 
                 Views.Insert(0, _randomChapterElement);
 
-                string effectivePath;
                 if (_settings != null && !string.IsNullOrEmpty(_settings.DefaultPath))
                 {
                     effectivePath = _settings.DefaultPath;
