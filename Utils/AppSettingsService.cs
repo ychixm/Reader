@@ -58,12 +58,15 @@ namespace Utils
             {
                 if (valueAsObject != null)
                 {
+                    // Check if valueAsObject is a JsonElement representing JSON null
+                    if (valueAsObject is System.Text.Json.JsonElement jsonElement && jsonElement.ValueKind == System.Text.Json.JsonValueKind.Null)
+                    {
+                        return null; // JSON null literal should deserialize to null for reference types
+                    }
+
                     try
                     {
-                        // If valueAsObject is a JsonElement, it needs to be re-serialized and then deserialized to T
-                        // This is a common way to convert JsonElement to a POCO.
-                        // Ensure System.Text.Json.JsonSerializer is available.
-                        // Using JsonSerializer.SerializeToUtf8Bytes and then Deserialize is efficient.
+                        // Proceed with serializing the object (likely JsonElement) to bytes, then deserializing to T
                         var jsonBytes = JsonSerializer.SerializeToUtf8Bytes(valueAsObject, _jsonSerializerOptions);
                         return JsonSerializer.Deserialize<T>(jsonBytes, _jsonSerializerOptions);
                     }
