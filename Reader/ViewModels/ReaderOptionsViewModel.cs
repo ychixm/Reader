@@ -14,6 +14,7 @@ namespace Reader.ViewModels
         private bool _enableGridClickNavigation;
         private bool _enableVisibleButtonsNavigation;
         private TabOverflowMode _selectedTabOverflowMode;
+        private string? _defaultPath;
         // DefaultPath is part of ReaderSettings but not directly bound/edited in this VM's view in this iteration.
         // It will be loaded and saved as part of the ReaderSettings object.
 
@@ -27,6 +28,19 @@ namespace Reader.ViewModels
                 if (_enableKeyboardNavigation != value)
                 {
                     _enableKeyboardNavigation = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string? DefaultPath
+        {
+            get => _defaultPath;
+            set
+            {
+                if (_defaultPath != value)
+                {
+                    _defaultPath = value;
                     OnPropertyChanged();
                 }
             }
@@ -94,6 +108,7 @@ namespace Reader.ViewModels
                 // If DefaultTabOverflowMode is null/empty or invalid, use a default from ReaderSettings or a hardcoded one
                 SelectedTabOverflowMode = TabOverflowMode.Scrollbar; // Fallback
             }
+            DefaultPath = settings.DefaultPath;
         }
 
         public void Apply()
@@ -111,6 +126,7 @@ namespace Reader.ViewModels
 
             settingsToSave.EnabledNavigationMethods = updatedMethods;
             settingsToSave.DefaultTabOverflowMode = SelectedTabOverflowMode.ToString();
+            settingsToSave.DefaultPath = DefaultPath;
             // settingsToSave.DefaultPath would be preserved if loaded as above. If this VM controlled it, it'd be set here.
 
             AppSettingsService.SaveModuleSettings("ReaderModule", settingsToSave);
