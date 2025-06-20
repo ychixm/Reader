@@ -51,7 +51,9 @@ namespace Assistant
                             {
                                 Header = optionsViewModel.Title,
                                 Content = optionView,
-                                Margin = new Thickness(0, 0, 0, 10) // Add some spacing between option groups
+                                Margin = new Thickness(0, 0, 0, 10), // Add some spacing between option groups
+                                MinWidth = 300, // Added
+                                MaxWidth = 800  // Added
                             };
                             OptionViews.Add(groupBox);
                         }
