@@ -1,8 +1,12 @@
 using System.Windows.Controls;
 using Utils.Models; // For TabOverflowMode
-using System; // For Enum
+using System; // For Enum, IntPtr
 using System.Linq; // For Enum.GetValues
 using System.Windows; // For RoutedEventArgs
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using System.Windows.Interop; // For WindowInteropHelper
+using WinRT.Interop; // For InitializeWithWindow
 
 namespace Reader.UserControls
 {
@@ -20,22 +24,26 @@ namespace Reader.UserControls
             BrowseButton.Click += BrowseButton_Click;
         }
 
-        private void BrowseButton_Click(object sender, RoutedEventArgs e)
+        private async void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
-            // This dialog is in System.Windows.Forms.dll.
-            // Make sure the project references this assembly (done via UseWindowsForms in .csproj).
-            var dialog = new System.Windows.Forms.FolderBrowserDialog();
-            // Consider setting dialog.Description or other properties as needed.
-            // dialog.ShowNewFolderButton = true; // If you want to allow creating new folders
+            var folderPicker = new FolderPicker();
+            // It's good practice to set the view mode and suggested start location.
+            folderPicker.ViewMode = PickerViewMode.Thumbnail; // or .List
+            folderPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            folderPicker.FileTypeFilter.Add("*"); // Required to be populated, even with "*" for folders
 
-            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+            // Get the current window's HWND
+            IntPtr hwnd = new WindowInteropHelper(Window.GetWindow(this)).EnsureHandle();
 
-            if (result == System.Windows.Forms.DialogResult.OK)
+            // Initialize the folder picker with the window handle (HWND).
+            InitializeWithWindow.Initialize(folderPicker, hwnd);
+
+            StorageFolder? pickedFolder = await folderPicker.PickSingleFolderAsync();
+            if (pickedFolder != null)
             {
-                // DataContext should be Reader.ViewModels.ReaderOptionsViewModel
                 if (DataContext is Reader.ViewModels.ReaderOptionsViewModel viewModel)
                 {
-                    viewModel.DefaultPath = dialog.SelectedPath;
+                    viewModel.DefaultPath = pickedFolder.Path;
                 }
             }
         }
