@@ -32,6 +32,14 @@ namespace Utils // Changed namespace
 
             try
             {
+                string? directoryPath = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directoryPath))
+                {
+                    if (!Directory.Exists(directoryPath))
+                    {
+                        Directory.CreateDirectory(directoryPath);
+                    }
+                }
                 string jsonContent = JsonSerializer.Serialize(settingsData, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(filePath, jsonContent);
             }

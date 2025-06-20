@@ -13,9 +13,8 @@ namespace Assistant
         public OptionsUserControl()
         {
             InitializeComponent();
-            OptionViews = new ObservableCollection<GroupBox>(); // Changed to GroupBox
-            DataContext = this; // Set DataContext for potential bindings to OptionViews from XAML if needed,
-                                // though ItemsSource will be set directly.
+            OptionViews = new ObservableCollection<GroupBox>();
+            DataContext = this;
 
             LoadOptionViews();
 
@@ -51,7 +50,9 @@ namespace Assistant
                             {
                                 Header = optionsViewModel.Title,
                                 Content = optionView,
-                                Margin = new Thickness(0, 0, 0, 10) // Add some spacing between option groups
+                                Margin = new Thickness(0, 0, 0, 10), //spacing between option groups
+                                MinWidth = 300,
+                                MaxWidth = 800
                             };
                             OptionViews.Add(groupBox);
                         }
@@ -59,7 +60,6 @@ namespace Assistant
                 }
             }
 
-            // Set the ItemsSource for the ItemsControl defined in OptionsUserControl.xaml
             if (OptionsItemsControl != null)
             {
                 OptionsItemsControl.ItemsSource = OptionViews;
@@ -88,7 +88,6 @@ namespace Assistant
                     {
                         allAppliedSuccessfully = false;
                         MessageBox.Show($"Error applying options for {app.Name}:\n{ex.Message}", "Apply Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        // Optionally, break or continue based on desired error handling strategy
                     }
                 }
             }
