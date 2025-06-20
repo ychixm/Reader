@@ -21,9 +21,9 @@ namespace Utils // Changed namespace
                                 .Select(path => new DirectoryInfo(path))
                                 .ToList();
             }
-            catch (Exception) // Consider logging the exception ex
+            catch (Exception ex) // Consider logging the exception ex
             {
-                // Debug.WriteLine($"Error getting directories from path '{directoryPath}': {ex.Message}");
+                LogService.LogError(ex, "Error getting directories from path {DirectoryPath}", directoryPath);
                 return new List<DirectoryInfo>();
             }
         }
@@ -38,12 +38,12 @@ namespace Utils // Changed namespace
         {
             if (directoryInfo == null)
             {
-                // Debug.WriteLine("GetFirstFileByExtensions: directoryInfo was null.");
+                LogService.LogWarning("GetFirstFileByExtensions: directoryInfo was null.");
                 return null;
             }
             if (validExtensions == null || validExtensions.Count == 0)
             {
-                // Debug.WriteLine("GetFirstFileByExtensions: validExtensions was null or empty.");
+                LogService.LogWarning("GetFirstFileByExtensions: validExtensions was null or empty.");
                 return null;
             }
 
@@ -60,9 +60,9 @@ namespace Utils // Changed namespace
                 }
                 return new Uri(files.First().FullName);
             }
-            catch (Exception) // Consider logging the exception ex
+            catch (Exception ex) // Consider logging the exception ex
             {
-                // Debug.WriteLine($"Error getting first file by extensions in directory {directoryInfo.FullName}: {ex.Message}");
+                LogService.LogError(ex, "Error getting first file by extensions in directory {DirectoryFullName}", directoryInfo.FullName);
                 return null;
             }
         }
@@ -76,7 +76,7 @@ namespace Utils // Changed namespace
         {
             if (string.IsNullOrEmpty(imagePath))
             {
-                // Debug.WriteLine("GetImageDimensions: imagePath was null or empty.");
+                LogService.LogWarning("GetImageDimensions: imagePath was null or empty.");
                 return (0,0);
             }
 
@@ -87,9 +87,9 @@ namespace Utils // Changed namespace
                 BitmapFrame frame = decoder.Frames[0];
                 return (frame.PixelWidth, frame.PixelHeight);
             }
-            catch (Exception) // Consider logging the exception ex
+            catch (Exception ex) // Consider logging the exception ex
             {
-                // Debug.WriteLine($"Error getting image dimensions for {imagePath}: {ex.Message}");
+                LogService.LogError(ex, "Error getting image dimensions for {ImagePath}", imagePath);
                 return (0, 0);
             }
         }

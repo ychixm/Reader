@@ -6,8 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using Utils;
 using Utils.Models;
-using Utils;
-// using System.Windows.Media; // Not strictly needed for this file's content
 
 namespace Reader.Business
 {
@@ -76,7 +74,7 @@ namespace Reader.Business
 
         private void LoadPersistedTabOverflowMode()
         {
-            ReaderSettings settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("Reader");
+            ReaderSettings? settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("Reader");
             if (settings != null && !string.IsNullOrEmpty(settings.DefaultTabOverflowMode))
             {
                 if (Enum.TryParse<TabOverflowMode>(settings.DefaultTabOverflowMode, out TabOverflowMode mode))

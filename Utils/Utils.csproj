@@ -12,4 +12,10 @@
   <!-- For .NET Core/5+ with UseWPF, PresentationFramework, WindowsBase, etc. are typically included. -->
   <!-- Microsoft.Win32 is part of Microsoft.WindowsDesktop.App shared framework, covered by netX.Y-windows TFM -->
 
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="Serilog.Sinks.Debug" Version="2.0.0" />
+  </ItemGroup>
+
 </Project>

@@ -38,8 +38,16 @@ namespace Reader.UserControls
             // Initialize the folder picker with the window handle (HWND).
             InitializeWithWindow.Initialize(folderPicker, hwnd);
 
-            StorageFolder? pickedFolder = await folderPicker.PickSingleFolderAsync();
-            if (pickedFolder != null)
+            StorageFolder? pickedFolder = null;
+            try
+            {
+                pickedFolder = await folderPicker.PickSingleFolderAsync();
+            }
+            catch (Exception ex_picker)
+            {
+                Utils.LogService.LogError(ex_picker, "Error picking folder.");
+            }
+            if (pickedFolder != null) // Continue if successful
             {
                 if (DataContext is Reader.ViewModels.ReaderOptionsViewModel viewModel)
                 {

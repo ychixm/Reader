@@ -1,12 +1,9 @@
 using System.Windows.Controls;
-using Utils; // For ISubApplication, IOptionsViewModel
-using System.Windows.Controls;
-using Utils; // For ISubApplication, AppSettingsService
 using Reader.UserControls;
 using Reader.ViewModels;
-using Reader.Models; // For ReaderSettings, NavigationMethod
-using Utils.Models; // For TabOverflowMode - assuming this is a shared enum
-using System; // For Enum.TryParse
+using Reader.Models; 
+using Utils.Models;
+using Utils; 
 
 namespace Reader
 {

@@ -86,6 +86,7 @@ namespace Assistant
                     }
                     catch (System.Exception ex)
                     {
+                        Utils.LogService.LogError(ex, "Error applying options for {AppName}", app.Name);
                         allAppliedSuccessfully = false;
                         MessageBox.Show($"Error applying options for {app.Name}:\n{ex.Message}", "Apply Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
