@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows</TargetFramework>
+		<TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
@@ -21,23 +21,5 @@
 		</None>
 	</ItemGroup>
 
-  <ItemGroup>
-    <Page Include="TemplateProject\TemplateUserControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="TemplateProject\TemplateUserControl.xaml.cs">
-      <DependentUpon>TemplateUserControl.xaml</DependentUpon>
-    </Compile>
-    <Page Include="TemplateProject\TemplateOptionsView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="TemplateProject\TemplateOptionsView.xaml.cs">
-      <DependentUpon>TemplateOptionsView.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="TemplateProject\TemplateOptionsViewModel.cs" />
-    <Compile Include="TemplateProject\TemplateSubApplication.cs" />
-  </ItemGroup>
 
 </Project>

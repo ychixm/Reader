@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 
-namespace Assistant.TemplateProject
+namespace Template
 {
     /// <summary>
     /// Interaction logic for TemplateOptionsView.xaml
