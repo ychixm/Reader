@@ -6,7 +6,7 @@ namespace Template
 {
     public class TemplateOptionsViewModel : IOptionsViewModel, INotifyPropertyChanged
     {
-        public string OptionsTitle => "Template Project Options";
+        public string Title => "Template Project Options";
 
         private bool _sampleOption;
         public bool SampleOption
@@ -28,28 +28,20 @@ namespace Template
             SampleOption = true;
         }
 
-        public void Load(string json)
+        public void LoadSettings()
         {
-            if (string.IsNullOrWhiteSpace(json)) return;
-            try
+            var settings = Utils.AppSettingsService.LoadModuleSettings<JsonSettings>("Template");
+            if (settings != null)
             {
-                var settings = System.Text.Json.JsonSerializer.Deserialize<JsonSettings>(json);
-                if (settings != null)
-                {
-                    SampleOption = settings.SampleOption;
-                }
+                SampleOption = settings.SampleOption;
             }
-            catch (System.Text.Json.JsonException ex)
-            {
-                // Handle deserialization error, e.g., log it or load defaults
-                System.Diagnostics.Debug.WriteLine($"Error loading settings: {ex.Message}");
-            }
+            // If settings are null, defaults set in the constructor will be used.
         }
 
-        public string Save()
+        public void Apply()
         {
             var settings = new JsonSettings { SampleOption = this.SampleOption };
-            return System.Text.Json.JsonSerializer.Serialize(settings);
+            Utils.AppSettingsService.SaveModuleSettings("Template", settings);
         }
 
         // Helper class for JSON serialization
@@ -62,6 +54,11 @@ namespace Template
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public System.Windows.Controls.UserControl GetView()
+        {
+            return new TemplateOptionsView();
         }
     }
 }
