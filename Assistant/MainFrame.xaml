@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Assistant"
-        xmlns:assistant="clr-namespace:Assistant"
         xmlns:ReaderUC="clr-namespace:Reader.UserControls;assembly=Reader"
         xmlns:utilsControls="clr-namespace:Utils.Controls;assembly=Utils"
         mc:Ignorable="d"
@@ -24,7 +23,7 @@
                     ItemContainerStyle="{StaticResource SharedTabItemStyle}"
                     ItemsPanel="{StaticResource SharedTabItemsPanelTemplate}">
             <TabItem Header="Options">
-                <assistant:OptionsUserControl />
+                <local:OptionsUserControl />
             </TabItem>
             <TabItem Header="ReaderUserControl">
                 <ReaderUC:ReaderUserControl x:Name="ReaderUserControl" />

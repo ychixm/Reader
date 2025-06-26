@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reader", "Reader\Reader.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Template", "Template\Template.csproj", "{A4F6432E-650D-227A-08A0-8733AEB4B29B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoundWeaver", "SoundWeaver\SoundWeaver.csproj", "{B851EDD3-67A1-838A-B674-F0B5B33B6B2E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{A4F6432E-650D-227A-08A0-8733AEB4B29B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4F6432E-650D-227A-08A0-8733AEB4B29B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4F6432E-650D-227A-08A0-8733AEB4B29B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B851EDD3-67A1-838A-B674-F0B5B33B6B2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B851EDD3-67A1-838A-B674-F0B5B33B6B2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B851EDD3-67A1-838A-B674-F0B5B33B6B2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B851EDD3-67A1-838A-B674-F0B5B33B6B2E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

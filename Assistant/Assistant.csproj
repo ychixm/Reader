@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Reader\Reader.csproj" />
+		<ProjectReference Include="..\SoundWeaver\SoundWeaver.csproj" />
 		<ProjectReference Include="..\Utils\Utils.csproj" />
 	</ItemGroup>
 
