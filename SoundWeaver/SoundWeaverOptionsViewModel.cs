@@ -1,10 +1,12 @@
-using Utils; // Required for IOptionsViewModel
+using Utils; // Required for IOptionsViewModel, AppSettingsService
+using SoundWeaver.Models; // Required for SoundWeaverSettings
 using System.ComponentModel; // Required for INotifyPropertyChanged
 using System.Runtime.CompilerServices; // Required for CallerMemberName
+using System.Windows.Controls; // Required for UserControl
 
 namespace SoundWeaver
 {
-    public class SoundWeaverOptionsViewModel : IOptionsViewModel, INotifyPropertyChanged
+    public class SoundWeaverOptionsViewModel : IOptionsViewModel
     {
         public string Title => "SoundWeaver Options";
 
@@ -21,33 +23,30 @@ namespace SoundWeaver
                 }
             }
         }
+        // Add other bindable properties for SoundWeaver options here
 
         public SoundWeaverOptionsViewModel()
         {
-            // Initialize with default values
-            SampleOption = true;
+            LoadSettings(); // Load settings on construction
         }
 
         public void LoadSettings()
         {
-            var settings = Utils.AppSettingsService.LoadModuleSettings<JsonSettings>("SoundWeaver");
-            if (settings != null)
-            {
-                SampleOption = settings.SampleOption;
-            }
-            // If settings are null, defaults set in the constructor will be used.
+            // Load settings using the specific SoundWeaverSettings type
+            var settings = AppSettingsService.LoadModuleSettings<SoundWeaverSettings>("SoundWeaver", () => new SoundWeaverSettings());
+            SampleOption = settings.SampleOption;
+            // Load other settings from SoundWeaverSettings into properties
         }
 
         public void Apply()
         {
-            var settings = new JsonSettings { SampleOption = this.SampleOption };
-            Utils.AppSettingsService.SaveModuleSettings("SoundWeaver", settings);
-        }
-
-        // Helper class for JSON serialization
-        private class JsonSettings
-        {
-            public bool SampleOption { get; set; }
+            // Create a settings object from current properties
+            var settings = new SoundWeaverSettings
+            {
+                SampleOption = this.SampleOption
+                // Set other properties for SoundWeaverSettings
+            };
+            AppSettingsService.SaveModuleSettings("SoundWeaver", settings);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -56,9 +55,16 @@ namespace SoundWeaver
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public System.Windows.Controls.UserControl GetView()
+        public UserControl GetView()
         {
-            return new SoundWeaverOptionsView();
+            // Pass this ViewModel instance to the View if it needs it directly
+            // (e.g., if the View's DataContext is set in code-behind or via a ViewModelLocator)
+            // For now, assuming SoundWeaverOptionsView sets its DataContext to a new instance of this VM,
+            // or it's set by the OptionsUserControl in Assistant.
+            // To ensure *this* instance is used:
+            var view = new SoundWeaverOptionsView();
+            view.DataContext = this; // Ensure the view uses this instance
+            return view;
         }
     }
 }
