@@ -19,4 +19,10 @@
     <ProjectReference Include="..\Utils\Utils.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="UI\MainViewModel.cs" />
+    <Compile Include="UI\RelayCommand.cs" />
+    <!-- Add other specific .cs files from subdirectories if default globbing is an issue -->
+  </ItemGroup>
+
 </Project>
