@@ -31,15 +31,17 @@ namespace SoundWeaver.Bot
                 return;
             }
 
-            var channel = guild.GetVoiceChannel(channelId);
-            if (channel == null)
+            var channel = guild.GetChannel(channelId);
+            if (channel == null || channel.Type != ChannelType.Voice)
             {
-                // Log or handle channel not found
+                // Log or handle channel not found or not a voice channel
+                // You might want to throw an exception or log more specifically here
+                System.Console.WriteLine($"Channel {channelId} not found or not a voice channel.");
                 return;
             }
 
             // Check if already connected or connecting to this guild
-            var vnc = Voice.GetVoiceNextConnection(guild);
+            var vnc = Voice.GetConnection(guild); // Corrected method
             if (vnc != null && vnc.TargetChannel.Id == channelId && vnc.IsConnected)
             {
                 // Already connected to this channel
@@ -57,7 +59,7 @@ namespace SoundWeaver.Bot
                 return;
             }
 
-            var vnc = Voice.GetVoiceNextConnection(guild);
+            var vnc = Voice.GetConnection(guild); // Corrected method
             if (vnc != null)
             {
                 vnc.Disconnect();

@@ -119,7 +119,14 @@ namespace SoundWeaver.UI
                 await _botService.JoinVoiceChannelAsync(GuildId, ChannelId);
                 StatusMessage = $"Connected to voice channel {ChannelId} on guild {GuildId}.";
 
-                var voiceConnection = _botService.Voice.GetVoiceNextConnection(_botService.Client.GetGuildAsync(GuildId).Result);
+                // After joining, get the guild object then the connection
+                var guild = await _botService.Client.GetGuildAsync(GuildId);
+                if (guild == null)
+                {
+                    StatusMessage = $"Failed to retrieve guild {GuildId} after connecting.";
+                    return;
+                }
+                var voiceConnection = _botService.Voice.GetConnection(guild);
                 if (voiceConnection != null)
                 {
                     _audioPlayer = new MultiLayerAudioPlayer(voiceConnection);
