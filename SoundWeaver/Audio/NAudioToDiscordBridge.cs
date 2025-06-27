@@ -1,5 +1,6 @@
 using DSharpPlus.VoiceNext;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders; // Added for sample provider classes
 using System.Threading.Tasks;
 
 namespace SoundWeaver.Audio
