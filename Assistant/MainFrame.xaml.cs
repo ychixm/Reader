@@ -1,9 +1,10 @@
-using System.Windows;
 using System.Collections.Generic; // For List
+using System.Windows;
 using System.Windows.Controls;    // For TabControl, TabItem
 // using Reader.UserControls; // Not strictly needed now in C#
 // using Reader.Business;   // Not directly used here
 using Reader;            // For ReaderSubApplication
+using SoundWeaver;
 using Utils;             // For ISubApplication
 // using Reader.Models;     // Not directly used here
 using Utils.Models;      // Already there, for TabOverflowMode
@@ -32,7 +33,9 @@ namespace Assistant
         private void LoadSubApplications()
         {
             var readerApp = new ReaderSubApplication();
+            var SoundWeaverSubApp = new SoundWeaverSubApplication();
             _subApplications.Add(readerApp);
+            _subApplications.Add(SoundWeaverSubApp);
 
             LoadedSubApplications.Clear();
             LoadedSubApplications.AddRange(_subApplications);

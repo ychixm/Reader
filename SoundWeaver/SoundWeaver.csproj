@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -19,22 +19,5 @@
     <ProjectReference Include="..\Utils\Utils.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="UI\MainViewModel.cs" />
-    <Compile Include="UI\RelayCommand.cs" />
-    <Compile Include="Models\AudioTrack.cs" />
-    <Compile Include="Models\SoundWeaverSettings.cs" />
-    <Compile Include="Audio\AudioPlayer.cs" />
-    <Compile Include="Audio\MultiLayerAudioPlayer.cs" />
-    <Compile Include="Audio\NAudioToDiscordBridge.cs" />
-    <Compile Include="Bot\DiscordBotService.cs" />
-    <Compile Include="Playlists\PlaylistManager.cs" />
-    <Compile Include="SoundWeaverSubApplication.cs" />
-    <Compile Include="SoundWeaverOptionsViewModel.cs" />
-    <!-- SoundWeaverOptionsView.xaml.cs is linked by XAML -->
-    <!-- SoundWeaverControl.xaml.cs is linked by XAML -->
-    <!-- App.xaml.cs is linked by XAML -->
-    <!-- MainWindow.xaml.cs (new host) is linked by XAML -->
-  </ItemGroup>
 
 </Project>
