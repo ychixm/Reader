@@ -9,29 +9,29 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
-// Assuming Microsoft.Win32.OpenFileDialog for WPF open file dialog
 using Microsoft.Win32;
-
 
 namespace SoundWeaver.UI
 {
-    public class MainViewModel : INotifyPropertyChanged, IDisposable
+    public class SoundWeaverControlViewModel : INotifyPropertyChanged, IDisposable
     {
         private string _discordToken;
         private ulong _guildId;
         private ulong _channelId;
         private string _statusMessage;
         private string _playlistPath;
-        private AudioTrack _selectedTrack; // For potential individual track operations
+        private AudioTrack _selectedTrack;
 
         private DiscordBotService _botService;
         private MultiLayerAudioPlayer _audioPlayer;
         private PlaylistManager _playlistManager;
 
+        private bool _isConnecting = false;
+
         public ObservableCollection<AudioTrack> CurrentPlaylistTracks { get; } = new ObservableCollection<AudioTrack>();
-        public ObservableCollection<AudioLayer> ActiveLayers { get; } = new ObservableCollection<AudioLayer>(); // To display active layers
+        public ObservableCollection<AudioLayer> ActiveLayers { get; } = new ObservableCollection<AudioLayer>();
         private Playlist _currentPlaylist;
-        private AudioLayer _currentPlaylistLayer; // If playing playlist as a single layer progression
+        private AudioLayer _currentPlaylistLayer;
 
         public string DiscordToken
         {
@@ -60,7 +60,7 @@ namespace SoundWeaver.UI
         public string PlaylistPath
         {
             get => _playlistPath;
-            set { _playlistPath = value; OnPropertyChanged(); ((RelayCommand)LoadPlaylistCommand).CanExecute(null); } // Update CanExecute
+            set { _playlistPath = value; OnPropertyChanged(); ((RelayCommand)LoadPlaylistCommand).CanExecute(null); }
         }
 
         public AudioTrack SelectedTrack
@@ -73,16 +73,15 @@ namespace SoundWeaver.UI
         public ICommand LoadPlaylistCommand { get; }
         public ICommand PlayPlaylistCommand { get; }
         public ICommand StopAllAudioCommand { get; }
-        public ICommand AddTrackAsLayerCommand { get; } // For adding individual files as layers
-        public ICommand PlayTrackCommand { get; } // Plays selected track from playlist, potentially as a new primary layer
+        public ICommand AddTrackAsLayerCommand { get; }
+        public ICommand PlayTrackCommand { get; }
         public ICommand BrowsePlaylistCommand { get; }
 
-
-        public MainViewModel()
+        public SoundWeaverControlViewModel()
         {
             _playlistManager = new PlaylistManager();
-            // Initialize commands
-            ConnectBotCommand = new RelayCommand(async _ => await ConnectBotAsync(), _ => !string.IsNullOrWhiteSpace(DiscordToken) && GuildId > 0 && ChannelId > 0);
+
+            ConnectBotCommand = new RelayCommand(async _ => await ConnectBotAsync(), _ => !string.IsNullOrWhiteSpace(DiscordToken) && GuildId > 0 && ChannelId > 0 && !_isConnecting);
             LoadPlaylistCommand = new RelayCommand(async _ => await LoadPlaylistAsync(), _ => !string.IsNullOrWhiteSpace(PlaylistPath));
             PlayPlaylistCommand = new RelayCommand(async _ => await PlayPlaylistAsync(), _ => _currentPlaylist != null && _currentPlaylist.Tracks.Any() && _audioPlayer != null);
             StopAllAudioCommand = new RelayCommand(_ => StopAllAudio(), _ => _audioPlayer != null && ActiveLayers.Any());
@@ -90,36 +89,47 @@ namespace SoundWeaver.UI
             PlayTrackCommand = new RelayCommand(async _ => await PlaySelectedTrackAsync(), _ => SelectedTrack != null && _audioPlayer != null);
             BrowsePlaylistCommand = new RelayCommand(_ => BrowseForPlaylist());
 
-            // Default values for testing if needed (remove for production)
-            // DiscordToken = "YOUR_BOT_TOKEN";
-            // GuildId = 123456789012345678;
-            // ChannelId = 123456789012345679;
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private async Task ConnectBotAsync()
         {
-            if (_botService != null)
-            {
-                await _botService.ShutdownAsync();
-                _botService.Dispose(); // Assuming DiscordBotService is IDisposable
-                 _botService = null;
-            }
-            if (_audioPlayer != null)
-            {
-                _audioPlayer.Dispose();
-                _audioPlayer = null;
-            }
+            if (_isConnecting)
+                return; // Empêche double clic
 
-            _botService = new DiscordBotService();
+            _isConnecting = true;
+            CommandManager.InvalidateRequerySuggested(); // Actualise l’état des boutons
+
             try
             {
+                // Shutdown propre de l’ancienne instance s’il y en a une
+                if (_botService != null)
+                {
+                    await _botService.ShutdownAsync();
+                    _botService.Dispose();
+                    _botService = null;
+                }
+                if (_audioPlayer != null)
+                {
+                    _audioPlayer.Dispose();
+                    _audioPlayer = null;
+                }
+
+                _botService = new DiscordBotService();
                 StatusMessage = "Initializing bot...";
                 await _botService.InitializeAsync(DiscordToken);
                 StatusMessage = "Bot initialized. Connecting to voice channel...";
-                await _botService.JoinVoiceChannelAsync(GuildId, ChannelId);
+
+                // Tentative de connexion vocale robuste avec auto-reconnect hard si besoin
+                bool connected = await _botService.HardResetAndReconnectAsync(DiscordToken, GuildId, ChannelId);
+                if (!connected)
+                {
+                    StatusMessage = "Impossible de connecter le bot au vocal après plusieurs tentatives.";
+                    return;
+                }
                 StatusMessage = $"Connected to voice channel {ChannelId} on guild {GuildId}.";
 
-                // After joining, get the guild object then the connection
+                // On récupère la connexion vocale DSharpPlus pour instancier le player
                 var guild = await _botService.Client.GetGuildAsync(GuildId);
                 if (guild == null)
                 {
@@ -141,7 +151,11 @@ namespace SoundWeaver.UI
             {
                 StatusMessage = $"Error connecting bot: {ex.Message}";
             }
-            CommandManager.InvalidateRequerySuggested();
+            finally
+            {
+                _isConnecting = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private void BrowseForPlaylist()
@@ -200,9 +214,9 @@ namespace SoundWeaver.UI
                 return;
             }
 
-            _audioPlayer.StopAllLayers(); // Stop current audio before playing new playlist
+            _audioPlayer.StopAllLayers();
             ActiveLayers.Clear();
-            _currentPlaylist.Reset(); // Start playlist from the beginning
+            _currentPlaylist.Reset();
 
             PlayNextTrackInPlaylist();
             StatusMessage = $"Playing playlist: {_currentPlaylist.Name}";
@@ -216,23 +230,22 @@ namespace SoundWeaver.UI
             if (trackToPlay != null)
             {
                 StatusMessage = $"Playing: {trackToPlay.Title}";
-                _currentPlaylistLayer = _audioPlayer.AddLayer(trackToPlay, trackToPlay.IsLooping); // Use track's own loop setting for playlist items
+                _currentPlaylistLayer = _audioPlayer.AddLayer(trackToPlay, trackToPlay.IsLooping);
                 if (_currentPlaylistLayer != null)
                 {
-                    ActiveLayers.Add(_currentPlaylistLayer); // For UI display
+                    ActiveLayers.Add(_currentPlaylistLayer);
                     _currentPlaylistLayer.PlaybackEnded += OnCurrentPlaylistTrackEnded;
                 }
                 else
                 {
                     StatusMessage = $"Failed to play track: {trackToPlay.Title}. Skipping.";
-                    PlayNextTrackInPlaylist(); // Try next track
+                    PlayNextTrackInPlaylist();
                 }
             }
             else
             {
                 StatusMessage = $"Playlist '{_currentPlaylist.Name}' finished.";
-                 _currentPlaylistLayer = null;
-                // If playlist itself is looping, it would have been handled by GetNextTrack()
+                _currentPlaylistLayer = null;
             }
             CommandManager.InvalidateRequerySuggested();
         }
@@ -241,13 +254,12 @@ namespace SoundWeaver.UI
         {
             if (sender is AudioLayer endedLayer)
             {
-                endedLayer.PlaybackEnded -= OnCurrentPlaylistTrackEnded; // Unsubscribe
-                ActiveLayers.Remove(endedLayer); // Remove from UI display
-                // Note: MultiLayerAudioPlayer automatically removes the layer from mixer on end if not looping.
+                endedLayer.PlaybackEnded -= OnCurrentPlaylistTrackEnded;
+                ActiveLayers.Remove(endedLayer);
 
-                if (object.ReferenceEquals(endedLayer, _currentPlaylistLayer)) // Ensure it's the main playlist track
+                if (object.ReferenceEquals(endedLayer, _currentPlaylistLayer))
                 {
-                     PlayNextTrackInPlaylist(); // Play next
+                    PlayNextTrackInPlaylist();
                 }
             }
         }
@@ -264,7 +276,7 @@ namespace SoundWeaver.UI
             if (newLayer != null)
             {
                 ActiveLayers.Add(newLayer);
-                newLayer.PlaybackEnded += OnLayerEndedUpdateList; // For UI cleanup
+                newLayer.PlaybackEnded += OnLayerEndedUpdateList;
                 StatusMessage = $"Layer '{SelectedTrack.Title}' added.";
             }
             else
@@ -282,8 +294,6 @@ namespace SoundWeaver.UI
                 return;
             }
 
-            // Stop current playlist layer if it exists, or all layers if preferred.
-            // For this example, let's assume "PlayTrack" means it becomes the primary sound.
             _audioPlayer.StopAllLayers();
             ActiveLayers.Clear();
 
@@ -292,9 +302,6 @@ namespace SoundWeaver.UI
             if (_currentPlaylistLayer != null)
             {
                 ActiveLayers.Add(_currentPlaylistLayer);
-                // If this is meant to be a one-off play, don't hook playlist advancement.
-                // If it's part of "previewing" from a playlist, you might not advance the main playlist index.
-                // For now, treat as a single track play.
                 _currentPlaylistLayer.PlaybackEnded += OnLayerEndedUpdateList;
                 StatusMessage = $"Now playing: {SelectedTrack.Title}.";
             }
@@ -305,38 +312,32 @@ namespace SoundWeaver.UI
             CommandManager.InvalidateRequerySuggested();
         }
 
-
         private void OnLayerEndedUpdateList(object sender, EventArgs e)
         {
             if (sender is AudioLayer endedLayer)
             {
                 endedLayer.PlaybackEnded -= OnLayerEndedUpdateList;
-                // Run on UI thread if needed for ObservableCollection
                 App.Current.Dispatcher.Invoke(() => ActiveLayers.Remove(endedLayer));
                 CommandManager.InvalidateRequerySuggested();
             }
         }
-
 
         private void StopAllAudio()
         {
             if (_audioPlayer != null)
             {
                 _audioPlayer.StopAllLayers();
-                ActiveLayers.Clear(); // Clear UI display
-                _currentPlaylistLayer = null; // Reset playlist layer
+                ActiveLayers.Clear();
+                _currentPlaylistLayer = null;
                 StatusMessage = "All audio stopped.";
             }
             CommandManager.InvalidateRequerySuggested();
         }
 
-
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            // Update CanExecute for commands that depend on properties
-            // This is a common way, or each property setter can be more specific
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -344,8 +345,7 @@ namespace SoundWeaver.UI
         {
             StatusMessage = "Disposing resources...";
             _audioPlayer?.Dispose();
-            _botService?.ShutdownAsync().Wait(); // Ensure bot is shut down
-            // _botService?.Dispose(); // If IDisposable
+            _botService?.ShutdownAsync().Wait();
             StatusMessage = "Cleanup complete.";
         }
     }

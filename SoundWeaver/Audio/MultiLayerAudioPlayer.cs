@@ -11,16 +11,17 @@ using System.Threading.Tasks;
 
 namespace SoundWeaver.Audio
 {
-    // Represents an active audio layer in the player
+    // Représente une couche audio active dans le lecteur
     public class AudioLayer : IDisposable
     {
         public string Id { get; }
         public AudioTrack Track { get; }
-        public WaveStream WaveStream { get; private set; } // The raw audio stream (e.g., AudioFileReader)
-        public ISampleProvider SampleProvider { get; private set; } // The stream after volume/effects, before mixing
+        public WaveStream WaveStream { get; private set; }
+        public ISampleProvider SampleProvider { get; private set; }
 
-        private LoopStream _loopStreamLogic; // Handles looping for this layer
+        private LoopStream _loopStreamLogic;
         private VolumeSampleProvider _volumeProvider;
+        private MediaFoundationResampler _resamplerInstance; // Pour disposer correctement
 
         public bool IsLooping
         {
@@ -29,11 +30,6 @@ namespace SoundWeaver.Audio
             {
                 if (_loopStreamLogic != null)
                     _loopStreamLogic.EnableLooping = value;
-                else if (value && WaveStream != null && WaveStream.CanSeek) // Create loopstream if enabling loop on non-looping
-                {
-                    // This case is tricky if it's already in the mixer. Best to set loop at AddLayer.
-                    // For now, assume IsLooping is set at creation via Track.IsLooping.
-                }
             }
         }
 
@@ -43,49 +39,62 @@ namespace SoundWeaver.Audio
             set
             {
                 if (_volumeProvider != null)
-                    _volumeProvider.Volume = Math.Clamp(value, 0.0f, 2.0f); // Example clamp
+                    _volumeProvider.Volume = Math.Clamp(value, 0.0f, 2.0f);
             }
         }
 
-        public event EventHandler PlaybackEnded; // Fires when the non-looping stream ends
+        public event EventHandler PlaybackEnded;
 
-        public AudioLayer(AudioTrack track, bool forceLoop = false)
+        public AudioLayer(
+            AudioTrack track,
+            bool forceLoop = false,
+            int targetSampleRate = 48000,
+            int targetChannels = 2,
+            int resamplerQuality = 60)
         {
-            Id = Guid.NewGuid().ToString(); // Unique ID for this layer instance
+            Id = Guid.NewGuid().ToString();
             Track = track ?? throw new ArgumentNullException(nameof(track));
 
             string sourcePath = track.Source.IsFile ? track.Source.LocalPath : track.Source.AbsoluteUri;
             if (track.Source.IsFile && !File.Exists(sourcePath))
-            {
                 throw new FileNotFoundException("Audio file not found.", sourcePath);
-            }
 
-            // For URLs, AudioFileReader would need to download it first or handle streaming if capable.
-            // NAudio's AudioFileReader primarily works with local files. For URLs, custom handling or different reader might be needed.
-            // Assuming for now source is a local path if IsFile, otherwise it's a direct streamable URL (less common for AudioFileReader).
             WaveStream = new AudioFileReader(sourcePath);
 
             bool actualLoop = forceLoop || track.IsLooping;
+
             if (actualLoop)
             {
-                _loopStreamLogic = new LoopStream(WaveStream, true); // LoopStream takes ownership of WaveStream if enabled
+                _loopStreamLogic = new LoopStream(WaveStream, true);
                 _volumeProvider = new VolumeSampleProvider(_loopStreamLogic.ToSampleProvider());
             }
             else
             {
                 _volumeProvider = new VolumeSampleProvider(WaveStream.ToSampleProvider());
-                // Hook into PlaybackStopped for non-looping streams if WaveStream is IWavePlayer compatible
-                // Or handle end-of-stream in the Read method of a wrapper.
-                // For MixingSampleProvider, it just stops reading from a source when it ends.
-                // We need a way to detect this to fire PlaybackEnded.
-                // This can be done by wrapping the WaveStream in another class that monitors Read() calls.
             }
 
-            SampleProvider = _volumeProvider; // This is what gets added to the mixer
-            Volume = track.Volume; // Set initial volume from track model
+            Volume = track.Volume;
+
+            // Conversion de format pour compatibilité avec le mixer (par défaut 48kHz/stéréo/float)
+            SampleProvider = EnsureCompatibleFormat(_volumeProvider, targetSampleRate, targetChannels, resamplerQuality);
         }
 
-        // Simplified way to signal end, more robust would be to check read bytes.
+        private ISampleProvider EnsureCompatibleFormat(ISampleProvider input, int sampleRate, int channels, int quality)
+        {
+            var wf = input.WaveFormat;
+            if (wf.SampleRate != sampleRate || wf.Channels != channels)
+            {
+                _resamplerInstance = new MediaFoundationResampler(
+                    input.ToWaveProvider(),
+                    new WaveFormat(sampleRate, wf.BitsPerSample, channels))
+                {
+                    ResamplerQuality = quality
+                };
+                input = _resamplerInstance.ToSampleProvider();
+            }
+            return input;
+        }
+
         public void CheckPlaybackEnded()
         {
             if (WaveStream != null && WaveStream.Position >= WaveStream.Length && !IsLooping)
@@ -94,16 +103,16 @@ namespace SoundWeaver.Audio
             }
         }
 
-
         public void Dispose()
         {
-            // SampleProvider is derived from WaveStream here, so disposing WaveStream should be enough
-            _loopStreamLogic?.Dispose(); // This will dispose the underlying WaveStream if it was used
-            WaveStream?.Dispose(); // Dispose if not used by LoopStream or if LoopStream is null
+            _loopStreamLogic?.Dispose();
+            WaveStream?.Dispose();
+            _resamplerInstance?.Dispose();
             WaveStream = null;
             SampleProvider = null;
             _volumeProvider = null;
             _loopStreamLogic = null;
+            _resamplerInstance = null;
         }
     }
 
@@ -116,15 +125,31 @@ namespace SoundWeaver.Audio
         private Task _playbackTask;
         private readonly ConcurrentDictionary<string, AudioLayer> _activeLayers = new ConcurrentDictionary<string, AudioLayer>();
 
-        public MultiLayerAudioPlayer(VoiceNextConnection voiceConnection)
+        // Mixer params
+        private readonly int _mixerSampleRate;
+        private readonly int _mixerChannels;
+        private readonly int _resamplerQuality;
+
+        /// <summary>
+        /// MixerProfile: permet d'ajuster la qualité et le coût CPU.
+        /// </summary>
+        public MultiLayerAudioPlayer(
+            VoiceNextConnection voiceConnection,
+            int mixerSampleRate = 48000,
+            int mixerChannels = 2,
+            int resamplerQuality = 60 // 1=rapide, 60=meilleur qualité/plus CPU
+        )
         {
             _voiceConnection = voiceConnection ?? throw new ArgumentNullException(nameof(voiceConnection));
             _transmitSink = _voiceConnection.GetTransmitSink();
 
-            // Output format for mixer: Stereo, 48kHz, IEEE Float.
-            // DSharpPlus VoiceNext will handle Opus encoding from PCM.
-            _mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(48000, 2));
-            _mixer.ReadFully = true; // Ensures continuous playback even if one source finishes
+            _mixerSampleRate = mixerSampleRate;
+            _mixerChannels = mixerChannels;
+            _resamplerQuality = resamplerQuality;
+
+            // Mixer format paramétrable
+            _mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(_mixerSampleRate, _mixerChannels));
+            _mixer.ReadFully = true; // Continue même si un flux termine
 
             StartPlaybackEngine();
         }
@@ -133,8 +158,8 @@ namespace SoundWeaver.Audio
         {
             _playbackCts?.Cancel();
             _playbackCts = new CancellationTokenSource();
-            // The bridge converts the mixer output (which is ISampleProvider) to IWaveProvider (16-bit PCM)
-            _playbackTask = Task.Run(() => NAudioToDiscordBridge.SendStreamAsync(_mixer.ToWaveProvider16(), _transmitSink, 20, _playbackCts.Token), _playbackCts.Token);
+            _playbackTask = Task.Run(() =>
+                NAudioToDiscordBridge.SendStreamAsync(_mixer.ToWaveProvider16(), _transmitSink, 20, _playbackCts.Token), _playbackCts.Token);
         }
 
         public AudioLayer AddLayer(AudioTrack track, bool? loopOverride = null, float? initialVolume = null)
@@ -143,9 +168,17 @@ namespace SoundWeaver.Audio
 
             try
             {
-                var layer = new AudioLayer(track, loopOverride ?? track.IsLooping);
-                if (initialVolume.HasValue) layer.Volume = initialVolume.Value;
-                else layer.Volume = track.Volume; // Use volume from track model if not overridden
+                var layer = new AudioLayer(
+                    track,
+                    loopOverride ?? track.IsLooping,
+                    _mixerSampleRate,
+                    _mixerChannels,
+                    _resamplerQuality);
+
+                if (initialVolume.HasValue)
+                    layer.Volume = initialVolume.Value;
+                else
+                    layer.Volume = track.Volume;
 
                 if (_activeLayers.TryAdd(layer.Id, layer))
                 {
@@ -156,7 +189,7 @@ namespace SoundWeaver.Audio
                 }
                 else
                 {
-                    layer.Dispose(); // Dispose if couldn't add
+                    layer.Dispose();
                     Console.WriteLine($"Failed to add layer (duplicate ID?): {track.Title}");
                     return null;
                 }
@@ -173,14 +206,13 @@ namespace SoundWeaver.Audio
             if (sender is AudioLayer layer)
             {
                 Console.WriteLine($"Layer '{layer.Track.Title}' (ID: {layer.Id}) has finished playback.");
-                RemoveLayer(layer.Id, true); // Automatically remove if it ended and isn't looping
+                RemoveLayer(layer.Id, true);
             }
         }
 
-        // Call this periodically to check for non-looping tracks that have ended.
         public void UpdateLayerStates()
         {
-            foreach (var layer in _activeLayers.Values.ToList()) // ToList to avoid modification issues during iteration
+            foreach (var layer in _activeLayers.Values.ToList())
             {
                 if (!layer.IsLooping && layer.WaveStream != null && layer.WaveStream.Position >= layer.WaveStream.Length)
                 {
@@ -188,7 +220,6 @@ namespace SoundWeaver.Audio
                 }
             }
         }
-
 
         public bool RemoveLayer(string layerId, bool autoCleanup = false)
         {
@@ -200,11 +231,11 @@ namespace SoundWeaver.Audio
                 Console.WriteLine($"Removed layer: {layer.Track.Title} (ID: {layer.Id})");
                 return true;
             }
-            if(!autoCleanup) Console.WriteLine($"Layer with ID {layerId} not found for removal.");
+            if (!autoCleanup) Console.WriteLine($"Layer with ID {layerId} not found for removal.");
             return false;
         }
 
-        public void RemoveLayer(AudioTrack track) // Convenience, finds first layer with this track
+        public void RemoveLayer(AudioTrack track)
         {
             var layerInstance = _activeLayers.FirstOrDefault(kvp => kvp.Value.Track == track).Value;
             if (layerInstance != null)
@@ -239,34 +270,25 @@ namespace SoundWeaver.Audio
         {
             if (_activeLayers.TryGetValue(layerId, out AudioLayer layer))
             {
-                // This is tricky if the layer was not initially created with LoopStream.
-                // The current AudioLayer setup initializes LoopStream at creation.
-                // Dynamically adding/removing LoopStream to an existing SampleProvider in the mixer is complex.
-                // For now, this will only toggle loop if LoopStream was already there.
-                // A more robust solution would involve replacing the SampleProvider in the mixer.
-                if (layer.IsLooping != loop) // Only act if there's a change
+                if (layer.IsLooping != loop)
                 {
-                     if (layer.Track.Source.IsFile && layer.WaveStream.CanSeek) // Only if seekable and was file based
-                     {
-                        // This is a simplification. True dynamic change would require re-creating the layer's sample provider chain.
-                        // For now, let's assume we'd need to remove and re-add the layer to change looping status post-creation
-                        // if it wasn't initially set up with LoopStream.
-                        // However, if LoopStream *is* present, its EnableLooping can be toggled.
-                        if (layer.IsLooping && !loop) { // Turning loop off
-                             layer.IsLooping = false; // loopStream.EnableLooping = false;
-                        } else if (!layer.IsLooping && loop) { // Turning loop on
-                            // This path is the most problematic if no LoopStream was setup.
-                            // For now, we'll say this only works if it was *initially* loopable.
-                            // The AudioLayer constructor tries to set up LoopStream if track.IsLooping is true.
-                            layer.IsLooping = true; // loopStream.EnableLooping = true;
-                            // To make it truly dynamic, you'd replace the ISampleProvider in the mixer.
-                            // E.g., _mixer.RemoveMixerInput(...); layer.ReconfigureLooping(loop); _mixer.AddMixerInput(...);
-                            Console.WriteLine($"Note: Dynamically enabling looping on a non-initially-looped track has limitations in current setup.");
+                    if (layer.Track.Source.IsFile && layer.WaveStream.CanSeek)
+                    {
+                        if (layer.IsLooping && !loop)
+                        {
+                            layer.IsLooping = false;
                         }
-                     } else {
-                         Console.WriteLine($"Cannot change looping for layer {layer.Track.Title} (ID: {layerId}): stream not seekable or not file-based for re-init.");
-                         return false;
-                     }
+                        else if (!layer.IsLooping && loop)
+                        {
+                            layer.IsLooping = true;
+                            Console.WriteLine($"Note: Dynamic enabling of looping after layer creation has limitations in current setup.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Cannot change looping for layer {layer.Track.Title} (ID: {layerId}): stream not seekable or not file-based for re-init.");
+                        return false;
+                    }
                 }
                 Console.WriteLine($"Set looping for layer {layer.Track.Title} (ID: {layerId}) to {loop}");
                 return true;
@@ -275,10 +297,9 @@ namespace SoundWeaver.Audio
             return false;
         }
 
-
         public void StopAllLayers()
         {
-            foreach (var layerId in _activeLayers.Keys.ToList()) // ToList to allow modification
+            foreach (var layerId in _activeLayers.Keys.ToList())
             {
                 RemoveLayer(layerId, true);
             }
@@ -290,20 +311,18 @@ namespace SoundWeaver.Audio
             _playbackCts?.Cancel();
             try
             {
-                _playbackTask?.Wait(TimeSpan.FromSeconds(2)); // Wait for playback task to finish
+                _playbackTask?.Wait(TimeSpan.FromSeconds(2));
             }
-            catch (OperationCanceledException) { /* Expected */ }
-            catch (AggregateException ae) when (ae.InnerExceptions.All(e => e is OperationCanceledException)) { /* Expected */ }
-
+            catch (OperationCanceledException) { }
+            catch (AggregateException ae) when (ae.InnerExceptions.All(e => e is OperationCanceledException)) { }
 
             _playbackCts?.Dispose();
             _playbackCts = null;
             _playbackTask = null;
 
-            StopAllLayers(); // Ensures all layers are disposed
+            StopAllLayers();
 
-            // _transmitSink is managed by VoiceNextConnection, should not be disposed here.
-            _voiceConnection = null; // Don't dispose the connection itself, it's managed externally.
+            _voiceConnection = null;
 
             Console.WriteLine("MultiLayerAudioPlayer disposed.");
         }

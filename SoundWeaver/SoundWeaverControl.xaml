@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DesignHeight="650" d:DesignWidth="850">
     <UserControl.DataContext>
-        <ui:MainViewModel/>
+        <ui:SoundWeaverControlViewModel/>
     </UserControl.DataContext>
     <Grid Margin="10">
         <Grid.RowDefinitions>
