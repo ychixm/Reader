@@ -1,0 +1,103 @@
+<UserControl x:Class="SoundWeaver.SoundWeaverControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:SoundWeaver"
+             xmlns:ui="clr-namespace:SoundWeaver.UI"
+             mc:Ignorable="d"
+             d:DesignHeight="650" d:DesignWidth="850">
+    <UserControl.DataContext>
+        <ui:SoundWeaverControlViewModel/>
+    </UserControl.DataContext>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Bot Connection -->
+        <GroupBox Header="Discord Connection" Grid.Row="0" Margin="5">
+            <StackPanel>
+                <TextBlock Text="Bot Token:"/>
+                <TextBox Text="{Binding DiscordToken, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Text="Guild ID:"/>
+                <TextBox Text="{Binding GuildId, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Text="Voice Channel ID:"/>
+                <TextBox Text="{Binding ChannelId, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Content="Connect Bot" Command="{Binding ConnectBotCommand}" Margin="0,5,0,0"/>
+                <Button Content="Disconnect Bot" Command="{Binding DisconnectBotCommand}" Margin="0,5,0,0"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Playlist Management -->
+        <GroupBox Header="Playlist" Grid.Row="1" Margin="5">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding PlaylistPath, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,5,0" IsReadOnly="True"/>
+                    <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowsePlaylistCommand}"/>
+                </Grid>
+                <Button Content="Load Playlist" Command="{Binding LoadPlaylistCommand}" Margin="0,5,0,0"/>
+                <Button Content="Play Playlist" Command="{Binding PlayPlaylistCommand}" Margin="0,5,0,0"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Tracks & Layers -->
+        <Grid Grid.Row="2" Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <GroupBox Header="Playlist Tracks" Grid.Column="0" Margin="0,0,5,0">
+                <ListView ItemsSource="{Binding CurrentPlaylistTracks}" SelectedItem="{Binding SelectedTrack}">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Title" DisplayMemberBinding="{Binding Title}" Width="Auto"/>
+                            <GridViewColumn Header="Source" DisplayMemberBinding="{Binding Source}" Width="Auto"/>
+                            <GridViewColumn Header="Loop" DisplayMemberBinding="{Binding IsLooping}" Width="50"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </GroupBox>
+
+            <GroupBox Header="Active Layers" Grid.Column="1" Margin="5,0,0,0">
+                <StackPanel>
+                    <ListView ItemsSource="{Binding ActiveLayers}" Height="150">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Track" DisplayMemberBinding="{Binding Track.Title}" Width="Auto"/>
+                                <GridViewColumn Header="Volume" DisplayMemberBinding="{Binding Volume}" Width="50"/>
+                                <GridViewColumn Header="Looping" DisplayMemberBinding="{Binding IsLooping}" Width="60"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <TextBlock Text="Selected Track Controls:" Margin="0,10,0,0"/>
+                    <Button Content="Play Selected as New Primary" Command="{Binding PlayTrackCommand}" Margin="0,5,0,0"/>
+                    <Button Content="Add Selected as New Layer" Command="{Binding AddTrackAsLayerCommand}" Margin="0,5,0,0"/>
+                     <!-- TODO: Volume slider for selected layer, remove layer button -->
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
+        <!-- Global Controls -->
+        <GroupBox Header="Global Controls" Grid.Row="3" Margin="5">
+            <Button Content="Stop All Audio" Command="{Binding StopAllAudioCommand}" HorizontalAlignment="Left"/>
+        </GroupBox>
+
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="4" Margin="5">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</UserControl>

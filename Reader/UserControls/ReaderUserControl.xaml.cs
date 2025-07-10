@@ -39,7 +39,7 @@ namespace Reader.UserControls
             // Changed call:
             _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
             _tabOverflowManagementCtrl = this.TabOverflowControl;
-            LoadChapterListAsync();
+            //LoadChapterListAsync();
         }
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
