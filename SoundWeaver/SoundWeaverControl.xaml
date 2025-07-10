@@ -29,6 +29,7 @@
                 <TextBlock Text="Voice Channel ID:"/>
                 <TextBox Text="{Binding ChannelId, UpdateSourceTrigger=PropertyChanged}"/>
                 <Button Content="Connect Bot" Command="{Binding ConnectBotCommand}" Margin="0,5,0,0"/>
+                <Button Content="Disconnect Bot" Command="{Binding DisconnectBotCommand}" Margin="0,5,0,0"/>
             </StackPanel>
         </GroupBox>
 

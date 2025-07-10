@@ -4,6 +4,7 @@ using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SoundWeaver.Bot
@@ -16,7 +17,10 @@ namespace SoundWeaver.Bot
         private readonly ILogger<DiscordBotService> _logger;
         private readonly ILoggerFactory _loggerFactory;
 
-        public DiscordClient Client => _client; // Pour exposer au ViewModel
+        private bool _isConnectingOrDisconnecting = false;
+        private bool _disposed = false;
+
+        public DiscordClient Client => _client; // Expose to ViewModel if needed
         public VoiceNextExtension Voice => _voice;
 
         public DiscordBotService()
@@ -31,6 +35,10 @@ namespace SoundWeaver.Bot
 
         public async Task InitializeAsync(string token)
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(DiscordBotService));
+            if (_isConnectingOrDisconnecting) throw new InvalidOperationException("Already connecting or disconnecting");
+
+            _isConnectingOrDisconnecting = true;
             try
             {
                 _logger.LogInformation("Initialisation du bot Discord...");
@@ -44,6 +52,28 @@ namespace SoundWeaver.Bot
 
                 _voice = _client.UseVoiceNext();
 
+                // Events pour traçabilité/debug
+                _client.Ready += (s, e) =>
+                {
+                    _logger.LogInformation("Bot Discord READY et connecté à l'API Discord.");
+                    return Task.CompletedTask;
+                };
+                _client.GuildAvailable += (s, e) =>
+                {
+                    _logger.LogInformation("GuildAvailable: {GuildName}", e.Guild.Name);
+                    return Task.CompletedTask;
+                };
+                _client.SocketClosed += (s, e) =>
+                {
+                    _logger.LogWarning("Socket Discord fermé ({Code}) : {Reason}", e.CloseCode, e.CloseMessage);
+                    return Task.CompletedTask;
+                };
+                _client.ClientErrored += (s, e) =>
+                {
+                    _logger.LogError(e.Exception, "Erreur client Discord");
+                    return Task.CompletedTask;
+                };
+
                 await _client.ConnectAsync();
 
                 _logger.LogInformation("Bot Discord connecté avec succès.");
@@ -53,46 +83,54 @@ namespace SoundWeaver.Bot
                 _logger.LogError(ex, "Erreur lors de l'initialisation du bot Discord.");
                 throw;
             }
+            finally
+            {
+                _isConnectingOrDisconnecting = false;
+            }
         }
 
         public async Task JoinVoiceChannelAsync(ulong guildId, ulong channelId)
         {
+            if (_disposed) throw new ObjectDisposedException(nameof(DiscordBotService));
+            if (_isConnectingOrDisconnecting) throw new InvalidOperationException("Already connecting or disconnecting");
+
+            _isConnectingOrDisconnecting = true;
             try
             {
                 _logger.LogInformation("JoinVoiceChannelAsync démarré pour guild {GuildId}, channel {ChannelId}", guildId, channelId);
 
                 var guild = await _client.GetGuildAsync(guildId);
-                _logger.LogInformation("Après await GetGuildAsync : {GuildName}", guild?.Name ?? "null");
+                if (guild == null) throw new Exception($"Guild {guildId} introuvable.");
 
-                var channel = guild?.GetChannel(channelId);
-                _logger.LogInformation("Après récupération du salon vocal : {ChannelName}", channel?.Name ?? "null");
-
+                var channel = guild.GetChannel(channelId);
                 if (channel == null)
-                {
-                    _logger.LogWarning("Salon vocal {ChannelId} introuvable sur le serveur {GuildId}.", channelId, guildId);
-                    throw new Exception("Salon vocal introuvable.");
-                }
+                    throw new Exception($"Channel {channelId} introuvable sur {guild.Name}.");
 
-                // Ajout d'un timeout (10s) pour éviter le lock
                 _logger.LogInformation("Avant await _voice.ConnectAsync (timeout 10s)");
-                var connectTask = _voice.ConnectAsync(channel);
-                if (await Task.WhenAny(connectTask, Task.Delay(10000)) == connectTask)
-                {
-                    var connection = connectTask.Result;
-                    _voiceConnections[guildId] = connection;
-                    _logger.LogInformation("Connecté au salon vocal {ChannelName} ({ChannelId}) sur le serveur {GuildName} ({GuildId}).",
-                        channel.Name, channelId, guild.Name, guildId);
-                }
-                else
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                var connectionTask = _voice.ConnectAsync(channel);
+
+                var completedTask = await Task.WhenAny(connectionTask, Task.Delay(Timeout.Infinite, cts.Token));
+                if (completedTask != connectionTask)
                 {
                     _logger.LogError("Timeout: la connexion vocale Discord n'a pas abouti sous 10s !");
                     throw new TimeoutException("Timeout lors de la connexion vocale Discord !");
                 }
+
+                var connection = await connectionTask;
+                _voiceConnections[guildId] = connection;
+
+                _logger.LogInformation("Connecté au salon vocal {ChannelName} ({ChannelId}) sur le serveur {GuildName} ({GuildId}).",
+                    channel.Name, channelId, guild.Name, guildId);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception dans JoinVoiceChannelAsync (guild {GuildId} / channel {ChannelId})", guildId, channelId);
                 throw;
+            }
+            finally
+            {
+                _isConnectingOrDisconnecting = false;
             }
         }
 
@@ -104,64 +142,39 @@ namespace SoundWeaver.Bot
 
         public async Task ShutdownAsync()
         {
+            if (_isConnectingOrDisconnecting) return;
+
+            _isConnectingOrDisconnecting = true;
             try
             {
                 _logger.LogWarning("Tentative de shutdown FULL (hard) du bot Discord...");
 
                 foreach (var connection in _voiceConnections.Values)
                 {
-                    try
-                    {
-                        connection.Disconnect();
-                    }
-                    catch { /* ignorer erreurs ici */ }
+                    try { connection.Disconnect(); } catch { /* ignore */ }
                 }
                 _voiceConnections.Clear();
 
                 if (_client != null)
                 {
-                    await _client.DisconnectAsync();
-                    _client.Dispose();
+                    try { await _client.DisconnectAsync(); } catch { /* ignore */ }
+                    try { _client.Dispose(); } catch { /* ignore */ }
                     _client = null;
                 }
+
                 _logger.LogWarning("Shutdown FULL terminé.");
             }
-            catch (Exception ex)
+            finally
             {
-                _logger.LogError(ex, "Erreur lors de l'arrêt du bot Discord.");
-                throw;
+                _isConnectingOrDisconnecting = false;
             }
-        }
-
-        /// <summary>
-        /// Tente un hard reset + reconnexion jusqu'à maxAttempts, retourne true si succès, false sinon.
-        /// </summary>
-        public async Task<bool> HardResetAndReconnectAsync(string token, ulong guildId, ulong channelId, int maxAttempts = 3, int delayBetweenTriesMs = 2000)
-        {
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                try
-                {
-                    await ShutdownAsync();
-                    await Task.Delay(1000);
-                    await InitializeAsync(token);
-                    await JoinVoiceChannelAsync(guildId, channelId);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "[HardResetAndReconnect] Tentative {Attempt} échouée.", attempt);
-                    if (attempt == maxAttempts)
-                        return false;
-                    await Task.Delay(delayBetweenTriesMs);
-                }
-            }
-            return false;
         }
 
         public void Dispose()
         {
-            _client?.Dispose();
+            if (_disposed) return;
+            _disposed = true;
+            try { _client?.Dispose(); } catch { /* ignore */ }
         }
     }
 }

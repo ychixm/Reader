@@ -313,8 +313,20 @@ namespace SoundWeaver.Audio
             {
                 _playbackTask?.Wait(TimeSpan.FromSeconds(2));
             }
-            catch (OperationCanceledException) { }
-            catch (AggregateException ae) when (ae.InnerExceptions.All(e => e is OperationCanceledException)) { }
+            catch (OperationCanceledException) { /* Attendu, on ignore */ }
+            catch (AggregateException ae)
+            {
+                // Ignore toutes les exceptions d'annulation attendues
+                if (ae.InnerExceptions.All(
+                        ex => ex is OperationCanceledException))
+                {
+                    // Pas d'action, annulation normale
+                }
+                else
+                {
+                    throw; // On relance les autres exceptions inattendues
+                }
+            }
 
             _playbackCts?.Dispose();
             _playbackCts = null;
