@@ -15,7 +15,7 @@ namespace SoundWeaver.Bot
         private VoiceNextExtension _voice;
         private readonly Dictionary<ulong, VoiceNextConnection> _voiceConnections = new();
         private readonly ILogger<DiscordBotService> _logger;
-        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILoggerFactory _loggerFactory; // Keep if DSharpPlus needs it, or remove if only ILogger is used by DSharpPlus
 
         private bool _isConnectingOrDisconnecting = false;
         private bool _disposed = false;
@@ -23,14 +23,11 @@ namespace SoundWeaver.Bot
         public DiscordClient Client => _client; // Expose to ViewModel if needed
         public VoiceNextExtension Voice => _voice;
 
-        public DiscordBotService()
+        // Constructor updated for DI
+        public DiscordBotService(ILogger<DiscordBotService> logger, ILoggerFactory loggerFactory)
         {
-            _loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder.AddConsole();
-                builder.SetMinimumLevel(LogLevel.Information);
-            });
-            _logger = _loggerFactory.CreateLogger<DiscordBotService>();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         public async Task InitializeAsync(string token)

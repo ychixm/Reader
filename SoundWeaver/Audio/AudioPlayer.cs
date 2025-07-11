@@ -1,4 +1,5 @@
 using DSharpPlus.VoiceNext;
+using Microsoft.Extensions.Logging;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using SoundWeaver.Models; // Assuming AudioTrack will be here
@@ -12,6 +13,7 @@ namespace SoundWeaver.Audio
 {
     public class AudioPlayer : IDisposable
     {
+        private readonly ILogger<AudioPlayer> _logger;
         private VoiceNextConnection _voiceConnection;
         private VoiceTransmitSink _transmitSink;
         private MixingSampleProvider _mixer;
@@ -22,8 +24,9 @@ namespace SoundWeaver.Audio
         private ConcurrentDictionary<string, IWavePlayer> _outputDevices; // For local playback if needed
         private ConcurrentDictionary<string, WaveStream> _fileReaders; // For managing active streams
 
-        public AudioPlayer(VoiceNextConnection voiceConnection)
+        public AudioPlayer(VoiceNextConnection voiceConnection, ILogger<AudioPlayer> logger)
         {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _voiceConnection = voiceConnection ?? throw new ArgumentNullException(nameof(voiceConnection));
             _transmitSink = _voiceConnection.GetTransmitSink();
 
@@ -40,9 +43,11 @@ namespace SoundWeaver.Audio
         {
             if (!File.Exists(filePath))
             {
-                Console.WriteLine($"Error: File not found {filePath}");
+                _logger.LogError("File not found: {FilePath}", filePath);
                 return;
             }
+
+            _logger.LogInformation("Attempting to play file: {FilePath}, Loop: {Loop}, Volume: {Volume}", filePath, loop, volume);
 
             try
             {
@@ -76,6 +81,7 @@ namespace SoundWeaver.Audio
                 // If playback task isn't running, start it.
                 if (_playbackTask == null || _playbackTask.IsCompleted)
                 {
+                    _logger.LogDebug("Playback task is null or completed, starting new playback task.");
                     _playbackCts?.Cancel(); // Cancel previous if any
                     _playbackCts = new CancellationTokenSource();
                     _playbackTask = Task.Run(() => NAudioToDiscordBridge.SendStreamAsync(_mixer.ToWaveProvider16(), _transmitSink, 20, _playbackCts.Token));
@@ -83,7 +89,7 @@ namespace SoundWeaver.Audio
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error playing file {filePath}: {ex.Message}");
+                _logger.LogError(ex, "Error playing file {FilePath}", filePath);
                 // Clean up the specific reader if it failed
                 if (_fileReaders.TryRemove(filePath, out var reader))
                 {
@@ -94,11 +100,13 @@ namespace SoundWeaver.Audio
 
         public void StopPlayback()
         {
+            _logger.LogInformation("Stopping playback.");
             _playbackCts?.Cancel();
             _playbackTask = null; // Allow it to be restarted
 
             // Clear all inputs from mixer and dispose readers
             _mixer.RemoveAllMixerInputs();
+            _logger.LogDebug("Removed all mixer inputs.");
             foreach (var key in _fileReaders.Keys)
             {
                 if (_fileReaders.TryRemove(key, out var reader))
@@ -114,12 +122,13 @@ namespace SoundWeaver.Audio
             // This is complex with MixingSampleProvider as it doesn't directly expose inputs by ID.
             // Would need to re-create the mixer or use a more advanced mixing setup.
             // For now, this is a limitation. MultiLayerAudioPlayer will address this better.
-            Console.WriteLine("RemoveTrack is not fully implemented for simple AudioPlayer. Use StopPlayback or wait for MultiLayerAudioPlayer.");
+            _logger.LogWarning("RemoveTrack is not fully implemented for simple AudioPlayer. FilePath: {FilePath}", filePath);
         }
 
 
         public void Dispose()
         {
+            _logger.LogInformation("Disposing AudioPlayer.");
             StopPlayback();
             _playbackCts?.Dispose();
             _transmitSink?.Dispose(); // Sink is from VoiceConnection, D#+ might manage its lifetime

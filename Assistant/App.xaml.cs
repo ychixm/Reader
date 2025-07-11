@@ -37,6 +37,9 @@ namespace Assistant
             });
 
             services.AddSingleton<MainFrame>();
+
+            // Add SoundWeaver specific services
+            services.AddSoundWeaverServices();
         }
 
         private void LoadThemeSpecificTextBlockStyles(ThemeMode themeMode)
