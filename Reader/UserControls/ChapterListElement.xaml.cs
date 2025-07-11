@@ -5,7 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Media; // Added for Typeface, FormattedText
 using Reader.Models;
-using Utils;
+using Utils; // ILoggerService will be here
 using Utils.Wpf; // Added for TextBlockUtils
 
 
@@ -17,6 +17,7 @@ namespace Reader.UserControls
     /// </summary>
     public partial class ChapterListElement : UserControl
     {
+        private readonly ILoggerService _logger;
         public bool IsSpecialRandomElement { get; set; } = false; // Added for Random Chapter element
         private string _originalChapterText = string.Empty; // Added this line
         public event EventHandler<ChapterOpenRequestedEventArgs>? ChapterOpenRequested;
@@ -34,8 +35,10 @@ namespace Reader.UserControls
         /// Initializes a new instance of the <see cref="ChapterListElement"/> class.
         /// </summary>
         /// <param name="directoryInfo">The directory information for the chapter.</param>
-        public ChapterListElement(DirectoryInfo directoryInfo)
+        /// <param name="logger">The logger service.</param>
+        public ChapterListElement(DirectoryInfo directoryInfo, ILoggerService logger)
         {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.Width = DesignWidth;
             this.MinWidth = DesignWidth;
             this.Height = DesignHeight;
@@ -119,7 +122,7 @@ namespace Reader.UserControls
                     }
                     catch (Exception ex_io)
                     {
-                        Utils.LogService.LogError(ex_io, "Error enumerating files in directory {DirectoryFullName}", _directory.DirectoryInfo.FullName);
+                        _logger.LogError(ex_io, "Error enumerating files in directory {DirectoryFullName}", _directory.DirectoryInfo.FullName);
                         return new List<string>(); // Return empty list on error
                     }
                 });

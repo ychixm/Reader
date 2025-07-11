@@ -3,29 +3,33 @@ using Reader.UserControls;
 using Reader.ViewModels;
 using Reader.Models; 
 using Utils.Models;
-using Utils; 
+using Utils; // ILoggerService is here
 
 namespace Reader
 {
     public class ReaderSubApplication : ISubApplication
     {
+        private readonly ILoggerService _logger;
         private ReaderUserControl? _mainView;
         private ReaderOptionsViewModel? _optionsViewModel;
         private ReaderSettings _readerSettings; // Changed type back to Reader.Models.ReaderSettings
 
         public string Name => "Reader";
 
-        public ReaderSubApplication()
+        public ReaderSubApplication(ILoggerService logger)
         {
+            _logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
             // Load initial settings for the Reader module using the generic service
             _readerSettings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
+            _logger.LogInfo("ReaderSubApplication initialized.");
         }
 
         public UserControl GetMainView()
         {
             if (_mainView == null)
             {
-                _mainView = new ReaderUserControl();
+                _logger.LogInfo("Creating ReaderUserControl main view.");
+                _mainView = new ReaderUserControl(_logger); // Pass logger
                 _mainView.ApplyNavigationSettings(_readerSettings.EnabledNavigationMethods);
                 if (Enum.TryParse<TabOverflowMode>(_readerSettings.DefaultTabOverflowMode, out var mode))
                 {
@@ -43,7 +47,8 @@ namespace Reader
         {
             if (_optionsViewModel == null)
             {
-                _optionsViewModel = new ReaderOptionsViewModel();
+                _logger.LogInfo("Creating ReaderOptionsViewModel.");
+                _optionsViewModel = new ReaderOptionsViewModel(_logger); // Pass logger
                 // _optionsViewModel.LoadSettings() is called by OptionsUserControl or by itself if needed.
                 // The plan for OptionsUserControl was to call LoadSettings, which is good.
                 // If called here too, it's redundant but harmless if LoadSettings is idempotent.

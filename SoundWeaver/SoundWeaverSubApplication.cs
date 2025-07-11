@@ -1,21 +1,24 @@
 using System.Windows.Controls;
 using SoundWeaver.Models; // For SoundWeaverSettings
-using Utils; // For ISubApplication, IOptionsViewModel, AppSettingsService
+using Utils; // For ISubApplication, IOptionsViewModel, AppSettingsService, ILoggerService
 
 namespace SoundWeaver
 {
     public class SoundWeaverSubApplication : ISubApplication
     {
+        private readonly ILoggerService _logger;
         private SoundWeaverControl? _mainView;
         private SoundWeaverOptionsViewModel? _optionsViewModel;
         private SoundWeaverSettings _settings;
 
         public string Name => "SoundWeaver";
 
-        public SoundWeaverSubApplication()
+        public SoundWeaverSubApplication(ILoggerService logger)
         {
+            _logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
             // Load initial settings for the SoundWeaver module
             _settings = AppSettingsService.LoadModuleSettings<SoundWeaverSettings>("SoundWeaver", () => new SoundWeaverSettings());
+            _logger.LogInfo("SoundWeaverSubApplication initialized.");
         }
 
         public UserControl GetMainView()
@@ -63,7 +66,7 @@ namespace SoundWeaver
                 //    // viewModel.UpdateDiscordToken(_settings.DefaultBotToken); // Hypothetical method
                 //    // Or, if settings directly affect UI elements not bound through MainViewModel's core logic.
                 // }
-                System.Console.WriteLine("SoundWeaverSubApplication: ApplyOptions called. Settings reloaded.");
+                _logger.LogInfo("SoundWeaverSubApplication: ApplyOptions called. Settings reloaded.");
                 // Potentially, MainViewModel could also listen to some kind of settings changed event.
             }
         }

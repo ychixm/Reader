@@ -21,7 +21,7 @@ namespace Utils // Changed namespace
             }
             catch (Exception ex) // Catch potential errors during file reading or deserialization
             {
-                Utils.LogService.LogError(ex, "Error loading settings from {FilePath}", filePath);
+                Serilog.Log.ForContext<JsonSettingsService<T>>().Error(ex, "Error loading settings from {FilePath}", filePath);
                 return new T(); // Return default on error
             }
         }
@@ -45,7 +45,7 @@ namespace Utils // Changed namespace
             }
             catch (Exception ex) // Catch potential errors during serialization or file writing
             {
-                Utils.LogService.LogError(ex, "Error saving settings to {FilePath}", filePath);
+                Serilog.Log.ForContext<JsonSettingsService<T>>().Error(ex, "Error saving settings to {FilePath}", filePath);
                 // Optionally re-throw or handle more gracefully
             }
         }

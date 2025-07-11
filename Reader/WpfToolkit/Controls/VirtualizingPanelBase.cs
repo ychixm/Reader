@@ -89,9 +89,9 @@ namespace WpfToolkit.Controls
                     }
                     catch (Exception ex_reflect)
                     {
-                        Utils.LogService.LogError(ex_reflect, "Error getting ItemsOwner via reflection in VirtualizingPanelBase. Falling back to public ItemsControl.");
+                        Serilog.Log.ForContext<VirtualizingPanelBase>().Error(ex_reflect, "Error getting ItemsOwner via reflection in VirtualizingPanelBase. Falling back to public ItemsControl.");
                         _itemsOwner = ItemsControl.GetItemsOwner(this);
-                        Utils.LogService.LogWarning("VirtualizingPanelBase: ItemsOwner reflection failed, using public GetItemsOwner as fallback.");
+                        Serilog.Log.ForContext<VirtualizingPanelBase>().Warning("VirtualizingPanelBase: ItemsOwner reflection failed, using public GetItemsOwner as fallback.");
                     }
                 }
                 return _itemsOwner;

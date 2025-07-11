@@ -4,8 +4,12 @@ using System.Data;
 using System.Windows;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+// Removed Microsoft.Extensions.Logging to replace with Serilog
 using SoundWeaver; // For AddSoundWeaverServices()
+using Utils; // Required for ILoggerService and LogService
+using Serilog;
+using Serilog.Events;
+using System.IO;
 // For .NET 9 ThemeMode enum:
 // No specific using needed for ThemeMode enum if it's directly accessible via Application.Current.ThemeMode
 // or if System.Windows.Controls.ThemeMode is used.
@@ -18,6 +22,8 @@ namespace Assistant
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; }
+        public static Serilog.Core.LoggingLevelSwitch? GlobalLogLevelSwitch { get; private set; } // Made public static
+        private ILoggerService _logger; // Store logger instance
 
         private ResourceDictionary? _currentTextBlockThemeDictionary = null;
 
@@ -26,15 +32,43 @@ namespace Assistant
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
             ServiceProvider = serviceCollection.BuildServiceProvider();
+            _logger = ServiceProvider.GetRequiredService<ILoggerService>(); // Get logger instance
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
+            // Configure Serilog
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string logDirectory = Path.Combine(appDataPath, "Assistant");
+            Directory.CreateDirectory(logDirectory);
+            string logFilePath = Path.Combine(logDirectory, "logs.txt");
+
+            GlobalLogLevelSwitch = new Serilog.Core.LoggingLevelSwitch(); // Assign to the static property
+            GlobalLogLevelSwitch.MinimumLevel = LogEventLevel.Verbose; // Default log level
+
+            Serilog.Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.ControlledBy(GlobalLogLevelSwitch) // Use the static property
+                .Enrich.FromLogContext()
+                .WriteTo.Debug(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.File(logFilePath,
+                              outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+                              rollingInterval: RollingInterval.Day,
+                              retainedFileCountLimit: 7,
+                              fileSizeLimitBytes: 10 * 1024 * 1024, // 10 MB
+                              rollOnFileSizeLimit: true)
+                .CreateLogger();
+
             services.AddLogging(builder =>
             {
-                builder.AddConsole(); 
-                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddSerilog(dispose: true); // Use Serilog for logging
             });
+
+            // Register custom LogService
+            services.AddSingleton<ILoggerService, LogService>();
+            // Pass the global LogLevelSwitch to LogService if it needs to control it,
+            // or ensure LogService uses the Serilog.Log.Logger which is already configured.
+            // For now, LogService creates its own switch, this could be centralized.
+            // services.AddSingleton<Serilog.Core.LoggingLevelSwitch>(levelSwitch); // Optional: if LogService needs direct access
 
             services.AddSingleton<MainFrame>();
         }
@@ -65,7 +99,8 @@ namespace Assistant
                 }
                 catch (Exception ex_reg)
                 {
-                    Utils.LogService.LogError(ex_reg, "Error reading system theme from registry. Defaulting to dark theme.");
+                    // Use the injected logger instance
+                    _logger?.LogError(ex_reg, "Error reading system theme from registry. Defaulting to dark theme.");
                     isSystemDark = true;
                 }
             }
@@ -89,7 +124,8 @@ namespace Assistant
                 }
                 catch (Exception ex)
                 {
-                    Utils.LogService.LogError(ex, "Error loading TextBlock theme dictionary for URI {DictionaryUriString}", dictionaryUriString);
+                    // Use the injected logger instance
+                     _logger?.LogError(ex, "Error loading TextBlock theme dictionary for URI {DictionaryUriString}", dictionaryUriString);
                 }
             }
         }
@@ -97,12 +133,14 @@ namespace Assistant
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            _logger.LogInfo("Application starting up.");
 
             var mainWindow = ServiceProvider.GetRequiredService<MainFrame>();
             mainWindow.Show();
 
             ThemeMode currentMode = Application.Current.ThemeMode;
             LoadThemeSpecificTextBlockStyles(currentMode);
+            _logger.LogInfo("Application startup complete.");
         }
     }
 

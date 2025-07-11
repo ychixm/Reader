@@ -1,18 +1,25 @@
 using System.Collections.ObjectModel; // For ObservableCollection
 using System.Windows; // For RoutedEventArgs
 using System.Windows.Controls; // For UserControl, GroupBox, MessageBox
-using Utils; // For ISubApplication, IOptionsViewModel
+using Utils; // For ISubApplication, IOptionsViewModel, ILoggerService
+using Microsoft.Extensions.DependencyInjection; // For GetRequiredService
 
 namespace Assistant
 {
     public partial class OptionsUserControl : UserControl
     {
+        private readonly ILoggerService _logger;
+
         // Collection to hold the GroupBox views (wrapping UserControl views from each sub-application's IOptionsViewModel)
         public ObservableCollection<GroupBox> OptionViews { get; set; }
 
         public OptionsUserControl()
         {
             InitializeComponent();
+
+            // Resolve the logger from the service provider
+            _logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
+
             OptionViews = new ObservableCollection<GroupBox>();
             DataContext = this;
 
@@ -86,7 +93,7 @@ namespace Assistant
                     }
                     catch (System.Exception ex)
                     {
-                        Utils.LogService.LogError(ex, "Error applying options for {AppName}", app.Name);
+                        _logger.LogError(ex, "Error applying options for {AppName}", app.Name);
                         allAppliedSuccessfully = false;
                         MessageBox.Show($"Error applying options for {app.Name}:\n{ex.Message}", "Apply Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }

@@ -7,14 +7,18 @@ using Windows.Storage;
 using Windows.Storage.Pickers;
 using System.Windows.Interop; // For WindowInteropHelper
 using WinRT.Interop; // For InitializeWithWindow
+using Utils; // For ILoggerService
 
 namespace Reader.UserControls
 {
     public partial class ReaderOptionsView : UserControl
     {
-        public ReaderOptionsView()
+        private readonly ILoggerService _logger;
+
+        public ReaderOptionsView(ILoggerService logger)
         {
             InitializeComponent(); // This must be first
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             TabOverflowComboBox.ItemsSource = Enum.GetValues(typeof(Utils.Models.TabOverflowMode));
             // The DataContext is typically set by the ViewModel in GetView(), or in XAML for design-time.
             // If ReaderOptionsViewModel.GetView() sets DataContext = this (where 'this' is ReaderOptionsViewModel),
@@ -45,7 +49,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_picker)
             {
-                Utils.LogService.LogError(ex_picker, "Error picking folder.");
+                _logger.LogError(ex_picker, "Error picking folder.");
             }
             if (pickedFolder != null) // Continue if successful
             {
