@@ -3,6 +3,7 @@ using SoundWeaver.Models; // For SoundWeaverSettings
 using SoundWeaver.UI; // For SoundWeaverControlViewModel
 using System.Windows.Controls;
 using Utils; // For ISubApplication, IOptionsViewModel, AppSettingsService
+using Assistant;
 
 namespace SoundWeaver
 {

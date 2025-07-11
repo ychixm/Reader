@@ -39,7 +39,7 @@ namespace SoundWeaver.Audio
             _audioLayerLogger = audioLayerLogger ?? throw new ArgumentNullException(nameof(audioLayerLogger));
             _voiceConnection = voiceConnection ?? throw new ArgumentNullException(nameof(voiceConnection));
 
-            var guildIdString = _voiceConnection.TargetGuild?.Id.ToString() ?? "Unknown Guild";
+            var guildIdString = _voiceConnection.Channel.Guild?.Id.ToString() ?? "Unknown Guild";
             _logger.LogInformation("MultiLayerAudioPlayer initializing for Guild ID: {GuildId}", guildIdString);
 
             _transmitSink = _voiceConnection.GetTransmitSink();
@@ -87,10 +87,10 @@ namespace SoundWeaver.Audio
                 }
                 finally
                 {
-                    _logger.LogInformation("Playback task (SendStreamAsync) finished for Guild ID: {GuildId}", _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                    _logger.LogInformation("Playback task (SendStreamAsync) finished for Guild ID: {GuildId}", _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 }
             }, _playbackCts.Token);
-            _logger.LogDebug("Playback engine (re)started for Guild ID: {GuildId}", _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+            _logger.LogDebug("Playback engine (re)started for Guild ID: {GuildId}", _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
         }
 
         public AudioLayer AddLayer(AudioTrack track, bool? loopOverride = null, float? initialVolume = null)
@@ -102,7 +102,7 @@ namespace SoundWeaver.Audio
             }
 
             _logger.LogInformation("Attempting to add layer for track: {TrackTitle}, Source: {TrackSource}, LoopOverride: {LoopOverride}, InitialVolume: {InitialVolume} for Guild ID: {GuildId}",
-                                 track.Title, track.Source.OriginalString, loopOverride, initialVolume, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                 track.Title, track.Source.OriginalString, loopOverride, initialVolume, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
 
             try
             {
@@ -124,13 +124,13 @@ namespace SoundWeaver.Audio
                     _mixer.AddMixerInput(layer.SampleProvider);
                     layer.PlaybackEnded += OnLayerPlaybackEnded;
                     _logger.LogInformation("Successfully added layer: {TrackTitle} (ID: {LayerId}), Volume: {Volume}, Looping: {Looping} for Guild ID: {GuildId}",
-                                         track.Title, layer.Id, layer.Volume, layer.IsLooping, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                         track.Title, layer.Id, layer.Volume, layer.IsLooping, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                     return layer;
                 }
                 else
                 {
                     _logger.LogWarning("Failed to add layer to ConcurrentDictionary (duplicate ID or other ConcurrentDictionary issue for track): {TrackTitle}, Layer ID: {LayerId} for Guild ID: {GuildId}",
-                                     track.Title, layer.Id, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                     track.Title, layer.Id, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                     layer.Dispose();
                     return null;
                 }
@@ -138,13 +138,13 @@ namespace SoundWeaver.Audio
             catch (FileNotFoundException ex)
             {
                 _logger.LogError(ex, "File not found for track {TrackTitle} when trying to add layer. Path: {FilePath} for Guild ID: {GuildId}",
-                               track.Title, ex.FileName, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                               track.Title, ex.FileName, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 return null;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Generic error adding layer for track {TrackTitle} for Guild ID: {GuildId}",
-                               track.Title, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                               track.Title, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 return null;
             }
         }
@@ -154,19 +154,19 @@ namespace SoundWeaver.Audio
             if (sender is AudioLayer layer)
             {
                 _logger.LogInformation("Layer '{TrackTitle}' (ID: {LayerId}) has finished playback and is being removed for Guild ID: {GuildId}.",
-                                     layer.Track.Title, layer.Id, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                     layer.Track.Title, layer.Id, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 RemoveLayer(layer.Id, true);
             }
             else
             {
                 _logger.LogWarning("OnLayerPlaybackEnded received event from unexpected sender type: {SenderType} for Guild ID: {GuildId}",
-                                 sender?.GetType().Name ?? "null", _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                 sender?.GetType().Name ?? "null", _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             }
         }
 
         public void UpdateLayerStates()
         {
-            _logger.LogTrace("UpdateLayerStates called. Active layers: {Count} for Guild ID: {GuildId}", _activeLayers.Count, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+            _logger.LogTrace("UpdateLayerStates called. Active layers: {Count} for Guild ID: {GuildId}", _activeLayers.Count, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             foreach (var layer in _activeLayers.Values.ToList())
             {
                 layer.CheckPlaybackEnded();
@@ -177,28 +177,28 @@ namespace SoundWeaver.Audio
         {
             if (string.IsNullOrEmpty(layerId))
             {
-                _logger.LogWarning("RemoveLayer called with null or empty layerId for Guild ID: {GuildId}.", _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                _logger.LogWarning("RemoveLayer called with null or empty layerId for Guild ID: {GuildId}.", _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 return false;
             }
             if (_activeLayers.TryRemove(layerId, out AudioLayer layer))
             {
                 _logger.LogInformation("Removing layer: {TrackTitle} (ID: {LayerId}) for Guild ID: {GuildId}",
-                                     layer.Track?.Title ?? "N/A", layer.Id, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                     layer.Track?.Title ?? "N/A", layer.Id, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 _mixer.RemoveMixerInput(layer.SampleProvider);
                 layer.PlaybackEnded -= OnLayerPlaybackEnded;
                 layer.Dispose();
                 _logger.LogInformation("Successfully removed layer: {TrackTitle} (ID: {LayerId}) for Guild ID: {GuildId}",
-                                     layer.Track?.Title ?? "N/A", layer.Id, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                     layer.Track?.Title ?? "N/A", layer.Id, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 return true;
             }
 
             if (!autoCleanup)
             {
-                _logger.LogWarning("Layer with ID {LayerId} not found for removal (explicit attempt) for Guild ID: {GuildId}.", layerId, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                _logger.LogWarning("Layer with ID {LayerId} not found for removal (explicit attempt) for Guild ID: {GuildId}.", layerId, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             }
             else
             {
-                _logger.LogTrace("Layer with ID {LayerId} not found for removal (auto-cleanup, might be already removed) for Guild ID: {GuildId}.", layerId, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                _logger.LogTrace("Layer with ID {LayerId} not found for removal (auto-cleanup, might be already removed) for Guild ID: {GuildId}.", layerId, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             }
             return false;
         }
@@ -207,10 +207,10 @@ namespace SoundWeaver.Audio
         {
             if (track == null)
             {
-                _logger.LogWarning("RemoveLayer called with a null track instance for Guild ID: {GuildId}.", _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                _logger.LogWarning("RemoveLayer called with a null track instance for Guild ID: {GuildId}.", _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 return;
             }
-            _logger.LogInformation("Attempting to remove layer by track object: {TrackTitle} for Guild ID: {GuildId}", track.Title, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+            _logger.LogInformation("Attempting to remove layer by track object: {TrackTitle} for Guild ID: {GuildId}", track.Title, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             var layerInstance = _activeLayers.FirstOrDefault(kvp => kvp.Value.Track == track).Value;
             if (layerInstance != null)
             {
@@ -218,7 +218,7 @@ namespace SoundWeaver.Audio
             }
             else
             {
-                _logger.LogInformation("No active layer found for track: {TrackTitle} during removal attempt by track object for Guild ID: {GuildId}.", track.Title, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                _logger.LogInformation("No active layer found for track: {TrackTitle} during removal attempt by track object for Guild ID: {GuildId}.", track.Title, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             }
         }
 
@@ -228,7 +228,7 @@ namespace SoundWeaver.Audio
             {
                 return layer;
             }
-            _logger.LogDebug("Layer with ID {LayerId} not found in GetLayer for Guild ID: {GuildId}.", layerId, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+            _logger.LogDebug("Layer with ID {LayerId} not found in GetLayer for Guild ID: {GuildId}.", layerId, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             return null;
         }
 
@@ -239,10 +239,10 @@ namespace SoundWeaver.Audio
                 float oldVolume = layer.Volume;
                 layer.Volume = volume;
                 _logger.LogInformation("MultiLayerAudioPlayer: Set volume for layer {TrackTitle} (ID: {LayerId}) from {OldVolume} to {NewVolume} for Guild ID: {GuildId}",
-                                     layer.Track.Title, layerId, oldVolume, layer.Volume, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                     layer.Track.Title, layerId, oldVolume, layer.Volume, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 return true;
             }
-            _logger.LogWarning("Layer with ID {LayerId} not found for volume adjustment for Guild ID: {GuildId}.", layerId, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+            _logger.LogWarning("Layer with ID {LayerId} not found for volume adjustment for Guild ID: {GuildId}.", layerId, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             return false;
         }
 
@@ -254,22 +254,22 @@ namespace SoundWeaver.Audio
                 {
                     layer.IsLooping = loop;
                     _logger.LogInformation("MultiLayerAudioPlayer: Set looping for layer {TrackTitle} (ID: {LayerId}) to {LoopState} for Guild ID: {GuildId}",
-                                         layer.Track.Title, layerId, loop, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                         layer.Track.Title, layerId, loop, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 }
                 else
                 {
                     _logger.LogDebug("MultiLayerAudioPlayer: Looping for layer {TrackTitle} (ID: {LayerId}) already set to {LoopState} for Guild ID: {GuildId}.",
-                                   layer.Track.Title, layerId, loop, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+                                   layer.Track.Title, layerId, loop, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
                 }
                 return true;
             }
-            _logger.LogWarning("Layer with ID {LayerId} not found for loop adjustment for Guild ID: {GuildId}.", layerId, _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild");
+            _logger.LogWarning("Layer with ID {LayerId} not found for loop adjustment for Guild ID: {GuildId}.", layerId, _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild");
             return false;
         }
 
         public void StopAllLayers()
         {
-            var guildIdString = _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild";
+            var guildIdString = _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild";
             _logger.LogInformation("Stopping all layers for Guild ID: {GuildId}. Current count: {Count}", guildIdString, _activeLayers.Count);
             var layerIds = _activeLayers.Keys.ToList();
             foreach (var layerId in layerIds)
@@ -281,7 +281,7 @@ namespace SoundWeaver.Audio
 
         public void Dispose()
         {
-            var guildIdString = _voiceConnection?.TargetGuild?.Id.ToString() ?? "Unknown Guild (already nulled during shutdown)";
+            var guildIdString = _voiceConnection?.Channel.Guild?.Id.ToString() ?? "Unknown Guild (already nulled during shutdown)";
             _logger.LogInformation("Disposing MultiLayerAudioPlayer for Guild ID: {GuildId}...", guildIdString);
 
             _playbackCts?.Cancel();
