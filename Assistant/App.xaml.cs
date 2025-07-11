@@ -32,7 +32,7 @@ namespace Assistant
         {
             services.AddLogging(builder =>
             {
-                builder.AddConsole(); 
+                builder.AddConsole();
                 builder.SetMinimumLevel(LogLevel.Information);
             });
 

@@ -52,7 +52,7 @@ namespace SoundWeaver
                 // If it does log, it should also be resolved via DI or passed logger factory.
                 // For now, keeping as is, as it wasn't part of the logger injection list.
                 _optionsViewModel = new SoundWeaverOptionsViewModel();
-                 _logger.LogDebug("Created SoundWeaverOptionsViewModel.");
+                _logger.LogDebug("Created SoundWeaverOptionsViewModel.");
                 // _optionsViewModel.LoadSettings(); // ViewModel now loads settings in its constructor
             }
             return _optionsViewModel;

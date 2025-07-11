@@ -105,7 +105,7 @@ namespace SoundWeaver.UI
             // _playlistManager = new PlaylistManager(_loggerFactory.CreateLogger<PlaylistManager>());
             // For this step, we only modify this ViewModel's constructor.
             // The instantiation of _playlistManager, _botService, _audioPlayer will be updated in step 5 (Register SoundWeaver services for DI)
-             _playlistManager = new PlaylistManager(_loggerFactory.CreateLogger<PlaylistManager>());
+            _playlistManager = new PlaylistManager(_loggerFactory.CreateLogger<PlaylistManager>());
 
 
             ConnectBotCommand = new RelayCommand(async _ => await ConnectBotAsync(),
