@@ -12,29 +12,15 @@ namespace Utils
     /// </summary>
     public class LogService : ILoggerService
     {
-        // _logger will use the globally configured Serilog.Log.Logger
         private readonly Serilog.ILogger _logger;
-        private readonly Serilog.Core.LoggingLevelSwitch? _globalLevelSwitch;
+        private readonly Serilog.Core.LoggingLevelSwitch _levelSwitch; // Changed from _globalLevelSwitch and made non-nullable
 
-        public LogService()
+        // Constructor now accepts LoggingLevelSwitch
+        public LogService(Serilog.Core.LoggingLevelSwitch levelSwitch)
         {
-            // Assign the globally configured logger.
-            // This assumes Serilog.Log.Logger has been configured by the application's entry point (Assistant.App.xaml.cs)
-            _logger = Serilog.Log.Logger;
-
-            // Attempt to get the global level switch.
-            // This relies on Assistant.App.GlobalLogLevelSwitch being set.
-            // Using a direct static reference here is a simplification. A more decoupled way
-            // would be to inject the LoggingLevelSwitch if strict DI adherence is paramount even for this.
-            // However, given LogService itself is a thin wrapper/facade, this direct access is pragmatic.
-            _globalLevelSwitch = Assistant.App.GlobalLogLevelSwitch;
-
-            if (_globalLevelSwitch == null)
-            {
-                // Log a warning if the global switch isn't found. SetMinimumLogLevel might not work as expected.
-                _logger.Warning("GlobalLogLevelSwitch not found by LogService. Dynamic log level changes may not apply via SetMinimumLogLevel.");
-            }
-             _logger.Debug("LogService instance created, using globally configured Serilog.Log.Logger.");
+            _logger = Serilog.Log.Logger; // Assumes Serilog.Log.Logger is configured globally
+            _levelSwitch = levelSwitch ?? throw new ArgumentNullException(nameof(levelSwitch));
+            _logger.Debug("LogService instance created, using globally configured Serilog.Log.Logger and provided LoggingLevelSwitch.");
         }
 
         /// <summary>
@@ -58,15 +44,9 @@ namespace Utils
         /// <param name="level">The minimum LogEventLevel to set.</param>
         public void SetMinimumLogLevel(LogEventLevel level)
         {
-            if (_globalLevelSwitch != null)
-            {
-                _globalLevelSwitch.MinimumLevel = level;
-                _logger.Information("Global minimum log level set to {LogLevel}", level);
-            }
-            else
-            {
-                _logger.Warning("Cannot set minimum log level: GlobalLogLevelSwitch is not available.");
-            }
+            // Uses the injected levelSwitch directly
+            _levelSwitch.MinimumLevel = level;
+            _logger.Information("Minimum log level set to {LogLevel}", level);
         }
 
         /// <summary>

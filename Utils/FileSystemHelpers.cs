@@ -23,7 +23,7 @@ namespace Utils // Changed namespace
             }
             catch (Exception ex) // Consider logging the exception ex
             {
-                LogService.LogError(ex, "Error getting directories from path {DirectoryPath}", directoryPath);
+                Serilog.Log.ForContext(typeof(FileSystemHelpers)).Error(ex, "Error getting directories from path {DirectoryPath}", directoryPath);
                 return new List<DirectoryInfo>();
             }
         }
@@ -38,12 +38,12 @@ namespace Utils // Changed namespace
         {
             if (directoryInfo == null)
             {
-                LogService.LogWarning("GetFirstFileByExtensions: directoryInfo was null.");
+                Serilog.Log.ForContext(typeof(FileSystemHelpers)).Warning("GetFirstFileByExtensions: directoryInfo was null.");
                 return null;
             }
             if (validExtensions == null || validExtensions.Count == 0)
             {
-                LogService.LogWarning("GetFirstFileByExtensions: validExtensions was null or empty.");
+                Serilog.Log.ForContext(typeof(FileSystemHelpers)).Warning("GetFirstFileByExtensions: validExtensions was null or empty.");
                 return null;
             }
 
@@ -62,7 +62,7 @@ namespace Utils // Changed namespace
             }
             catch (Exception ex) // Consider logging the exception ex
             {
-                LogService.LogError(ex, "Error getting first file by extensions in directory {DirectoryFullName}", directoryInfo.FullName);
+                Serilog.Log.ForContext(typeof(FileSystemHelpers)).Error(ex, "Error getting first file by extensions in directory {DirectoryFullName}", directoryInfo.FullName);
                 return null;
             }
         }
@@ -76,7 +76,7 @@ namespace Utils // Changed namespace
         {
             if (string.IsNullOrEmpty(imagePath))
             {
-                LogService.LogWarning("GetImageDimensions: imagePath was null or empty.");
+                Serilog.Log.ForContext(typeof(FileSystemHelpers)).Warning("GetImageDimensions: imagePath was null or empty.");
                 return (0,0);
             }
 
@@ -89,7 +89,7 @@ namespace Utils // Changed namespace
             }
             catch (Exception ex) // Consider logging the exception ex
             {
-                LogService.LogError(ex, "Error getting image dimensions for {ImagePath}", imagePath);
+                Serilog.Log.ForContext(typeof(FileSystemHelpers)).Error(ex, "Error getting image dimensions for {ImagePath}", imagePath);
                 return (0, 0);
             }
         }

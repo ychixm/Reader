@@ -63,12 +63,9 @@ namespace Assistant
                 builder.AddSerilog(dispose: true); // Use Serilog for logging
             });
 
-            // Register custom LogService
-            services.AddSingleton<ILoggerService, LogService>();
-            // Pass the global LogLevelSwitch to LogService if it needs to control it,
-            // or ensure LogService uses the Serilog.Log.Logger which is already configured.
-            // For now, LogService creates its own switch, this could be centralized.
-            // services.AddSingleton<Serilog.Core.LoggingLevelSwitch>(levelSwitch); // Optional: if LogService needs direct access
+            // Register custom LogService, providing the GlobalLogLevelSwitch instance
+            services.AddSingleton<ILoggerService>(sp => new LogService(GlobalLogLevelSwitch ?? new Serilog.Core.LoggingLevelSwitch()));
+            // The null-coalescing operator provides a fallback, though GlobalLogLevelSwitch should always be initialized.
 
             services.AddSingleton<MainFrame>();
         }
