@@ -1,8 +1,11 @@
-﻿using System; // For Uri
+﻿using System;
 using System.Configuration;
 using System.Data;
 using System.Windows;
-using System.Linq; // For MergedDictionaries manipulation
+using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using SoundWeaver; // For AddSoundWeaverServices()
 // For .NET 9 ThemeMode enum:
 // No specific using needed for ThemeMode enum if it's directly accessible via Application.Current.ThemeMode
 // or if System.Windows.Controls.ThemeMode is used.
@@ -14,7 +17,27 @@ namespace Assistant
     /// </summary>
     public partial class App : Application
     {
+        public static IServiceProvider ServiceProvider { get; private set; }
+
         private ResourceDictionary? _currentTextBlockThemeDictionary = null;
+
+        public App()
+        {
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection);
+            ServiceProvider = serviceCollection.BuildServiceProvider();
+        }
+
+        private void ConfigureServices(IServiceCollection services)
+        {
+            services.AddLogging(builder =>
+            {
+                builder.AddConsole(); 
+                builder.SetMinimumLevel(LogLevel.Information);
+            });
+
+            services.AddSingleton<MainFrame>();
+        }
 
         private void LoadThemeSpecificTextBlockStyles(ThemeMode themeMode)
         {
@@ -74,6 +97,9 @@ namespace Assistant
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            var mainWindow = ServiceProvider.GetRequiredService<MainFrame>();
+            mainWindow.Show();
 
             ThemeMode currentMode = Application.Current.ThemeMode;
             LoadThemeSpecificTextBlockStyles(currentMode);
