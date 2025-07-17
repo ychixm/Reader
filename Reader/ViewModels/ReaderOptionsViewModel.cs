@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
-using Utils; // For IOptionsViewModel and AppSettingsService
+using Utils; // For IOptionsViewModel, AppSettingsService, ILoggerService
 using Reader.Models; // For ReaderSettings, NavigationMethod
 using Utils.Models; // For TabOverflowMode - assuming this is a shared enum
 using System; // For Enum.TryParse
@@ -10,6 +10,7 @@ namespace Reader.ViewModels
 {
     public class ReaderOptionsViewModel : IOptionsViewModel
     {
+        private readonly ILoggerService _logger;
         private bool _enableKeyboardNavigation;
         private bool _enableGridClickNavigation;
         private bool _enableVisibleButtonsNavigation;
@@ -85,9 +86,18 @@ namespace Reader.ViewModels
             }
         }
 
+        // Constructor to accept ILoggerService
+        public ReaderOptionsViewModel(ILoggerService logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            LoadSettings(); // Load settings upon construction
+            _logger.LogInfo("ReaderOptionsViewModel initialized.");
+        }
+
         public UserControl GetView()
         {
-            return new UserControls.ReaderOptionsView { DataContext = this };
+            // Pass the logger to the View
+            return new UserControls.ReaderOptionsView(_logger) { DataContext = this };
         }
 
         public void LoadSettings()
@@ -114,7 +124,7 @@ namespace Reader.ViewModels
             }
             catch (Exception ex_load_settings)
             {
-                Utils.LogService.LogError(ex_load_settings, "Error loading reader options settings.");
+                _logger.LogError(ex_load_settings, "Error loading reader options settings.");
             }
         }
 
@@ -122,6 +132,7 @@ namespace Reader.ViewModels
         {
             try
             {
+                _logger.LogInfo("Applying Reader options settings.");
                 // It's good practice to load existing settings for the module first if other properties
                 // (not managed by this VM, like DefaultPath) should be preserved.
                 var settingsToSave = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
@@ -139,10 +150,11 @@ namespace Reader.ViewModels
                 // settingsToSave.DefaultPath would be preserved if loaded as above. If this VM controlled it, it'd be set here.
 
                 AppSettingsService.SaveModuleSettings("ReaderModule", settingsToSave);
+                _logger.LogInfo("Reader options settings applied and saved.");
             }
             catch (Exception ex_apply_settings)
             {
-                Utils.LogService.LogError(ex_apply_settings, "Error applying reader options settings.");
+                _logger.LogError(ex_apply_settings, "Error applying reader options settings.");
             }
         }
 

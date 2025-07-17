@@ -5,9 +5,10 @@ using System.Windows.Controls;    // For TabControl, TabItem
 // using Reader.Business;   // Not directly used here
 using Reader;            // For ReaderSubApplication
 using SoundWeaver;
-using Utils;             // For ISubApplication
+using Utils;             // For ISubApplication, ILoggerService
 // using Reader.Models;     // Not directly used here
 using Utils.Models;      // Already there, for TabOverflowMode
+using Microsoft.Extensions.DependencyInjection; // For GetRequiredService
 
 // OptionsUserControl is in the same namespace (Assistant)
 
@@ -15,27 +16,37 @@ namespace Assistant
 {
     public partial class MainFrame : Window
     {
+        private readonly ILoggerService _logger;
         public TabOverflowMode CurrentTabOverflowMode { get; set; } // Existing property
 
         private List<ISubApplication> _subApplications = new List<ISubApplication>();
         public static List<ISubApplication> LoadedSubApplications { get; private set; } = new List<ISubApplication>();
 
-        public MainFrame()
+        public MainFrame() // This constructor is called by App.xaml.cs after ServiceProvider is built
         {
             InitializeComponent();
+
+            // Resolve services from the static ServiceProvider in App
+            _logger = App.ServiceProvider.GetRequiredService<ILoggerService>();
+
+            _logger.LogInfo("MainFrame initializing...");
+
             this.CurrentTabOverflowMode = TabOverflowMode.Scrollbar; // Existing line
             this.DataContext = this; // Existing line
 
             LoadSubApplications();
             InitializeTabsAndOptions(); // Renamed for clarity
+            _logger.LogInfo("MainFrame initialized.");
         }
 
         private void LoadSubApplications()
         {
-            var readerApp = new ReaderSubApplication();
-            var SoundWeaverSubApp = new SoundWeaverSubApplication();
+            _logger.LogInfo("Loading sub-applications...");
+            // Pass the logger to sub-application constructors
+            var readerApp = new ReaderSubApplication(_logger);
+            var soundWeaverSubApp = new SoundWeaverSubApplication(_logger);
             _subApplications.Add(readerApp);
-            _subApplications.Add(SoundWeaverSubApp);
+            _subApplications.Add(soundWeaverSubApp);
 
             LoadedSubApplications.Clear();
             LoadedSubApplications.AddRange(_subApplications);

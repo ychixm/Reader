@@ -7,82 +7,46 @@ using System.IO;
 namespace Utils
 {
     /// <summary>
-    /// Provides a static logging service using Serilog.
+    /// Provides a logging service using Serilog.
     /// This service is configured to log to a file and the debug output.
     /// </summary>
-    public static class LogService
+    public class LogService : ILoggerService
     {
-        private static readonly LoggingLevelSwitch _levelSwitch = new LoggingLevelSwitch();
-        private static readonly string _logFilePath; // Store for access if needed
+        private readonly Serilog.ILogger _logger;
+        private readonly Serilog.Core.LoggingLevelSwitch _levelSwitch; // Changed from _globalLevelSwitch and made non-nullable
 
-        /// <summary>
-        /// Initializes the LogService.
-        /// Configures Serilog to write to a file in the application's roaming data folder
-        /// and to the debug console.
-        /// The log file path is: %APPDATA%\Assistant\logsYYYYMMDD.txt (daily rolling)
-        /// The output template includes Timestamp, LogLevel, Message, and Exception details.
-        /// </summary>
-        static LogService()
+        // Constructor now accepts LoggingLevelSwitch
+        public LogService(Serilog.Core.LoggingLevelSwitch levelSwitch)
         {
-            // Choice of Serilog:
-            // Serilog is a popular, well-documented, and highly configurable logging library for .NET.
-            // It supports structured logging, various sinks (outputs), and is widely adopted in the community,
-            // aligning with the request for using Microsoft and community standards.
-
-            // Log file location strategy:
-            // Logs are stored in Environment.SpecialFolder.ApplicationData (typically C:\\Users\\username\\AppData\\Roaming).
-            // This is a standard location for application-specific user data that should roam with the user profile.
-            // A dedicated "Assistant" subfolder is used to keep logs organized.
-            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string logDirectory = Path.Combine(appDataPath, "Assistant");
-            // The actual file name will be logsYYYYMMDD.txt due to rollingInterval: RollingInterval.Day
-            // _logFilePath will store the pattern or the directory for clarity.
-            _logFilePath = Path.Combine(logDirectory, "logs.txt"); // Base name, Serilog adds date
-
-            // Ensure the directory exists
-            Directory.CreateDirectory(logDirectory);
-
-            // Configuration:
-            // - MinimumLevel.ControlledBy(_levelSwitch): Allows dynamic changing of log level. Defaulting to Verbose.
-            // - Enrich.FromLogContext(): Enables context-based enrichment (e.g., adding properties within a scope).
-            // - WriteTo.Debug(): Writes logs to the Visual Studio Debug output window.
-            // - WriteTo.File(): Writes logs to a file.
-            //   - path: _logFilePath specifies the base path pattern for the log file.
-            //   - outputTemplate: Defines the format: Timestamp, Level, Message, NewLine, Exception.
-            //   - rollingInterval: RollingInterval.Day creates a new log file each day (e.g., logs20231027.txt).
-            //   - retainedFileCountLimit: Keeps the last 7 daily log files.
-            //   - fileSizeLimitBytes: Limits each log file to 10MB.
-            //   - rollOnFileSizeLimit: If a daily log exceeds 10MB, it will roll into another file (e.g., logs20231027_001.txt).
-            _levelSwitch.MinimumLevel = LogEventLevel.Verbose; // Default log level
-
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.ControlledBy(_levelSwitch)
-                .Enrich.FromLogContext()
-                .WriteTo.Debug(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-                .WriteTo.File(_logFilePath, // Serilog handles the YYYYMMDD in the filename based on rollingInterval
-                              outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-                              rollingInterval: RollingInterval.Day,
-                              retainedFileCountLimit: 7,
-                              fileSizeLimitBytes: 10 * 1024 * 1024, // 10 MB
-                              rollOnFileSizeLimit: true)
-                .CreateLogger();
-
-            Log.Information("Logging service initialized. Log base path: {LogBasePath}", _logFilePath);
+            _logger = Serilog.Log.Logger; // Assumes Serilog.Log.Logger is configured globally
+            _levelSwitch = levelSwitch ?? throw new ArgumentNullException(nameof(levelSwitch));
+            _logger.Debug("LogService instance created, using globally configured Serilog.Log.Logger and provided LoggingLevelSwitch.");
         }
 
         /// <summary>
         /// Gets the directory where log files are stored.
         /// </summary>
-        public static string LogDirectoryPath => Path.GetDirectoryName(_logFilePath);
+        public string LogDirectoryPath
+        {
+            get
+            {
+                // This is a bit of a hack as Serilog's ILogger doesn't directly expose sink paths.
+                // For this specific app, we know the path structure from App.xaml.cs.
+                // A more robust solution would involve custom Serilog configuration access if this path is critical.
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                return Path.Combine(appDataPath, "Assistant");
+            }
+        }
 
         /// <summary>
-        /// Sets the minimum logging level dynamically.
+        /// Sets the minimum logging level dynamically using the global switch.
         /// </summary>
         /// <param name="level">The minimum LogEventLevel to set.</param>
-        public static void SetMinimumLogLevel(LogEventLevel level)
+        public void SetMinimumLogLevel(LogEventLevel level)
         {
+            // Uses the injected levelSwitch directly
             _levelSwitch.MinimumLevel = level;
-            Log.Information("Minimum log level set to {LogLevel}", level);
+            _logger.Information("Minimum log level set to {LogLevel}", level);
         }
 
         /// <summary>
@@ -90,9 +54,9 @@ namespace Utils
         /// </summary>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogVerbose(string messageTemplate, params object[] propertyValues)
+        public void LogVerbose(string messageTemplate, params object[] propertyValues)
         {
-            Log.Verbose(messageTemplate, propertyValues);
+            _logger.Verbose(messageTemplate, propertyValues);
         }
 
         /// <summary>
@@ -100,9 +64,9 @@ namespace Utils
         /// </summary>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogDebug(string messageTemplate, params object[] propertyValues)
+        public void LogDebug(string messageTemplate, params object[] propertyValues)
         {
-            Log.Debug(messageTemplate, propertyValues);
+            _logger.Debug(messageTemplate, propertyValues);
         }
 
         /// <summary>
@@ -110,9 +74,9 @@ namespace Utils
         /// </summary>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogInfo(string messageTemplate, params object[] propertyValues)
+        public void LogInfo(string messageTemplate, params object[] propertyValues)
         {
-            Log.Information(messageTemplate, propertyValues);
+            _logger.Information(messageTemplate, propertyValues);
         }
 
         /// <summary>
@@ -120,9 +84,9 @@ namespace Utils
         /// </summary>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogWarning(string messageTemplate, params object[] propertyValues)
+        public void LogWarning(string messageTemplate, params object[] propertyValues)
         {
-            Log.Warning(messageTemplate, propertyValues);
+            _logger.Warning(messageTemplate, propertyValues);
         }
 
         /// <summary>
@@ -130,9 +94,9 @@ namespace Utils
         /// </summary>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogError(string messageTemplate, params object[] propertyValues)
+        public void LogError(string messageTemplate, params object[] propertyValues)
         {
-            Log.Error(messageTemplate, propertyValues);
+            _logger.Error(messageTemplate, propertyValues);
         }
 
         /// <summary>
@@ -141,9 +105,9 @@ namespace Utils
         /// <param name="exception">The exception related to the error.</param>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogError(Exception exception, string messageTemplate, params object[] propertyValues)
+        public void LogError(Exception exception, string messageTemplate, params object[] propertyValues)
         {
-            Log.Error(exception, messageTemplate, propertyValues);
+            _logger.Error(exception, messageTemplate, propertyValues);
         }
 
         /// <summary>
@@ -151,9 +115,9 @@ namespace Utils
         /// </summary>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogFatal(string messageTemplate, params object[] propertyValues)
+        public void LogFatal(string messageTemplate, params object[] propertyValues)
         {
-            Log.Fatal(messageTemplate, propertyValues);
+            _logger.Fatal(messageTemplate, propertyValues);
         }
 
         /// <summary>
@@ -162,9 +126,9 @@ namespace Utils
         /// <param name="exception">The exception related to the fatal error.</param>
         /// <param name="messageTemplate">Message template describing the event.</param>
         /// <param name="propertyValues">Objects positionally formatted into the message template.</param>
-        public static void LogFatal(Exception exception, string messageTemplate, params object[] propertyValues)
+        public void LogFatal(Exception exception, string messageTemplate, params object[] propertyValues)
         {
-            Log.Fatal(exception, messageTemplate, propertyValues);
+            _logger.Fatal(exception, messageTemplate, propertyValues);
         }
     }
 }

@@ -81,7 +81,7 @@ namespace Utils
                             }
                             catch (JsonException ex)
                             {
-                                Utils.LogService.LogError(ex, "Error deserializing string-encoded JSON for module {ModuleKey} to {TypeName}", moduleKey, typeof(T).Name);
+                                Serilog.Log.ForContext(typeof(AppSettingsService)).Error(ex, "Error deserializing string-encoded JSON for module {ModuleKey} to {TypeName}", moduleKey, typeof(T).Name);
                                 return null; // Fallback to default
                             }
                         }
@@ -100,7 +100,7 @@ namespace Utils
                     }
                     catch (JsonException ex)
                     {
-                        Utils.LogService.LogError(ex, "Error deserializing settings for module {ModuleKey} from object to {TypeName}", moduleKey, typeof(T).Name);
+                        Serilog.Log.ForContext(typeof(AppSettingsService)).Error(ex, "Error deserializing settings for module {ModuleKey} from object to {TypeName}", moduleKey, typeof(T).Name);
                         return null;
                     }
                 }

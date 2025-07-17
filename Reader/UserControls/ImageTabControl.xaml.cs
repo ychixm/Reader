@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-// using System.Diagnostics; // Will be removed
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,15 +14,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Reader.Models; // For ReaderSettings, NavigationMethod
-// Remove: using Reader.Business;
-using Utils; // For AppSettingsService
+using Reader.Models;
+using Utils;
 
 namespace Reader.UserControls
 {
     public partial class ImageTabControl : UserControl
     {
-        private ReaderSettings _settings; // Changed type
+        private readonly ILoggerService _logger;
+        private ReaderSettings _settings;
         private readonly List<string> _imagePaths;
         private int _currentIndex;
 
@@ -35,11 +34,11 @@ namespace Reader.UserControls
 
         private static BitmapImage? _errorPlaceholderImage;
 
-        private static void EnsureErrorPlaceholderLoaded()
+        private void EnsureErrorPlaceholderLoaded()
         {
             if (_errorPlaceholderImage == null)
             {
-                string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ressources", "NoImage.png"); // Moved declaration
+                string placeholderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Ressources", "NoImage.png");
                 try
                 {
                     BitmapImage bmp = new BitmapImage();
@@ -52,7 +51,7 @@ namespace Reader.UserControls
                 }
                 catch (Exception ex)
                 {
-                    Utils.LogService.LogError(ex, "Failed to load error placeholder image for ImageTabControl at {PlaceholderPath}", placeholderPath);
+                    _logger.LogError(ex, "Failed to load error placeholder image for ImageTabControl at {PlaceholderPath}", placeholderPath);
                 }
             }
         }
@@ -64,7 +63,6 @@ namespace Reader.UserControls
                 return;
             }
 
-            // Ensure _settings is not null before accessing it.
             if (_settings == null || !(_settings.EnabledNavigationMethods.HasFlag(NavigationMethod.GridClick)))
             {
                 return;
@@ -88,12 +86,12 @@ namespace Reader.UserControls
             }
         }
 
-        public ImageTabControl(List<string> imagePaths)
+        public ImageTabControl(List<string> imagePaths, ILoggerService logger)
         {
             InitializeComponent();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             EnsureErrorPlaceholderLoaded();
 
-            // Changed call:
             _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
             AppSettingsService.SettingsChanged += HandleAppSettingsChanged;
 
@@ -104,10 +102,12 @@ namespace Reader.UserControls
             {
                 LoadingIndicator.Visibility = Visibility.Collapsed;
                 DisplayedImage.Source = _errorPlaceholderImage;
+                _logger.LogInfo("ImageTabControl initialized with no image paths.");
                 return;
             }
 
             _currentIndex = 0;
+            _logger.LogInfo("ImageTabControl initializing with {ImagePathCount} images. Current index: {CurrentIndex}", _imagePaths.Count, _currentIndex);
             LoadAndDisplayImage(_currentIndex);
 
             this.Focusable = true;
@@ -120,8 +120,7 @@ namespace Reader.UserControls
         {
             if (_settings == null)
             {
-                // This case should be less likely now with the default factory in LoadModuleSettings
-                _settings = new ReaderSettings(); // Ensure _settings is not null
+                _settings = new ReaderSettings();
             }
 
             bool showButtons = _settings.EnabledNavigationMethods.HasFlag(NavigationMethod.VisibleButtons);
@@ -129,10 +128,9 @@ namespace Reader.UserControls
 
             LeftArrow.Visibility = buttonVisibility;
             RightArrow.Visibility = buttonVisibility;
-            // this.Focus(); // Re-evaluate if Focus() is needed here every time settings apply
         }
 
-        private static BitmapImage? LoadBitmapImageFromFile(string imagePath, CancellationToken token)
+        private BitmapImage? LoadBitmapImageFromFile(string imagePath, CancellationToken token)
         {
             if (token.IsCancellationRequested) return null;
 
@@ -149,7 +147,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_load) when (!(ex_load is OperationCanceledException || ex_load is ArgumentException ))
             {
-                Utils.LogService.LogWarning("Failed to load bitmap image from file {ImagePath}. Exception: {Exception}", imagePath, ex_load);
+                _logger.LogWarning(ex_load.Message, "Failed to load bitmap image from file {ImagePath}.", imagePath);
                 return null;
             }
         }
@@ -158,12 +156,14 @@ namespace Reader.UserControls
         {
             if (index < 0 || index >= _imagePaths.Count)
             {
+                _logger.LogWarning("LoadAndDisplayImage called with invalid index: {Index}. Image count: {ImageCount}", index, _imagePaths.Count);
                 DisplayedImage.Source = _errorPlaceholderImage;
                 LoadingIndicator.Visibility = Visibility.Collapsed;
                 return;
             }
             _currentIndex = index;
             string imagePath = _imagePaths[index];
+            _logger.LogVerbose("LoadAndDisplayImage: Index {Index}, Path {ImagePath}", _currentIndex, imagePath);
 
             if (_preloadCts != null)
             {
@@ -180,14 +180,16 @@ namespace Reader.UserControls
 
             if (_imageCache.TryGetValue(imagePath, out bitmapToShow))
             {
-                // Image is in cache
+                _logger.LogDebug("Image {ImagePath} found in cache.", imagePath);
             }
             else
             {
+                _logger.LogDebug("Image {ImagePath} not in cache. Loading from file.", imagePath);
                 try
                 {
                     if (currentToken.IsCancellationRequested)
                     {
+                        _logger.LogInfo("Image loading cancelled for {ImagePath} before starting Task.Run.", imagePath);
                         DisplayedImage.Source = _errorPlaceholderImage;
                         LoadingIndicator.Visibility = Visibility.Collapsed;
                         return;
@@ -200,19 +202,25 @@ namespace Reader.UserControls
                         lock(_imageCache)
                         {
                             _imageCache[imagePath] = bitmapToShow;
+                            _logger.LogDebug("Image {ImagePath} loaded and added to cache.", imagePath);
                         }
+                    }
+                    else if(currentToken.IsCancellationRequested)
+                    {
+                        _logger.LogInfo("Image loading cancelled for {ImagePath} after Task.Run.", imagePath);
                     }
                 }
                 catch (Exception ex_display) when (!(ex_display is OperationCanceledException))
                 {
-                    Utils.LogService.LogWarning("Exception during LoadAndDisplayImage for path {ImagePath}. Exception: {Exception}", imagePath, ex_display);
+                    _logger.LogWarning(ex_display.Message, "Exception during LoadAndDisplayImage for path {ImagePath}.", imagePath);
                     bitmapToShow = null;
                 }
             }
 
             if (currentToken.IsCancellationRequested)
             {
-                DisplayedImage.Source = _errorPlaceholderImage;
+                _logger.LogInfo("Display update cancelled for {ImagePath}.", imagePath);
+                DisplayedImage.Source = _errorPlaceholderImage; // Ensure placeholder on cancellation
                 LoadingIndicator.Visibility = Visibility.Collapsed;
                 return;
             }
@@ -223,6 +231,7 @@ namespace Reader.UserControls
             }
             else
             {
+                _logger.LogWarning("Bitmap for {ImagePath} is null after load attempt. Displaying error placeholder.", imagePath);
                 DisplayedImage.Source = _errorPlaceholderImage;
             }
 
@@ -237,6 +246,7 @@ namespace Reader.UserControls
         private async Task PreloadAdjacentImagesAsync(int currentIndex, CancellationToken token)
         {
             if (token.IsCancellationRequested) return;
+            _logger.LogVerbose("Starting preload for images adjacent to index {CurrentIndex}", currentIndex);
             List<Task> preloadTasks = new List<Task>();
 
             for (int i = 1; i <= PreloadNextCount; i++)
@@ -260,16 +270,26 @@ namespace Reader.UserControls
             try
             {
                 await Task.WhenAll(preloadTasks);
+                _logger.LogVerbose("Preload tasks completed for index {CurrentIndex}", currentIndex);
             }
             catch (Exception ex_preload_agg) when (!(ex_preload_agg is OperationCanceledException))
             {
-                Utils.LogService.LogWarning("Exception during PreloadAdjacentImagesAsync Task.WhenAll for current index {CurrentIndex}. Exception: {Exception}", currentIndex, ex_preload_agg);
+                _logger.LogWarning(ex_preload_agg.Message, "Exception during PreloadAdjacentImagesAsync Task.WhenAll for current index {CurrentIndex}.", currentIndex);
             }
         }
 
         private async Task EnsureImageLoadedAsync(string imagePath, CancellationToken token)
         {
-            if (token.IsCancellationRequested || _imageCache.ContainsKey(imagePath)) return;
+            if (token.IsCancellationRequested)
+            {
+                _logger.LogDebug("Preload cancelled for {ImagePath} (token).", imagePath);
+                return;
+            }
+            if (_imageCache.ContainsKey(imagePath))
+            {
+                _logger.LogDebug("Image {ImagePath} already in cache, skipping preload.", imagePath);
+                return;
+            }
 
             bool shouldLoad = false;
             lock (_currentlyPreloading)
@@ -281,11 +301,21 @@ namespace Reader.UserControls
                 }
             }
 
-            if (!shouldLoad) return;
+            if (!shouldLoad)
+            {
+                _logger.LogDebug("Image {ImagePath} is already being preloaded by another task.", imagePath);
+                return;
+            }
+
+            _logger.LogVerbose("Starting EnsureImageLoadedAsync for {ImagePath}", imagePath);
 
             try
             {
-                if (token.IsCancellationRequested) return;
+                if (token.IsCancellationRequested)
+                {
+                     _logger.LogDebug("Preload cancelled for {ImagePath} (token before Task.Run).", imagePath);
+                    return;
+                }
 
                 BitmapImage? bitmap = await Task.Run(() => LoadBitmapImageFromFile(imagePath, token), token);
 
@@ -294,12 +324,17 @@ namespace Reader.UserControls
                     lock (_imageCache)
                     {
                         _imageCache[imagePath] = bitmap;
+                        _logger.LogDebug("Image {ImagePath} preloaded and added to cache.", imagePath);
                     }
+                }
+                 else if(token.IsCancellationRequested)
+                {
+                    _logger.LogInfo("Preload cancelled for {ImagePath} after Task.Run.", imagePath);
                 }
             }
             catch (Exception ex_ensure) when (!(ex_ensure is OperationCanceledException))
             {
-                Utils.LogService.LogWarning("Exception during EnsureImageLoadedAsync for path {ImagePath}. Exception: {Exception}", imagePath, ex_ensure);
+                _logger.LogWarning(ex_ensure.Message, "Exception during EnsureImageLoadedAsync for path {ImagePath}.", imagePath);
             }
             finally
             {
@@ -314,6 +349,7 @@ namespace Reader.UserControls
         {
             if (_currentIndex > 0)
             {
+                _logger.LogDebug("Navigating left from index {CurrentIndex}", _currentIndex);
                 LoadAndDisplayImage(_currentIndex - 1);
             }
         }
@@ -322,6 +358,7 @@ namespace Reader.UserControls
         {
             if (_currentIndex < _imagePaths.Count - 1)
             {
+                _logger.LogDebug("Navigating right from index {CurrentIndex}", _currentIndex);
                 LoadAndDisplayImage(_currentIndex + 1);
             }
         }
@@ -330,7 +367,6 @@ namespace Reader.UserControls
         {
             base.OnKeyDown(e);
 
-            // Ensure _settings is not null
             if (_settings == null) return;
 
             if (e.Key == Key.Left || e.Key == Key.Right)
@@ -354,6 +390,7 @@ namespace Reader.UserControls
 
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
+            _logger.LogInfo("ImageTabControl unloading. Cancelling preload tasks and clearing cache.");
             if (_preloadCts != null)
             {
                 _preloadCts.Cancel();
@@ -366,11 +403,12 @@ namespace Reader.UserControls
             }
             DisplayedImage.Source = null;
             AppSettingsService.SettingsChanged -= HandleAppSettingsChanged;
+            _logger.LogInfo("ImageTabControl unloaded.");
         }
 
         private void HandleAppSettingsChanged(object? sender, EventArgs e)
         {
-            // Changed call:
+            _logger.LogInfo("App settings changed, reloading ReaderModule settings for ImageTabControl.");
             _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
 
             if (Dispatcher.CheckAccess())

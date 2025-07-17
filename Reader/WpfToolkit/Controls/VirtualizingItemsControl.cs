@@ -35,7 +35,7 @@ namespace WpfToolkit.Controls
             }
             catch (System.Windows.Markup.XamlParseException ex_xaml)
             {
-                Utils.LogService.LogError(ex_xaml, "Failed to parse XAML template for VirtualizingItemsControl.");
+                Serilog.Log.ForContext<VirtualizingItemsControl>().Error(ex_xaml, "Failed to parse XAML template for VirtualizingItemsControl.");
                 throw;
             }
 

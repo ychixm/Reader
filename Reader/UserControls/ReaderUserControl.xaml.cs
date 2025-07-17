@@ -21,6 +21,7 @@ namespace Reader.UserControls
 {
     public partial class ReaderUserControl : UserControl, INotifyPropertyChanged
     {
+        private readonly ILoggerService _logger;
         private ReaderSettings _settings; // Changed type to ReaderSettings
         private TabOverflowManagementControl? _tabOverflowManagementCtrl;
 
@@ -33,18 +34,19 @@ namespace Reader.UserControls
         private const int MaxTitleLength = 40;
         private ChapterListElement? _randomChapterElement;
 
-        public ReaderUserControl()
+        public ReaderUserControl(ILoggerService logger)
         {
             InitializeComponent();
-            // Changed call:
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
             _tabOverflowManagementCtrl = this.TabOverflowControl;
-            //LoadChapterListAsync();
+            _logger.LogInfo("ReaderUserControl initialized.");
+            LoadChapterListAsync(); 
         }
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
         {
-            ChapterListElement chapterListElement = new(directory)
+            ChapterListElement chapterListElement = new(directory, _logger) // Pass logger
             {
                 BorderBrush = Brushes.DarkGray,
                 BorderThickness = new Thickness(1),
@@ -59,7 +61,7 @@ namespace Reader.UserControls
             }
             catch(Exception ex_placeholder)
             {
-                Utils.LogService.LogError(ex_placeholder, "Failed to load placeholder image for chapter {ChapterName} from {PlaceholderPath}", directory.Name, placeholderPath);
+                _logger.LogError(ex_placeholder, "Failed to load placeholder image for chapter {ChapterName} from {PlaceholderPath}", directory.Name, placeholderPath);
             }
 
             Views.Add(chapterListElement);
@@ -92,12 +94,13 @@ namespace Reader.UserControls
             }
             catch (Exception ex_process_chapter)
             {
-                Utils.LogService.LogError(ex_process_chapter, "Error processing chapter directory {DirectoryName} for image loading", directory.Name);
+                _logger.LogError(ex_process_chapter, "Error processing chapter directory {DirectoryName} for image loading", directory.Name);
             }
         }
 
         private async void LoadChapterListAsync()
         {
+            _logger.LogInfo("LoadChapterListAsync started.");
             string effectivePath = string.Empty; // Initialize to ensure it's always assigned before use in catch
             try
             {
@@ -105,7 +108,7 @@ namespace Reader.UserControls
                 Directory.CreateDirectory(randomChapterPlaceholderPath);
                 DirectoryInfo randomChapterDirInfo = new DirectoryInfo(randomChapterPlaceholderPath);
 
-                _randomChapterElement = new ChapterListElement(randomChapterDirInfo)
+                _randomChapterElement = new ChapterListElement(randomChapterDirInfo, _logger) // Pass logger
                 {
                     BorderBrush = Brushes.DarkGray,
                     BorderThickness = new Thickness(1),
@@ -153,7 +156,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex)
             {
-                Utils.LogService.LogError(ex, "Error loading chapter list. Effective path was {EffectivePath}", effectivePath);
+                _logger.LogError(ex, "Error loading chapter list. Effective path was {EffectivePath}", effectivePath);
                 MessageBox.Show($"Error loading chapter list: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -166,10 +169,11 @@ namespace Reader.UserControls
             if (existingTab != null)
             {
                 if (switchToTab) MainTabControl.SelectedItem = existingTab;
+                _logger.LogInfo("Existing tab found for {DirectoryPath}. Switching to it.", directoryPath);
                 return;
             }
-
-            var imageTabControl = new ImageTabControl(imagePaths);
+            _logger.LogInfo("Creating new image tab for {DirectoryPath}.", directoryPath);
+            var imageTabControl = new ImageTabControl(imagePaths, _logger); // Pass logger
             string tabTitle = Path.GetFileName(directoryPath);
             if (tabTitle.Length > MaxTitleLength) tabTitle = string.Concat(tabTitle.AsSpan(0, MaxTitleLength), "...");
 
@@ -320,7 +324,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex)
             {
-                Utils.LogService.LogError(ex, "Error reading images for random chapter from directory {DirectoryFullName}", chapterDirectoryInfo.FullName);
+                _logger.LogError(ex, "Error reading images for random chapter from directory {DirectoryFullName}", chapterDirectoryInfo.FullName);
                 MessageBox.Show($"Error reading images from directory {chapterDirectoryInfo.FullName}: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
