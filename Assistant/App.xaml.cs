@@ -4,15 +4,10 @@ using System.Data;
 using System.Windows;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-// Removed Microsoft.Extensions.Logging to replace with Serilog
-using SoundWeaver; // For AddSoundWeaverServices()
-using Utils; // Required for ILoggerService and LogService
+using Utils;
 using Serilog;
 using Serilog.Events;
 using System.IO;
-// For .NET 9 ThemeMode enum:
-// No specific using needed for ThemeMode enum if it's directly accessible via Application.Current.ThemeMode
-// or if System.Windows.Controls.ThemeMode is used.
 
 namespace Assistant
 {
@@ -32,7 +27,7 @@ namespace Assistant
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
             ServiceProvider = serviceCollection.BuildServiceProvider();
-            _logger = ServiceProvider.GetRequiredService<ILoggerService>(); // Get logger instance
+            _logger = ServiceProvider.GetRequiredService<ILoggerService>();
         }
 
         private void ConfigureServices(IServiceCollection services)
@@ -43,8 +38,8 @@ namespace Assistant
             Directory.CreateDirectory(logDirectory);
             string logFilePath = Path.Combine(logDirectory, "logs.txt");
 
-            GlobalLogLevelSwitch = new Serilog.Core.LoggingLevelSwitch(); // Assign to the static property
-            GlobalLogLevelSwitch.MinimumLevel = LogEventLevel.Verbose; // Default log level
+            GlobalLogLevelSwitch = new Serilog.Core.LoggingLevelSwitch();
+            GlobalLogLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
 
             Serilog.Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(GlobalLogLevelSwitch) // Use the static property
@@ -60,12 +55,10 @@ namespace Assistant
 
             services.AddLogging(builder =>
             {
-                builder.AddSerilog(dispose: true); // Use Serilog for logging
+                builder.AddSerilog(dispose: true);
             });
 
-            // Register custom LogService, providing the GlobalLogLevelSwitch instance
             services.AddSingleton<ILoggerService>(sp => new LogService(GlobalLogLevelSwitch ?? new Serilog.Core.LoggingLevelSwitch()));
-            // The null-coalescing operator provides a fallback, though GlobalLogLevelSwitch should always be initialized.
 
             services.AddSingleton<MainFrame>();
         }
@@ -96,7 +89,6 @@ namespace Assistant
                 }
                 catch (Exception ex_reg)
                 {
-                    // Use the injected logger instance
                     _logger?.LogError(ex_reg, "Error reading system theme from registry. Defaulting to dark theme.");
                     isSystemDark = true;
                 }
@@ -121,7 +113,6 @@ namespace Assistant
                 }
                 catch (Exception ex)
                 {
-                    // Use the injected logger instance
                      _logger?.LogError(ex, "Error loading TextBlock theme dictionary for URI {DictionaryUriString}", dictionaryUriString);
                 }
             }
@@ -131,9 +122,6 @@ namespace Assistant
         {
             base.OnStartup(e);
             _logger.LogInfo("Application starting up.");
-
-            var mainWindow = ServiceProvider.GetRequiredService<MainFrame>();
-            mainWindow.Show();
 
             ThemeMode currentMode = Application.Current.ThemeMode;
             LoadThemeSpecificTextBlockStyles(currentMode);
