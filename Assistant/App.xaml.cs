@@ -132,9 +132,6 @@ namespace Assistant
             base.OnStartup(e);
             _logger.LogInfo("Application starting up.");
 
-            var mainWindow = ServiceProvider.GetRequiredService<MainFrame>();
-            mainWindow.Show();
-
             ThemeMode currentMode = Application.Current.ThemeMode;
             LoadThemeSpecificTextBlockStyles(currentMode);
             _logger.LogInfo("Application startup complete.");

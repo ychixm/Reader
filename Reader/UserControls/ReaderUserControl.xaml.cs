@@ -41,7 +41,7 @@ namespace Reader.UserControls
             _settings = AppSettingsService.LoadModuleSettings<ReaderSettings>("ReaderModule", () => new ReaderSettings());
             _tabOverflowManagementCtrl = this.TabOverflowControl;
             _logger.LogInfo("ReaderUserControl initialized.");
-            //LoadChapterListAsync(); // Called from Loaded event handler or explicitly after construction
+            LoadChapterListAsync(); 
         }
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)

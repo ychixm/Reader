@@ -22,12 +22,6 @@
         <TabControl x:Name="MainAppTabControl" Template="{StaticResource SharedTabControlTemplate}"
                     ItemContainerStyle="{StaticResource SharedTabItemStyle}"
                     ItemsPanel="{StaticResource SharedTabItemsPanelTemplate}">
-            <TabItem Header="Options">
-                <local:OptionsUserControl />
-            </TabItem>
-            <TabItem Header="ReaderUserControl">
-                <ReaderUC:ReaderUserControl x:Name="ReaderUserControl" />
-            </TabItem>
         </TabControl>
     </Grid>
 </Window>

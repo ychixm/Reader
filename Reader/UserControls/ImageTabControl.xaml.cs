@@ -147,7 +147,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_load) when (!(ex_load is OperationCanceledException || ex_load is ArgumentException ))
             {
-                _logger.LogWarning(ex_load, "Failed to load bitmap image from file {ImagePath}.", imagePath);
+                _logger.LogWarning(ex_load.Message, "Failed to load bitmap image from file {ImagePath}.", imagePath);
                 return null;
             }
         }
@@ -212,7 +212,7 @@ namespace Reader.UserControls
                 }
                 catch (Exception ex_display) when (!(ex_display is OperationCanceledException))
                 {
-                    _logger.LogWarning(ex_display, "Exception during LoadAndDisplayImage for path {ImagePath}.", imagePath);
+                    _logger.LogWarning(ex_display.Message, "Exception during LoadAndDisplayImage for path {ImagePath}.", imagePath);
                     bitmapToShow = null;
                 }
             }
@@ -274,7 +274,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_preload_agg) when (!(ex_preload_agg is OperationCanceledException))
             {
-                _logger.LogWarning(ex_preload_agg, "Exception during PreloadAdjacentImagesAsync Task.WhenAll for current index {CurrentIndex}.", currentIndex);
+                _logger.LogWarning(ex_preload_agg.Message, "Exception during PreloadAdjacentImagesAsync Task.WhenAll for current index {CurrentIndex}.", currentIndex);
             }
         }
 
@@ -334,7 +334,7 @@ namespace Reader.UserControls
             }
             catch (Exception ex_ensure) when (!(ex_ensure is OperationCanceledException))
             {
-                _logger.LogWarning(ex_ensure, "Exception during EnsureImageLoadedAsync for path {ImagePath}.", imagePath);
+                _logger.LogWarning(ex_ensure.Message, "Exception during EnsureImageLoadedAsync for path {ImagePath}.", imagePath);
             }
             finally
             {
