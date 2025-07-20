@@ -1,4 +1,4 @@
-using SoundWeaver.UI;
+using SoundWeaver.Models;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -9,9 +9,11 @@ namespace SoundWeaver
     /// </summary>
     public partial class SoundWeaverControl : UserControl
     {
-        public SoundWeaverControl()
+        public SoundWeaverControl(SoundWeaverControlViewModel viewModel)
         {
             InitializeComponent();
+            this.DataContext = viewModel;
+
         }
 
     }

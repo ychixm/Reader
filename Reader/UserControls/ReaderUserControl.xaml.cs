@@ -22,7 +22,7 @@ namespace Reader.UserControls
     public partial class ReaderUserControl : UserControl, INotifyPropertyChanged
     {
         private readonly ILoggerService _logger;
-        private ReaderSettings _settings; // Changed type to ReaderSettings
+        private ReaderSettings _settings;
         private TabOverflowManagementControl? _tabOverflowManagementCtrl;
 
         private static readonly HashSet<string> SupportedImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -46,7 +46,7 @@ namespace Reader.UserControls
 
         private async Task ProcessChapterDirectoryAsync(DirectoryInfo directory)
         {
-            ChapterListElement chapterListElement = new(directory, _logger) // Pass logger
+            ChapterListElement chapterListElement = new(directory, _logger)
             {
                 BorderBrush = Brushes.DarkGray,
                 BorderThickness = new Thickness(1),

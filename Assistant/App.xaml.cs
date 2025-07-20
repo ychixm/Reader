@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Configuration;
 using System.Data;
-using System.Windows;
+using System.IO;
 using System.Linq;
+using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
-using Utils;
 using Serilog;
 using Serilog.Events;
-using System.IO;
+using SoundWeaver;
+using SoundWeaver.Models;
+using Utils;
 
 namespace Assistant
 {
@@ -61,6 +63,7 @@ namespace Assistant
             services.AddSingleton<ILoggerService>(sp => new LogService(GlobalLogLevelSwitch ?? new Serilog.Core.LoggingLevelSwitch()));
 
             services.AddSingleton<MainFrame>();
+            services.AddSingleton<SoundWeaverControlViewModel>();
         }
 
         private void LoadThemeSpecificTextBlockStyles(ThemeMode themeMode)
@@ -113,7 +116,7 @@ namespace Assistant
                 }
                 catch (Exception ex)
                 {
-                     _logger?.LogError(ex, "Error loading TextBlock theme dictionary for URI {DictionaryUriString}", dictionaryUriString);
+                    _logger?.LogError(ex, "Error loading TextBlock theme dictionary for URI {DictionaryUriString}", dictionaryUriString);
                 }
             }
         }
@@ -127,6 +130,15 @@ namespace Assistant
             LoadThemeSpecificTextBlockStyles(currentMode);
             _logger.LogInfo("Application startup complete.");
         }
-    }
 
+        protected override void OnExit(ExitEventArgs e)
+        {
+            base.OnExit(e);
+
+            var soundWeaverVm = ServiceProvider.GetService<SoundWeaverControlViewModel>();
+            soundWeaverVm?.DisconnectBotCommand.Execute(null);
+            soundWeaverVm?.Dispose();
+        }
+
+    }
 }

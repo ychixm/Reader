@@ -8,5 +8,6 @@ namespace Utils
         UserControl GetMainView();
         IOptionsViewModel GetOptionsViewModel();
         void ApplyOptions();
+        void Shutdown();
     }
 }

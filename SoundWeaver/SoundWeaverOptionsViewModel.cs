@@ -1,70 +1,112 @@
-using Utils; // Required for IOptionsViewModel, AppSettingsService
-using SoundWeaver.Models; // Required for SoundWeaverSettings
-using System.ComponentModel; // Required for INotifyPropertyChanged
-using System.Runtime.CompilerServices; // Required for CallerMemberName
-using System.Windows.Controls; // Required for UserControl
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Controls;
+using SoundWeaver;
+using SoundWeaver.Models;
+using Utils;
 
-namespace SoundWeaver
+public class SoundWeaverOptionsViewModel : IOptionsViewModel, INotifyPropertyChanged
 {
-    public class SoundWeaverOptionsViewModel : IOptionsViewModel
-    {
-        public string Title => "SoundWeaver Options";
+    public string Title => "SoundWeaver Options";
 
-        private bool _sampleOption;
-        public bool SampleOption
+    public IReadOnlyList<int> ChannelOptions { get; } = new[] { 1, 2 };
+
+    private int _selectedChannels = 2;
+    public int SelectedChannels
+    {
+        get => _selectedChannels;
+        set { if (_selectedChannels != value) { _selectedChannels = value; OnPropertyChanged(); } }
+    }
+
+    // Liste observable de tous les salons connus
+    public ObservableCollection<ChannelBitrateSetting> ChannelBitrateSettings { get; } = new();
+
+    private ChannelBitrateSetting _selectedChannelBitrateSetting;
+    public ChannelBitrateSetting SelectedChannelBitrateSetting
+    {
+        get => _selectedChannelBitrateSetting;
+        set { _selectedChannelBitrateSetting = value; OnPropertyChanged(); }
+    }
+
+    public SoundWeaverOptionsViewModel()
+    {
+        LoadSettings();
+    }
+
+    public void LoadSettings()
+    {
+        var settings = AppSettingsService.LoadModuleSettings(
+                           "SoundWeaver",
+                           () => new SoundWeaverSettings());
+
+        SelectedChannels = settings.SelectedChannels is 1 or 2
+                           ? settings.SelectedChannels
+                           : 2;
+
+        ChannelBitrateSettings.Clear();
+        if (settings.ChannelBitrates != null)
         {
-            get => _sampleOption;
-            set
+            foreach (var item in settings.ChannelBitrates)
+                ChannelBitrateSettings.Add(item);
+            SelectedChannelBitrateSetting = ChannelBitrateSettings.FirstOrDefault();
+        }
+    }
+
+    public void SaveSettings()
+    {
+        var settings = AppSettingsService.LoadModuleSettings(
+            "SoundWeaver", () => new SoundWeaverSettings());
+        settings.SelectedChannels = this.SelectedChannels;
+        settings.ChannelBitrates = ChannelBitrateSettings.ToList();
+        AppSettingsService.SaveModuleSettings("SoundWeaver", settings);
+    }
+
+    /// <summary>
+    /// Ajoute ou met à jour un salon vocal (appelé lors de la connexion ou d’un scan).
+    /// </summary>
+    public ChannelBitrateSetting RegisterOrUpdateChannel(ulong channelId, string channelName, int discordCap)
+    {
+        var found = ChannelBitrateSettings.FirstOrDefault(x => x.ChannelId == channelId);
+        if (found == null)
+        {
+            found = new ChannelBitrateSetting
             {
-                if (_sampleOption != value)
-                {
-                    _sampleOption = value;
-                    OnPropertyChanged();
-                }
+                ChannelId = channelId,
+                ChannelName = channelName,
+                DiscordBitrateCap = discordCap,
+                Bitrate = Math.Min(64000, discordCap)
+            };
+            ChannelBitrateSettings.Add(found);
+        }
+        else
+        {
+            found.ChannelName = channelName;
+            if (found.DiscordBitrateCap != discordCap)
+            {
+                found.DiscordBitrateCap = discordCap;
+                if (found.Bitrate > discordCap)
+                    found.Bitrate = discordCap;
             }
         }
-        // Add other bindable properties for SoundWeaver options here
+        SelectedChannelBitrateSetting = found;
+        SaveSettings();
+        return found;
+    }
 
-        public SoundWeaverOptionsViewModel()
-        {
-            LoadSettings(); // Load settings on construction
-        }
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
 
-        public void LoadSettings()
-        {
-            // Load settings using the specific SoundWeaverSettings type
-            var settings = AppSettingsService.LoadModuleSettings<SoundWeaverSettings>("SoundWeaver", () => new SoundWeaverSettings());
-            SampleOption = settings.SampleOption;
-            // Load other settings from SoundWeaverSettings into properties
-        }
+    public UserControl GetView()
+    {
+        var view = new SoundWeaverOptionsView();
+        view.DataContext = this;
+        return view;
+    }
 
-        public void Apply()
-        {
-            // Create a settings object from current properties
-            var settings = new SoundWeaverSettings
-            {
-                SampleOption = this.SampleOption
-                // Set other properties for SoundWeaverSettings
-            };
-            AppSettingsService.SaveModuleSettings("SoundWeaver", settings);
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public UserControl GetView()
-        {
-            // Pass this ViewModel instance to the View if it needs it directly
-            // (e.g., if the View's DataContext is set in code-behind or via a ViewModelLocator)
-            // For now, assuming SoundWeaverOptionsView sets its DataContext to a new instance of this VM,
-            // or it's set by the OptionsUserControl in Assistant.
-            // To ensure *this* instance is used:
-            var view = new SoundWeaverOptionsView();
-            view.DataContext = this; // Ensure the view uses this instance
-            return view;
-        }
+    public void Apply()
+    {
+        SaveSettings();
     }
 }

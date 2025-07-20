@@ -1,17 +1,18 @@
-using SoundWeaver.Audio;
-using SoundWeaver.Bot;
-using SoundWeaver.Models;
-using SoundWeaver.Playlists;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Win32;
+using SoundWeaver.Audio;
+using SoundWeaver.Bot;
+using SoundWeaver.Playlists;
+using Utils;
 
-namespace SoundWeaver.UI
+namespace SoundWeaver.Models
 {
     public class SoundWeaverControlViewModel : INotifyPropertyChanged, IDisposable
     {
@@ -27,6 +28,7 @@ namespace SoundWeaver.UI
         private DiscordBotService _botService;
         private MultiLayerAudioPlayer _audioPlayer;
         private PlaylistManager _playlistManager;
+        private SoundWeaverSettings _settings;
 
         public ObservableCollection<AudioTrack> CurrentPlaylistTracks { get; } = new ObservableCollection<AudioTrack>();
         public ObservableCollection<AudioLayer> ActiveLayers { get; } = new ObservableCollection<AudioLayer>();
@@ -90,6 +92,63 @@ namespace SoundWeaver.UI
         public ICommand PlayTrackCommand { get; }
         public ICommand BrowsePlaylistCommand { get; }
 
+
+
+        private int _mixerSampleRate = 48000;
+        public int MixerSampleRate
+        {
+            get => _mixerSampleRate;
+            set { _mixerSampleRate = value; OnPropertyChanged(); }
+        }
+        private int _bitrateMin = 8_000;
+        private int _bitrateMax = 96_000;
+        private int _targetBitrate = 64_000;
+
+        public int BitrateMin
+        {
+            get => _bitrateMin;
+            private set { _bitrateMin = value; OnPropertyChanged(); }
+        }
+        public int BitrateMax
+        {
+            get => _bitrateMax;
+            private set { _bitrateMax = value; OnPropertyChanged(); }
+        }
+        public int TargetBitrate
+        {
+            get => _targetBitrate;
+            set
+            {
+                int clamped = Math.Clamp(value, BitrateMin, BitrateMax);
+                if (_targetBitrate != clamped)
+                {
+                    _targetBitrate = clamped;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private int _resamplerQuality = 60;
+        public int ResamplerQuality
+        {
+            get => _resamplerQuality;
+            set { _resamplerQuality = Math.Clamp(value, 1, 60); OnPropertyChanged(); }
+        }
+
+        private ChannelBitrateSetting _currentChannelBitrateSetting;
+        public ChannelBitrateSetting CurrentChannelBitrateSetting
+        {
+            get => _currentChannelBitrateSetting;
+            set
+            {
+                _currentChannelBitrateSetting = value;
+                BitrateMax = value?.DiscordBitrateCap ?? 96000;
+                TargetBitrate = value?.Bitrate ?? 64000;
+                OnPropertyChanged(nameof(CurrentChannelBitrateSetting));
+                OnPropertyChanged(nameof(BitrateMax));
+                OnPropertyChanged(nameof(TargetBitrate));
+            }
+        }
         public SoundWeaverControlViewModel()
         {
             _playlistManager = new PlaylistManager();
@@ -114,6 +173,8 @@ namespace SoundWeaver.UI
 
             IsConnecting = false;
             IsConnected = false;
+
+            _settings = AppSettingsService.LoadModuleSettings("SoundWeaver", () => new SoundWeaverSettings());
         }
 
         private async Task ConnectBotAsync()
@@ -143,7 +204,46 @@ namespace SoundWeaver.UI
                 var connection = _botService.GetConnection(GuildId);
                 if (connection != null)
                 {
-                    _audioPlayer = new MultiLayerAudioPlayer(connection);
+                    var voiceChannel = connection.TargetChannel;
+                    int discordCap = voiceChannel.Bitrate ?? 96000;
+                    string channelName = voiceChannel.Name ?? $"Channel_{ChannelId}";
+
+                    // --- Recherche ou création de la config pour ce salon ---
+                    var chanList = _settings.ChannelBitrates ??= new List<ChannelBitrateSetting>();
+                    var chanSetting = chanList.FirstOrDefault(x => x.ChannelId == ChannelId);
+                    if (chanSetting == null)
+                    {
+                        chanSetting = new ChannelBitrateSetting
+                        {
+                            ChannelId = ChannelId,
+                            ChannelName = channelName,
+                            DiscordBitrateCap = discordCap,
+                            Bitrate = Math.Min(64000, discordCap)
+                        };
+                        chanList.Add(chanSetting);
+                    }
+                    else
+                    {
+                        chanSetting.ChannelName = channelName;
+                        if (chanSetting.DiscordBitrateCap != discordCap)
+                        {
+                            chanSetting.DiscordBitrateCap = discordCap;
+                            if (chanSetting.Bitrate > discordCap)
+                                chanSetting.Bitrate = discordCap;
+                        }
+                    }
+                    // --- Enregistre et sélectionne la config
+                    AppSettingsService.SaveModuleSettings("SoundWeaver", _settings);
+
+                    // --- Applique dynamiquement
+                    UpdateBitrateBounds(chanSetting.DiscordBitrateCap, _settings.SelectedChannels);
+                    TargetBitrate = chanSetting.Bitrate;
+
+                    _audioPlayer = new MultiLayerAudioPlayer(
+                                       connection,
+                                       MixerSampleRate,
+                                       _settings.SelectedChannels,
+                                       ResamplerQuality);
                     StatusMessage += " AudioPlayer initialized.";
                     IsConnected = true;
                 }
@@ -163,6 +263,8 @@ namespace SoundWeaver.UI
                 IsConnecting = false;
             }
         }
+
+
 
         private async Task DisconnectBotAsync()
         {
@@ -293,7 +395,7 @@ namespace SoundWeaver.UI
                 endedLayer.PlaybackEnded -= OnCurrentPlaylistTrackEnded;
                 ActiveLayers.Remove(endedLayer);
 
-                if (object.ReferenceEquals(endedLayer, _currentPlaylistLayer))
+                if (ReferenceEquals(endedLayer, _currentPlaylistLayer))
                 {
                     PlayNextTrackInPlaylist();
                 }
@@ -353,7 +455,7 @@ namespace SoundWeaver.UI
             if (sender is AudioLayer endedLayer)
             {
                 endedLayer.PlaybackEnded -= OnLayerEndedUpdateList;
-                App.Current.Dispatcher.Invoke(() => ActiveLayers.Remove(endedLayer));
+                System.Windows.Application.Current.Dispatcher.Invoke(() => ActiveLayers.Remove(endedLayer));
                 UpdateCommandStates();
             }
         }
@@ -387,6 +489,48 @@ namespace SoundWeaver.UI
             _audioPlayer?.Dispose();
             _botService?.ShutdownAsync().Wait();
             StatusMessage = "Cleanup complete.";
+        }
+
+        /// <summary>
+        /// Recalcule les bornes min?/?max à partir du cap Discord et du nombre de canaux choisis.
+        /// </summary>
+        private void UpdateBitrateBounds(int discordCapBps, int channelCount)
+        {
+            BitrateMax = discordCapBps;
+            BitrateMin = 8_000 * channelCount;
+            TargetBitrate = Math.Clamp(TargetBitrate, BitrateMin, BitrateMax);
+        }
+
+        private ChannelBitrateSetting GetOrCreateChannelSetting(ulong channelId, string channelName, int discordCap)
+        {
+            var setting = _settings.ChannelBitrates.FirstOrDefault(x => x.ChannelId == channelId);
+            if (setting == null)
+            {
+                setting = new ChannelBitrateSetting
+                {
+                    ChannelId = channelId,
+                    ChannelName = channelName,
+                    DiscordBitrateCap = discordCap,
+                    Bitrate = Math.Min(64000, discordCap) // Valeur initiale safe
+                };
+                _settings.ChannelBitrates.Add(setting);
+                SaveSettings();
+            }
+            // MAJ du cap si besoin
+            if (setting.DiscordBitrateCap != discordCap)
+            {
+                setting.DiscordBitrateCap = discordCap;
+                if (setting.Bitrate > discordCap)
+                    setting.Bitrate = discordCap;
+                SaveSettings();
+            }
+            return setting;
+        }
+
+        // Pour sauver les modifs
+        private void SaveSettings()
+        {
+            AppSettingsService.SaveModuleSettings("SoundWeaver", _settings);
         }
     }
 }

@@ -149,7 +149,7 @@ namespace Reader.ViewModels
                 settingsToSave.DefaultPath = DefaultPath;
                 // settingsToSave.DefaultPath would be preserved if loaded as above. If this VM controlled it, it'd be set here.
 
-                AppSettingsService.SaveModuleSettings("ReaderModule", settingsToSave);
+                AppSettingsService.SaveModuleSettings("Reader", settingsToSave);
                 _logger.LogInfo("Reader options settings applied and saved.");
             }
             catch (Exception ex_apply_settings)

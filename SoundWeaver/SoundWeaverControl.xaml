@@ -4,12 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:SoundWeaver"
-             xmlns:ui="clr-namespace:SoundWeaver.UI"
              mc:Ignorable="d"
              d:DesignHeight="650" d:DesignWidth="850">
-    <UserControl.DataContext>
-        <ui:SoundWeaverControlViewModel/>
-    </UserControl.DataContext>
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -82,7 +78,7 @@
                     <TextBlock Text="Selected Track Controls:" Margin="0,10,0,0"/>
                     <Button Content="Play Selected as New Primary" Command="{Binding PlayTrackCommand}" Margin="0,5,0,0"/>
                     <Button Content="Add Selected as New Layer" Command="{Binding AddTrackAsLayerCommand}" Margin="0,5,0,0"/>
-                     <!-- TODO: Volume slider for selected layer, remove layer button -->
+                    <!-- TODO: Volume slider for selected layer, remove layer button -->
                 </StackPanel>
             </GroupBox>
         </Grid>

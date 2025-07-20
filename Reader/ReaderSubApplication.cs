@@ -82,5 +82,9 @@ namespace Reader
 
             _readerSettings = currentReaderSettings; // Update local cache
         }
+
+        public void Shutdown()
+        {
+        }
     }
 }

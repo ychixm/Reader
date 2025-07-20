@@ -1,11 +1,7 @@
 ﻿using DSharpPlus;
 using DSharpPlus.VoiceNext;
-using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SoundWeaver.Bot
 {
@@ -91,49 +87,47 @@ namespace SoundWeaver.Bot
 
         public async Task JoinVoiceChannelAsync(ulong guildId, ulong channelId)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(DiscordBotService));
-            if (_isConnectingOrDisconnecting) throw new InvalidOperationException("Already connecting or disconnecting");
+            var guild = await _client.GetGuildAsync(guildId);
+            if (guild == null) throw new Exception($"Guild {guildId} introuvable.");
 
-            _isConnectingOrDisconnecting = true;
-            try
+            var channel = guild.GetChannel(channelId);
+            if (channel == null)
+                throw new Exception($"Channel {channelId} introuvable sur {guild.Name}.");
+
+            var existingConn = _voice.GetConnection(guild);
+            if (existingConn != null)
             {
-                _logger.LogInformation("JoinVoiceChannelAsync démarré pour guild {GuildId}, channel {ChannelId}", guildId, channelId);
-
-                var guild = await _client.GetGuildAsync(guildId);
-                if (guild == null) throw new Exception($"Guild {guildId} introuvable.");
-
-                var channel = guild.GetChannel(channelId);
-                if (channel == null)
-                    throw new Exception($"Channel {channelId} introuvable sur {guild.Name}.");
-
-                _logger.LogInformation("Avant await _voice.ConnectAsync (timeout 10s)");
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                var connectionTask = _voice.ConnectAsync(channel);
-
-                var completedTask = await Task.WhenAny(connectionTask, Task.Delay(Timeout.Infinite, cts.Token));
-                if (completedTask != connectionTask)
+                _logger.LogInformation("Déconnexion de la session vocale précédente...");
+                try
                 {
-                    _logger.LogError("Timeout: la connexion vocale Discord n'a pas abouti sous 10s !");
-                    throw new TimeoutException("Timeout lors de la connexion vocale Discord !");
+                    existingConn.Disconnect();
+                    await Task.Delay(1000); // 1 seconde de marge, indispensable pour Discord/VoiceNext
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Erreur lors de la déconnexion de la session vocale précédente.");
                 }
 
-                var connection = await connectionTask;
-                _voiceConnections[guildId] = connection;
+            }
 
-                _logger.LogInformation("Connecté au salon vocal {ChannelName} ({ChannelId}) sur le serveur {GuildName} ({GuildId}).",
-                    channel.Name, channelId, guild.Name, guildId);
-            }
-            catch (Exception ex)
+            _logger.LogInformation("Avant await _voice.ConnectAsync (timeout 10s)");
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+            var connectionTask = _voice.ConnectAsync(channel);
+
+            var completedTask = await Task.WhenAny(connectionTask, Task.Delay(Timeout.Infinite, cts.Token));
+            if (completedTask != connectionTask)
             {
-                _logger.LogError(ex, "Exception dans JoinVoiceChannelAsync (guild {GuildId} / channel {ChannelId})", guildId, channelId);
-                throw;
+                _logger.LogError("Timeout: la connexion vocale Discord n'a pas abouti sous 10s !");
+                throw new TimeoutException("Timeout lors de la connexion vocale Discord !");
             }
-            finally
-            {
-                _isConnectingOrDisconnecting = false;
-            }
+
+            var connection = await connectionTask;
+            _voiceConnections[guildId] = connection;
+
+            _logger.LogInformation("Connecté au salon vocal {ChannelName} ({ChannelId}) sur le serveur {GuildName} ({GuildId}).",
+                channel.Name, channelId, guild.Name, guildId);
         }
-
         public VoiceNextConnection GetConnection(ulong guildId)
         {
             _voiceConnections.TryGetValue(guildId, out var connection);

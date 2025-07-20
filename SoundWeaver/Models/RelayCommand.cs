@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Input;
 
-namespace SoundWeaver.UI
+namespace SoundWeaver.Models
 {
     public class RelayCommand : ICommand
     {
