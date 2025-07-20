@@ -17,7 +17,7 @@ namespace Assistant
     public partial class MainFrame : Window
     {
         private readonly ILoggerService _logger;
-        public TabOverflowMode CurrentTabOverflowMode { get; set; } // Existing property
+        public TabOverflowMode CurrentTabOverflowMode { get; set; }
 
         private List<ISubApplication> _subApplications = new List<ISubApplication>();
         public static List<ISubApplication> LoadedSubApplications { get; private set; } = new List<ISubApplication>();
@@ -31,11 +31,11 @@ namespace Assistant
 
             _logger.LogInfo("MainFrame initializing...");
 
-            this.CurrentTabOverflowMode = TabOverflowMode.Scrollbar; // Existing line
-            this.DataContext = this; // Existing line
+            this.CurrentTabOverflowMode = TabOverflowMode.Scrollbar;
+            this.DataContext = this;
 
             LoadSubApplications();
-            InitializeTabsAndOptions(); // Renamed for clarity
+            InitializeTabsAndOptions();
             _logger.LogInfo("MainFrame initialized.");
         }
 
@@ -61,13 +61,12 @@ namespace Assistant
                 return;
             }
 
-            MainAppTabControl.Items.Clear(); // Clear any design-time tabs
+            MainAppTabControl.Items.Clear(); 
 
-            // Add the Options Tab
             TabItem optionsTab = new TabItem
             {
                 Header = "Options",
-                Content = new OptionsUserControl() // Create an instance of our OptionsUserControl
+                Content = new OptionsUserControl()
             };
             MainAppTabControl.Items.Add(optionsTab);
 
@@ -86,13 +85,12 @@ namespace Assistant
                 }
                 else
                 {
-                     MessageBox.Show($"Error: Main view for {app.Name} could not be loaded.",
-                                "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"Error: Main view for {app.Name} could not be loaded.",
+                               "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
         }
 
-        // Existing MainFrame_Loaded event handler - keep as is
         private void MainFrame_Loaded(object sender, RoutedEventArgs e)
         {
             // It's possible that ThemeManager.ApplyTheme() might be called here

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 
 namespace SoundWeaver.Models
 {
@@ -40,14 +41,14 @@ namespace SoundWeaver.Models
     public class Playlist
     {
         public string Name { get; set; }
-        public List<AudioTrack> Tracks { get; private set; }
+        public ObservableCollection<AudioTrack> Tracks { get; private set; }
         public bool IsLooping { get; set; } // For whole playlist looping
         public int CurrentTrackIndex { get; set; } = -1; // -1 means not started or finished
 
         public Playlist(string name)
         {
             Name = name;
-            Tracks = new List<AudioTrack>();
+            Tracks = new ObservableCollection<AudioTrack>();
         }
 
         public void AddTrack(AudioTrack track)

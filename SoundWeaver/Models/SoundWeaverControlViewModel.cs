@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -29,6 +30,12 @@ namespace SoundWeaver.Models
         private MultiLayerAudioPlayer _audioPlayer;
         private PlaylistManager _playlistManager;
         private SoundWeaverSettings _settings;
+
+        // ********** NOUVELLE COLLECTION POUR LE SCROLLER DE PLAYLISTS **********
+        public ObservableCollection<PlaylistElementViewModel> Playlists { get; } = new ObservableCollection<PlaylistElementViewModel>();
+        public ICommand AddPlaylistCommand { get; }
+        public ICommand LoadPlaylistElementCommand { get; }
+        public ICommand PlayPlaylistElementCommand { get; }
 
         public ObservableCollection<AudioTrack> CurrentPlaylistTracks { get; } = new ObservableCollection<AudioTrack>();
         public ObservableCollection<AudioLayer> ActiveLayers { get; } = new ObservableCollection<AudioLayer>();
@@ -92,8 +99,6 @@ namespace SoundWeaver.Models
         public ICommand PlayTrackCommand { get; }
         public ICommand BrowsePlaylistCommand { get; }
 
-
-
         private int _mixerSampleRate = 48000;
         public int MixerSampleRate
         {
@@ -103,6 +108,10 @@ namespace SoundWeaver.Models
         private int _bitrateMin = 8_000;
         private int _bitrateMax = 96_000;
         private int _targetBitrate = 64_000;
+        private DateTime _lastDisconnect = DateTime.MinValue;
+        private const int _reconnectDelayMs = 7000;
+        private int _connectRetries = 0;
+        private const int _maxConnectRetries = 5;
 
         public int BitrateMin
         {
@@ -149,40 +158,110 @@ namespace SoundWeaver.Models
                 OnPropertyChanged(nameof(TargetBitrate));
             }
         }
+
         public SoundWeaverControlViewModel()
         {
             _playlistManager = new PlaylistManager();
 
-            ConnectBotCommand = new RelayCommand(async _ => await ConnectBotAsync(),
+            ConnectBotCommand = new RelayCommand<object>(async _ => await ConnectBotAsync(),
                                                  _ => !IsConnecting && !IsConnected && !string.IsNullOrWhiteSpace(DiscordToken) && GuildId > 0 && ChannelId > 0);
 
-            DisconnectBotCommand = new RelayCommand(async _ => await DisconnectBotAsync(),
+            DisconnectBotCommand = new RelayCommand<object>(async _ => await DisconnectBotAsync(),
                                                     _ => IsConnected && !IsConnecting);
 
-            LoadPlaylistCommand = new RelayCommand(async _ => await LoadPlaylistAsync(),
+            LoadPlaylistCommand = new RelayCommand<object>(async _ => await LoadPlaylistAsync(),
                                                   _ => !string.IsNullOrWhiteSpace(PlaylistPath));
-            PlayPlaylistCommand = new RelayCommand(async _ => await PlayPlaylistAsync(),
+            PlayPlaylistCommand = new RelayCommand<object>(async _ => await PlayPlaylistAsync(),
                                                    _ => _currentPlaylist != null && _currentPlaylist.Tracks.Any() && _audioPlayer != null);
-            StopAllAudioCommand = new RelayCommand(_ => StopAllAudio(),
+            StopAllAudioCommand = new RelayCommand<object>(_ => StopAllAudio(),
                                                    _ => _audioPlayer != null && ActiveLayers.Any());
-            AddTrackAsLayerCommand = new RelayCommand(async _ => await AddSelectedTrackAsLayerAsync(),
+            AddTrackAsLayerCommand = new RelayCommand<object>(async _ => await AddSelectedTrackAsLayerAsync(),
                                                       _ => SelectedTrack != null && _audioPlayer != null);
-            PlayTrackCommand = new RelayCommand(async _ => await PlaySelectedTrackAsync(),
+            PlayTrackCommand = new RelayCommand<object>(async _ => await PlaySelectedTrackAsync(),
                                                 _ => SelectedTrack != null && _audioPlayer != null);
-            BrowsePlaylistCommand = new RelayCommand(_ => BrowseForPlaylist());
+            BrowsePlaylistCommand = new RelayCommand<object>(_ => BrowseForPlaylist());
+
+            // *********** NOUVELLES COMMANDES PLAYLIST ELEMENTS ************
+            AddPlaylistCommand = new RelayCommand<object>(_ => ExecuteAddPlaylist());
+            LoadPlaylistElementCommand = new RelayCommand<Playlist>(async playlist => await ExecuteLoadPlaylistElementAsync(playlist));
+            PlayPlaylistElementCommand = new RelayCommand<Playlist>(async playlist => await ExecutePlayPlaylistElementAsync(playlist));
 
             IsConnecting = false;
             IsConnected = false;
 
             _settings = AppSettingsService.LoadModuleSettings("SoundWeaver", () => new SoundWeaverSettings());
+
+            // Init dummy si tu veux une playlist à l’ouverture (optionnel)
+            //LoadPlaylists(GetInitialPlaylists());
         }
+
+        // ************* LOGIQUE SCROLLER PLAYLISTS ***********************
+
+        private void ExecuteAddPlaylist()
+        {
+            // TODO : à personnaliser selon structure Playlist/AudioTrack de ton appli
+            var newPlaylist = new Playlist("Nom de la playlist"); ;
+            Playlists.Add(new PlaylistElementViewModel(
+                newPlaylist,
+                LoadPlaylistElementCommand,
+                PlayPlaylistElementCommand
+            ));
+        }
+
+        private async Task ExecuteLoadPlaylistElementAsync(Playlist playlist)
+        {
+            // Charge la playlist et affiche ses tracks dans le usercontrol (selon ton modèle)
+            if (playlist == null)
+                return;
+
+            try
+            {
+                StatusMessage = $"Chargement playlist '{playlist.Name}'...";
+                // Exemple : simulateur de chargement
+                await Task.Delay(500);
+                // Implémente la logique métier ici (ou bind tracks dans le VM)
+                StatusMessage = $"Playlist '{playlist.Name}' chargée.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Erreur chargement playlist : {ex.Message}";
+            }
+        }
+
+        private async Task ExecutePlayPlaylistElementAsync(Playlist playlist)
+        {
+            // Démarre la lecture de la playlist sélectionnée (logique à adapter)
+            if (playlist == null || playlist.Tracks == null || !playlist.Tracks.Any())
+            {
+                StatusMessage = "Impossible de lire la playlist?: vide ou non chargée.";
+                return;
+            }
+            // Exemples?: stop tous les layers puis joue le 1er
+            _audioPlayer?.StopAllLayers();
+            ActiveLayers.Clear();
+            _currentPlaylistLayer = null;
+
+            var firstTrack = playlist.Tracks.FirstOrDefault();
+            if (firstTrack != null)
+            {
+                StatusMessage = $"Lecture playlist?: {playlist.Name}";
+                _currentPlaylistLayer = _audioPlayer.AddLayer(firstTrack, firstTrack.IsLooping);
+                if (_currentPlaylistLayer != null)
+                {
+                    ActiveLayers.Add(_currentPlaylistLayer);
+                    _currentPlaylistLayer.PlaybackEnded += OnLayerEndedUpdateList;
+                }
+            }
+        }
+
+        // ************* FIN LOGIQUE SCROLLER PLAYLISTS *******************
 
         private async Task ConnectBotAsync()
         {
             if (_botService != null)
             {
                 await _botService.ShutdownAsync();
-                _botService.Dispose();
+                await _botService.DisposeAsync();
                 _botService = null;
             }
             if (_audioPlayer != null)
@@ -192,23 +271,47 @@ namespace SoundWeaver.Models
             }
 
             IsConnecting = true;
-            StatusMessage = "Initializing bot...";
+            StatusMessage = "Preflight checks: ping Discord gateway…";
+
+            _botService = new DiscordBotService();
+
+            // Diagnostic AVANT login Discord.NET
+            bool gatewayOk = await DiscordBotService.PingDiscordGatewayAsync(_botService.Logger);
+            bool tokenOk = await DiscordBotService.TestDiscordTokenAsync(DiscordToken, _botService.Logger);
+
+            if (!gatewayOk)
+            {
+                StatusMessage = "? Impossible de joindre la gateway Discord. Réseau coupé, proxy, ou Discord HS ?";
+                IsConnecting = false;
+                _botService = null;
+                return;
+            }
+            if (!tokenOk)
+            {
+                StatusMessage = "? Token Discord invalide, bot banni/disabled, ou token mal copié.";
+                IsConnecting = false;
+                _botService = null;
+                return;
+            }
+
+            StatusMessage = "Gateway Discord OK. Token OK. Initialisation du bot...";
+
             try
             {
-                _botService = new DiscordBotService();
                 await _botService.InitializeAsync(DiscordToken);
                 StatusMessage = "Bot initialized. Connecting to voice channel...";
-                await _botService.JoinVoiceChannelAsync(GuildId, ChannelId);
+
+                // Connexion vocale et récupération du IAudioClient
+                var audioClient = await _botService.JoinVoiceChannelAsync(GuildId, ChannelId);
                 StatusMessage = $"Connected to voice channel {ChannelId} on guild {GuildId}.";
 
-                var connection = _botService.GetConnection(GuildId);
-                if (connection != null)
+                if (audioClient != null)
                 {
-                    var voiceChannel = connection.TargetChannel;
-                    int discordCap = voiceChannel.Bitrate ?? 96000;
-                    string channelName = voiceChannel.Name ?? $"Channel_{ChannelId}";
+                    var guild = _botService.Client.GetGuild(GuildId);
+                    var channel = guild?.GetVoiceChannel(ChannelId);
+                    int discordCap = channel?.Bitrate ?? 96000;
+                    string channelName = channel?.Name ?? $"Channel_{ChannelId}";
 
-                    // --- Recherche ou création de la config pour ce salon ---
                     var chanList = _settings.ChannelBitrates ??= new List<ChannelBitrateSetting>();
                     var chanSetting = chanList.FirstOrDefault(x => x.ChannelId == ChannelId);
                     if (chanSetting == null)
@@ -232,15 +335,12 @@ namespace SoundWeaver.Models
                                 chanSetting.Bitrate = discordCap;
                         }
                     }
-                    // --- Enregistre et sélectionne la config
                     AppSettingsService.SaveModuleSettings("SoundWeaver", _settings);
-
-                    // --- Applique dynamiquement
                     UpdateBitrateBounds(chanSetting.DiscordBitrateCap, _settings.SelectedChannels);
                     TargetBitrate = chanSetting.Bitrate;
 
                     _audioPlayer = new MultiLayerAudioPlayer(
-                                       connection,
+                                       audioClient,
                                        MixerSampleRate,
                                        _settings.SelectedChannels,
                                        ResamplerQuality);
@@ -256,6 +356,17 @@ namespace SoundWeaver.Models
             catch (Exception ex)
             {
                 StatusMessage = $"Error connecting bot: {ex.Message}";
+                Console.WriteLine($"[SoundWeaver VM] Exception lors de la connexion Discord: {ex}");
+
+                if ((ex is Discord.Net.WebSocketClosedException wsEx && wsEx.CloseCode == 4006) ||
+                     ex.ToString().Contains("Session is no longer valid") ||
+                     ex.ToString().Contains("WebSocketClosedException"))
+                {
+                    StatusMessage = $"Session Discord.NET invalide (4006). Attente 10s puis tentative de reconnexion…";
+                    await Task.Delay(10_000);
+                    await ConnectBotAsync(); // auto-retry
+                    return;
+                }
                 IsConnected = false;
             }
             finally
@@ -263,8 +374,6 @@ namespace SoundWeaver.Models
                 IsConnecting = false;
             }
         }
-
-
 
         private async Task DisconnectBotAsync()
         {
@@ -280,21 +389,24 @@ namespace SoundWeaver.Models
                 if (_botService != null)
                 {
                     await _botService.ShutdownAsync();
-                    _botService.Dispose();
+                    await _botService.DisposeAsync();
                     _botService = null;
                 }
+                _lastDisconnect = DateTime.UtcNow; // <--- TRACK la dernière déco
                 StatusMessage = "Disconnected.";
                 IsConnected = false;
             }
             catch (Exception ex)
             {
                 StatusMessage = $"Error during disconnect: {ex.Message}";
+                Console.WriteLine($"[SoundWeaver VM] Exception lors du disconnect: {ex}");
             }
             finally
             {
                 IsConnecting = false;
             }
         }
+
 
         private void BrowseForPlaylist()
         {

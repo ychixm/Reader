@@ -1,174 +1,234 @@
-﻿using DSharpPlus;
-using DSharpPlus.VoiceNext;
+﻿using Discord;
+using Discord.Audio;
+using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SoundWeaver.Bot
 {
-    public class DiscordBotService : IDisposable
+    public class DiscordBotService : IAsyncDisposable
     {
-        private DiscordClient _client;
-        private VoiceNextExtension _voice;
-        private readonly Dictionary<ulong, VoiceNextConnection> _voiceConnections = new();
         private readonly ILogger<DiscordBotService> _logger;
-        private readonly ILoggerFactory _loggerFactory;
+        private readonly DiscordSocketClient _client;
+        private readonly ConcurrentDictionary<ulong, IAudioClient> _voiceClients = new();
 
-        private bool _isConnectingOrDisconnecting = false;
         private bool _disposed = false;
+        private bool _isConnecting = false;
+        private DateTime _lastDisconnect = DateTime.MinValue;
 
-        public DiscordClient Client => _client; // Expose to ViewModel if needed
-        public VoiceNextExtension Voice => _voice;
+        private const int _minReconnectDelayMs = 10_000;
+        private const int _maxRetries = 5;
+        private int _reconnectTries = 0;
+        public ILogger Logger => _logger;
+        public DiscordSocketClient Client => _client;
 
-        public DiscordBotService()
+        public DiscordBotService(ILogger<DiscordBotService> logger = null)
         {
-            _loggerFactory = LoggerFactory.Create(builder =>
+            _logger = logger ?? LoggerFactory.Create(b => b.AddConsole())
+                                .CreateLogger<DiscordBotService>();
+            _client = new DiscordSocketClient(new DiscordSocketConfig
             {
-                builder.AddConsole();
-                builder.SetMinimumLevel(LogLevel.Information);
+                GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildVoiceStates,
+                LogGatewayIntentWarnings = false
             });
-            _logger = _loggerFactory.CreateLogger<DiscordBotService>();
+
+            _client.Log += msg =>
+            {
+                _logger.Log(msg.Severity switch
+                {
+                    LogSeverity.Critical => LogLevel.Critical,
+                    LogSeverity.Error => LogLevel.Error,
+                    LogSeverity.Warning => LogLevel.Warning,
+                    LogSeverity.Info => LogLevel.Information,
+                    LogSeverity.Verbose => LogLevel.Debug,
+                    _ => LogLevel.Trace
+                }, msg.Exception, "[Discord.NET] " + msg.Message);
+                return Task.CompletedTask;
+            };
+            _client.Ready += () =>
+            {
+                _logger.LogInformation("[Discord.NET] Event READY reçu. Latence: " + _client.Latency + "ms");
+                return Task.CompletedTask;
+            };
+            _client.Connected += () =>
+            {
+                _logger.LogInformation("[Discord.NET] Event CONNECTED.");
+                return Task.CompletedTask;
+            };
+            _client.Disconnected += (ex) =>
+            {
+                _logger.LogWarning(ex, "[Discord.NET] Event DISCONNECTED.");
+                return Task.CompletedTask;
+            };
+            _client.LatencyUpdated += (old, now) =>
+            {
+                _logger.LogInformation($"[Discord.NET] Latence gateway: {now} ms (avant: {old} ms)");
+                return Task.CompletedTask;
+            };
+        }
+
+        private async Task OnDisconnected(Exception ex)
+        {
+            _logger.LogWarning(ex, "Déconnecté de Discord. Attente puis tentative de reconnexion...");
+            _lastDisconnect = DateTime.UtcNow;
+            _reconnectTries++;
+
+            if (_reconnectTries > _maxRetries)
+            {
+                _logger.LogCritical("Trop de tentatives de reconnexion. Arrêt du bot.");
+                return;
+            }
+
+            await Task.Delay(_minReconnectDelayMs * _reconnectTries);
+            try
+            {
+                await _client.StartAsync();
+                _logger.LogInformation("Reconnexion Discord.NET réussie.");
+                _reconnectTries = 0;
+            }
+            catch (Exception err)
+            {
+                _logger.LogError(err, "Erreur de reconnexion Discord.NET (tentative {0})", _reconnectTries);
+                await OnDisconnected(err); // Retry récursif avec délai croissant
+            }
         }
 
         public async Task InitializeAsync(string token)
         {
             if (_disposed) throw new ObjectDisposedException(nameof(DiscordBotService));
-            if (_isConnectingOrDisconnecting) throw new InvalidOperationException("Already connecting or disconnecting");
+            if (_isConnecting) throw new InvalidOperationException("Déjà en cours de connexion.");
 
-            _isConnectingOrDisconnecting = true;
+            _isConnecting = true;
             try
             {
-                _logger.LogInformation("Initialisation du bot Discord...");
-                _client = new DiscordClient(new DiscordConfiguration
-                {
-                    Token = token,
-                    TokenType = TokenType.Bot,
-                    Intents = DiscordIntents.Guilds | DiscordIntents.GuildVoiceStates,
-                    LoggerFactory = _loggerFactory
-                });
+                _logger.LogInformation("Initialisation du bot Discord.NET…");
+                await _client.LoginAsync(TokenType.Bot, token);
 
-                _voice = _client.UseVoiceNext();
+                // Respecte délai si bot relancé souvent
+                var sinceLast = DateTime.UtcNow - _lastDisconnect;
+                if (sinceLast < TimeSpan.FromMilliseconds(_minReconnectDelayMs))
+                    await Task.Delay(TimeSpan.FromMilliseconds(_minReconnectDelayMs) - sinceLast);
 
-                // Events pour traçabilité/debug
-                _client.Ready += (s, e) =>
-                {
-                    _logger.LogInformation("Bot Discord READY et connecté à l'API Discord.");
-                    return Task.CompletedTask;
-                };
-                _client.GuildAvailable += (s, e) =>
-                {
-                    _logger.LogInformation("GuildAvailable: {GuildName}", e.Guild.Name);
-                    return Task.CompletedTask;
-                };
-                _client.SocketClosed += (s, e) =>
-                {
-                    _logger.LogWarning("Socket Discord fermé ({Code}) : {Reason}", e.CloseCode, e.CloseMessage);
-                    return Task.CompletedTask;
-                };
-                _client.ClientErrored += (s, e) =>
-                {
-                    _logger.LogError(e.Exception, "Erreur client Discord");
-                    return Task.CompletedTask;
-                };
+                await _client.StartAsync();
 
-                await _client.ConnectAsync();
+                var readyTcs = new TaskCompletionSource<bool>();
+                Task OnReady() { readyTcs.TrySetResult(true); return Task.CompletedTask; }
+                _client.Ready += OnReady;
 
-                _logger.LogInformation("Bot Discord connecté avec succès.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erreur lors de l'initialisation du bot Discord.");
-                throw;
+                if (await Task.WhenAny(readyTcs.Task, Task.Delay(15000)) != readyTcs.Task)
+                    throw new TimeoutException("Discord READY non reçu (<15 s)");
+
+                _client.Ready -= OnReady;
+                _logger.LogInformation("Bot Discord prêt.");
+                _reconnectTries = 0;
             }
             finally
             {
-                _isConnectingOrDisconnecting = false;
+                _isConnecting = false;
             }
         }
 
-        public async Task JoinVoiceChannelAsync(ulong guildId, ulong channelId)
+        public async Task<IAudioClient> JoinVoiceChannelAsync(ulong guildId, ulong channelId,
+                                                              bool selfDeaf = false, bool selfMute = false,
+                                                              int timeoutSec = 10)
         {
-            var guild = await _client.GetGuildAsync(guildId);
-            if (guild == null) throw new Exception($"Guild {guildId} introuvable.");
+            var guild = _client.GetGuild(guildId) ?? throw new Exception($"Guild {guildId} introuvable.");
+            var channel = guild.GetVoiceChannel(channelId) ?? throw new Exception($"Salon {channelId} introuvable.");
 
-            var channel = guild.GetChannel(channelId);
-            if (channel == null)
-                throw new Exception($"Channel {channelId} introuvable sur {guild.Name}.");
-
-            var existingConn = _voice.GetConnection(guild);
-            if (existingConn != null)
+            // Déconnexion vocale existante
+            if (_voiceClients.TryRemove(guildId, out var oldClient))
             {
-                _logger.LogInformation("Déconnexion de la session vocale précédente...");
-                try
-                {
-                    existingConn.Disconnect();
-                    await Task.Delay(1000); // 1 seconde de marge, indispensable pour Discord/VoiceNext
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Erreur lors de la déconnexion de la session vocale précédente.");
-                }
-
+                _logger.LogInformation("Déconnexion de la session vocale précédente…");
+                try { await oldClient.StopAsync(); } catch { }
+                await Task.Delay(1000);
             }
 
-            _logger.LogInformation("Avant await _voice.ConnectAsync (timeout 10s)");
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            _logger.LogInformation("Connexion voix → {0}/{1} (timeout {2}s)…", guild.Name, channel.Name, timeoutSec);
 
-            var connectionTask = _voice.ConnectAsync(channel);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSec));
+            var joinTask = channel.ConnectAsync(selfDeaf, selfMute);
 
-            var completedTask = await Task.WhenAny(connectionTask, Task.Delay(Timeout.Infinite, cts.Token));
-            if (completedTask != connectionTask)
-            {
-                _logger.LogError("Timeout: la connexion vocale Discord n'a pas abouti sous 10s !");
-                throw new TimeoutException("Timeout lors de la connexion vocale Discord !");
-            }
+            if (await Task.WhenAny(joinTask, Task.Delay(-1, cts.Token)) != joinTask)
+                throw new TimeoutException("Timeout lors de la connexion vocale Discord.NET");
 
-            var connection = await connectionTask;
-            _voiceConnections[guildId] = connection;
+            var audioClient = await joinTask;
+            _voiceClients[guildId] = audioClient;
 
-            _logger.LogInformation("Connecté au salon vocal {ChannelName} ({ChannelId}) sur le serveur {GuildName} ({GuildId}).",
-                channel.Name, channelId, guild.Name, guildId);
+            _logger.LogInformation("Connecté au salon vocal {0} sur {1}.", channel.Name, guild.Name);
+            return audioClient;
         }
-        public VoiceNextConnection GetConnection(ulong guildId)
+
+        public async Task LeaveGuildVoiceAsync(ulong guildId)
         {
-            _voiceConnections.TryGetValue(guildId, out var connection);
-            return connection;
+            if (_voiceClients.TryRemove(guildId, out var client))
+            {
+                try { await client.StopAsync(); } catch { }
+                _logger.LogInformation("Déconnecté du vocal sur guild {0}.", guildId);
+            }
         }
 
         public async Task ShutdownAsync()
         {
-            if (_isConnectingOrDisconnecting) return;
-
-            _isConnectingOrDisconnecting = true;
-            try
+            foreach (var kvp in _voiceClients)
             {
-                _logger.LogWarning("Tentative de shutdown FULL (hard) du bot Discord...");
-
-                foreach (var connection in _voiceConnections.Values)
-                {
-                    try { connection.Disconnect(); } catch { /* ignore */ }
-                }
-                _voiceConnections.Clear();
-
-                if (_client != null)
-                {
-                    try { await _client.DisconnectAsync(); } catch { /* ignore */ }
-                    try { _client.Dispose(); } catch { /* ignore */ }
-                    _client = null;
-                }
-
-                _logger.LogWarning("Shutdown FULL terminé.");
+                try { await kvp.Value.StopAsync(); } catch { }
             }
-            finally
+            _voiceClients.Clear();
+
+            if (_client.LoginState != LoginState.LoggedOut)
             {
-                _isConnectingOrDisconnecting = false;
+                await _client.StopAsync();
+                await _client.LogoutAsync();
             }
+            _lastDisconnect = DateTime.UtcNow;
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             if (_disposed) return;
             _disposed = true;
-            try { _client?.Dispose(); } catch { /* ignore */ }
+            try { await ShutdownAsync(); } catch { }
+            _client.Dispose();
         }
+
+        public static async Task<bool> PingDiscordGatewayAsync(ILogger logger = null)
+        {
+            try
+            {
+                using var client = new System.Net.Http.HttpClient();
+                var resp = await client.GetAsync("https://discord.com/api/v10/gateway");
+                var body = await resp.Content.ReadAsStringAsync();
+                logger?.LogInformation($"[PingDiscordGatewayAsync] StatusCode: {resp.StatusCode} Body: {body}");
+                return resp.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(ex, "[PingDiscordGatewayAsync] Exception lors du ping gateway.");
+                return false;
+            }
+        }
+
+        public static async Task<bool> TestDiscordTokenAsync(string token, ILogger logger = null)
+        {
+            try
+            {
+                using var client = new System.Net.Http.HttpClient();
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bot", token);
+                var resp = await client.GetAsync("https://discord.com/api/v10/users/@me");
+                var body = await resp.Content.ReadAsStringAsync();
+                logger?.LogInformation($"[TestDiscordTokenAsync] StatusCode: {resp.StatusCode} Body: {body}");
+                return resp.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(ex, "[TestDiscordTokenAsync] Exception lors du test du token.");
+                return false;
+            }
+        }
+
+
     }
 }

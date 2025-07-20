@@ -1,70 +1,53 @@
-using DSharpPlus.VoiceNext;
 using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
-using SoundWeaver.Models; // Assuming AudioTrack will be here
-using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SoundWeaver.Audio
 {
     public class LoopStream : WaveStream
     {
-        private readonly WaveStream _sourceStream;
-        private bool _enableLooping;
+        private readonly WaveStream _src;
+        private bool _loop;
 
-        public LoopStream(WaveStream sourceStream, bool enableLooping = true)
+        public LoopStream(WaveStream source, bool enableLoop = true)
         {
-            _sourceStream = sourceStream;
-            _enableLooping = enableLooping;
-            this.WaveFormat = sourceStream.WaveFormat;
+            _src  = source;
+            _loop = enableLoop;
         }
 
         public bool EnableLooping
         {
-            get => _enableLooping;
-            set => _enableLooping = value;
+            get => _loop;
+            set => _loop = value;
         }
 
-        public override WaveFormat WaveFormat { get; }
-
-        public override long Length => _sourceStream.Length; // Can be problematic if true length is unknown or if we want infinite
+        public override WaveFormat WaveFormat => _src.WaveFormat;
+        public override long Length          => _src.Length;
 
         public override long Position
         {
-            get => _sourceStream.Position;
-            set => _sourceStream.Position = value;
+            get => _src.Position;
+            set => _src.Position = value;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int totalBytesRead = 0;
-            while (totalBytesRead < count)
+            int total = 0;
+            while (total < count)
             {
-                int bytesRead = _sourceStream.Read(buffer, offset + totalBytesRead, count - totalBytesRead);
-                if (bytesRead == 0)
+                int read = _src.Read(buffer, offset + total, count - total);
+                if (read == 0)
                 {
-                    if (_sourceStream.Position == 0 || !_enableLooping)
-                    {
-                        // Either end of stream and not looping, or an issue
-                        break;
-                    }
-                    // Loop
-                    _sourceStream.Position = 0;
+                    if (!_loop) break;
+                    _src.Position = 0;           // restart
+                    continue;
                 }
-                totalBytesRead += bytesRead;
+                total += read;
             }
-            return totalBytesRead;
+            return total;
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                _sourceStream?.Dispose();
-            }
+            if (disposing) _src.Dispose();
             base.Dispose(disposing);
         }
     }
