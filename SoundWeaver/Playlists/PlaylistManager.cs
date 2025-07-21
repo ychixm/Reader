@@ -109,36 +109,12 @@ namespace SoundWeaver.Playlists
                     }
                     catch (ArgumentException ex)
                     {
-                         Console.WriteLine($"Skipping invalid track source '{trackSource}': {ex.Message}");
+                        Console.WriteLine($"Skipping invalid track source '{trackSource}': {ex.Message}");
                     }
                     currentTrackTitle = null; // Reset for next #EXTINF or plain path
                 }
             }
             return playlist;
         }
-
-        // Example usage (conceptual, would be part of a larger system)
-        // public async Task PlayPlaylist(Playlist playlist, AudioPlayer audioPlayer)
-        // {
-        //     if (playlist == null || audioPlayer == null) return;
-        //
-        //     AudioTrack currentTrack;
-        //     while ((currentTrack = playlist.GetNextTrack()) != null)
-        //     {
-        //         Console.WriteLine($"Playing: {currentTrack.Title} from {currentTrack.Source}");
-        //         await audioPlayer.PlayFileAsync(currentTrack.Source.IsFile ? currentTrack.Source.LocalPath : currentTrack.Source.AbsoluteUri, currentTrack.IsLooping);
-        //
-        //         // This is simplistic: PlayFileAsync is asynchronous but doesn't wait for completion here.
-        //         // A real player would need to know when a track finishes to play the next one.
-        //         // This would involve events from AudioPlayer or a more complex queueing mechanism.
-        //         // For now, this just adds all tracks to the mixer if PlayFileAsync adds them non-blockingly.
-        //         // If PlayFileAsync blocks, it will play them sequentially.
-        //     }
-        //
-        //     if (playlist.CurrentTrackIndex >= playlist.Tracks.Count && !playlist.IsLooping)
-        //     {
-        //         Console.WriteLine("Playlist finished.");
-        //     }
-        // }
     }
 }

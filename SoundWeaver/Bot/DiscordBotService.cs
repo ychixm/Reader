@@ -165,7 +165,22 @@ namespace SoundWeaver.Bot
         {
             if (_voiceClients.TryRemove(guildId, out var client))
             {
-                try { await client.StopAsync(); } catch { }
+                try
+                {
+                    await client.StopAsync();
+                }
+                catch (ObjectDisposedException ode)
+                {
+                    _logger.LogWarning(ode, "AudioClient déjà disposé lors du disconnect.");
+                }
+                catch (System.Net.WebSockets.WebSocketException wsEx)
+                {
+                    _logger.LogWarning(wsEx, "WebSocket déjà fermé (Aborted) lors du disconnect. Sans gravité.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Erreur lors du disconnect vocal Discord.");
+                }
                 _logger.LogInformation("Déconnecté du vocal sur guild {0}.", guildId);
             }
         }
@@ -174,7 +189,18 @@ namespace SoundWeaver.Bot
         {
             foreach (var kvp in _voiceClients)
             {
-                try { await kvp.Value.StopAsync(); } catch { }
+                try
+                {
+                    await kvp.Value.StopAsync();
+                }
+                catch (System.Net.WebSockets.WebSocketException wsEx)
+                {
+                    _logger.LogWarning(wsEx, "WebSocket déjà fermé lors du shutdown. Ignoré.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Erreur lors du shutdown du vocal.");
+                }
             }
             _voiceClients.Clear();
 
