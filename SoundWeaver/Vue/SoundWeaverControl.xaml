@@ -31,24 +31,29 @@
         </GroupBox>
 
         <!-- Playlists Scroller -->
-        <GroupBox Header="Playlists" Grid.Row="1" Margin="5" Grid.RowSpan="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="PlaylistsPanel">
-                    <ItemsControl x:Name="PlaylistsList" ItemsSource="{Binding Playlists}">
+        <StackPanel Grid.Row="1" Orientation="Vertical" Margin="5">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal">
+                    <ItemsControl ItemsSource="{Binding Playlists}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <vue:PlaylistElement />
+                                <vue:PlaylistElement Margin="5,0"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <!-- Bouton Ajouter une playlist -->
-                    <Button Content="Ajouter une playlist"
+                    <!-- Le bouton est ici, dans le flux horizontal -->
+                    <Button Content="&#xFF0B; Nouvelle playlist"
                     Command="{Binding AddPlaylistCommand}"
-                    Margin="0,8,0,0"
-                    Padding="8,4"/>
+                    Margin="10,0,0,0"
+                    Padding="16,0"/>
                 </StackPanel>
             </ScrollViewer>
-        </GroupBox>
+        </StackPanel>
 
         <!-- Global Controls -->
         <GroupBox Header="Global Controls" Grid.Row="4" Margin="5">
