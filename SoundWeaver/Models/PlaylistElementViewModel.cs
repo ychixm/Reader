@@ -17,18 +17,20 @@ namespace SoundWeaver.Models
         public ICommand LoadPlaylistCommand { get; }
         public ICommand PlayPlaylistCommand { get; }
         public ICommand BrowseAndLoadCommand { get; }
-
+        private readonly SoundWeaverControlViewModel _parentVm;
         private readonly PlaylistManager _playlistManager;
 
         public PlaylistElementViewModel(
-            Playlist playlist,
-            ICommand loadPlaylistCommand,
-            ICommand playPlaylistCommand)
+     Playlist playlist,
+     ICommand loadPlaylistCommand,
+     ICommand playPlaylistCommand,
+     SoundWeaverControlViewModel parentVm)
         {
             Playlist = playlist;
             LoadPlaylistCommand = loadPlaylistCommand;
             PlayPlaylistCommand = playPlaylistCommand;
             _playlistManager = new PlaylistManager();
+            _parentVm = parentVm;
             BrowseAndLoadCommand = new RelayCommand<object>(async _ => await BrowseAndLoadAsync());
         }
 

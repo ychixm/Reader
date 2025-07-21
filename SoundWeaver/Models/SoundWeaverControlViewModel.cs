@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
 using SoundWeaver.Audio;
@@ -195,17 +196,16 @@ namespace SoundWeaver.Models
             //LoadPlaylists(GetInitialPlaylists());
         }
 
-        // ************* LOGIQUE SCROLLER PLAYLISTS ***********************
 
         private void ExecuteAddPlaylist()
         {
-            // TODO : à personnaliser selon structure Playlist/AudioTrack de ton appli
             var newPlaylist = new Playlist("Nom de la playlist"); ;
             Playlists.Add(new PlaylistElementViewModel(
-                newPlaylist,
-                LoadPlaylistElementCommand,
-                PlayPlaylistElementCommand
-            ));
+            newPlaylist,
+           LoadPlaylistElementCommand,
+               PlayPlaylistElementCommand,
+               this
+));
         }
 
         private async Task ExecuteLoadPlaylistElementAsync(Playlist playlist)
@@ -216,15 +216,24 @@ namespace SoundWeaver.Models
 
             try
             {
-                StatusMessage = $"Chargement playlist '{playlist.Name}'...";
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    StatusMessage = $"Chargement playlist '{playlist.Name}'...";
+                });
                 // Exemple : simulateur de chargement
                 await Task.Delay(500);
                 // Implémente la logique métier ici (ou bind tracks dans le VM)
-                StatusMessage = $"Playlist '{playlist.Name}' chargée.";
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    StatusMessage = $"Playlist '{playlist.Name}' chargée.";
+                });
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Erreur chargement playlist : {ex.Message}";
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    StatusMessage = $"Erreur chargement playlist : {ex.Message}";
+                });
             }
         }
 
@@ -364,7 +373,7 @@ namespace SoundWeaver.Models
                 {
                     StatusMessage = $"Session Discord.NET invalide (4006). Attente 10s puis tentative de reconnexion…";
                     await Task.Delay(10_000);
-                    await ConnectBotAsync(); // auto-retry
+                    await ConnectBotAsync();
                     return;
                 }
                 IsConnected = false;

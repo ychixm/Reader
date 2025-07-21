@@ -1,7 +1,6 @@
 ﻿<UserControl x:Class="SoundWeaver.Vue.PlaylistElement"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Width="500" >
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
     <GroupBox Header="{Binding Playlist.Name}" Width="500" Margin="0,0,0,0">
         <StackPanel>
             <!-- tes boutons, la liste, etc -->
