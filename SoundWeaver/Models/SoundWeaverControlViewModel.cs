@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+ï»¿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -148,7 +148,7 @@ namespace SoundWeaver.Models
             set { _channelSettings = value; OnPropertyChanged(); }
         }
 
-        // Propriété pour afficher/masquer la popup
+        // PropriÃ©tÃ© pour afficher/masquer la popup
         private bool _isAddChannelDialogOpen;
         public bool IsAddChannelDialogOpen
         {
@@ -156,7 +156,7 @@ namespace SoundWeaver.Models
             set { _isAddChannelDialogOpen = value; OnPropertyChanged(); }
         }
 
-        // ViewModel dédié à la popup (pour le binding)
+        // ViewModel dÃ©diÃ© Ã  la popup (pour le binding)
         private AddChannelDialogViewModel? _addChannelDialogVM;
         public AddChannelDialogViewModel? AddChannelDialogVM
         {
@@ -224,7 +224,7 @@ namespace SoundWeaver.Models
 
         private async Task ExecuteLoadPlaylistElementAsync(Playlist playlist)
         {
-            // Charge la playlist et affiche ses tracks dans le usercontrol (selon ton modèle)
+            // Charge la playlist et affiche ses tracks dans le usercontrol (selon ton modÃ¨le)
             if (playlist == null)
                 return;
 
@@ -236,10 +236,10 @@ namespace SoundWeaver.Models
                 });
                 // Exemple : simulateur de chargement
                 await Task.Delay(500);
-                // Implémente la logique métier ici (ou bind tracks dans le VM)
+                // ImplÃ©mente la logique mÃ©tier ici (ou bind tracks dans le VM)
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    StatusMessage = $"Playlist '{playlist.Name}' chargée.";
+                    StatusMessage = $"Playlist '{playlist.Name}' chargÃ©e.";
                 });
             }
             catch (Exception ex)
@@ -253,10 +253,10 @@ namespace SoundWeaver.Models
 
         private async Task ExecutePlayPlaylistElementAsync(Playlist playlist)
         {
-            // Démarre la lecture de la playlist sélectionnée (logique à adapter)
+            // DÃ©marre la lecture de la playlist sÃ©lectionnÃ©e (logique Ã  adapter)
             if (playlist == null || playlist.Tracks == null || !playlist.Tracks.Any())
             {
-                StatusMessage = "Impossible de lire la playlist?: vide ou non chargée.";
+                StatusMessage = "Impossible de lire la playlist?: vide ou non chargÃ©e.";
                 return;
             }
             // Exemples?: stop tous les layers puis joue le 1er
@@ -294,7 +294,7 @@ namespace SoundWeaver.Models
             }
 
             IsConnecting = true;
-            StatusMessage = "Preflight checks: ping Discord gateway…";
+            StatusMessage = "Preflight checks: ping Discord gatewayâ€¦";
 
             _botService = new DiscordBotService();
 
@@ -304,14 +304,14 @@ namespace SoundWeaver.Models
 
             if (!gatewayOk)
             {
-                StatusMessage = "? Impossible de joindre la gateway Discord. Réseau coupé, proxy, ou Discord HS ?";
+                StatusMessage = "? Impossible de joindre la gateway Discord. RÃ©seau coupÃ©, proxy, ou Discord HS ?";
                 IsConnecting = false;
                 _botService = null;
                 return;
             }
             if (!tokenOk)
             {
-                StatusMessage = "? Token Discord invalide, bot banni/disabled, ou token mal copié.";
+                StatusMessage = "? Token Discord invalide, bot banni/disabled, ou token mal copiÃ©.";
                 IsConnecting = false;
                 _botService = null;
                 return;
@@ -324,10 +324,10 @@ namespace SoundWeaver.Models
                 await _botService.InitializeAsync(_settings.DiscordToken);
                 StatusMessage = "Bot initialized. Connecting to voice channel...";
 
-                // Connexion vocale et récupération du IAudioClient
+                // Connexion vocale et rÃ©cupÃ©ration du IAudioClient
                 if (SelectedChannelSetting == null)
                 {
-                    StatusMessage = "Aucun salon sélectionné.";
+                    StatusMessage = "Aucun salon sÃ©lectionnÃ©.";
                     return;
                 }
                 var audioClient = await _botService.JoinVoiceChannelAsync(SelectedChannelSetting.GuildId, SelectedChannelSetting.ChannelId);
@@ -392,7 +392,7 @@ namespace SoundWeaver.Models
                      ex.ToString().Contains("Session is no longer valid") ||
                      ex.ToString().Contains("WebSocketClosedException"))
                 {
-                    StatusMessage = $"Session Discord.NET invalide (4006). Attente 10s puis tentative de reconnexion…";
+                    StatusMessage = $"Session Discord.NET invalide (4006). Attente 10s puis tentative de reconnexionâ€¦";
                     await Task.Delay(10_000);
                     await ConnectBotAsync();
                     return;
@@ -422,7 +422,7 @@ namespace SoundWeaver.Models
                     await _botService.DisposeAsync();
                     _botService = null;
                 }
-                _lastDisconnect = DateTime.UtcNow; // <--- TRACK la dernière déco
+                _lastDisconnect = DateTime.UtcNow; // <--- TRACK la derniÃ¨re dÃ©co
                 StatusMessage = "Disconnected.";
                 IsConnected = false;
             }
@@ -634,7 +634,7 @@ namespace SoundWeaver.Models
         }
 
         /// <summary>
-        /// Recalcule les bornes min?/?max à partir du cap Discord et du nombre de canaux choisis.
+        /// Recalcule les bornes min?/?max Ã  partir du cap Discord et du nombre de canaux choisis.
         /// </summary>
         private void UpdateBitrateBounds(int discordCapBps, int channelCount)
         {
@@ -745,7 +745,7 @@ namespace SoundWeaver.Models
                 SetMuteSfx(sfx, mute);
             }
         });
-
+         
 
         private void SaveSfxElements()
         {
@@ -824,7 +824,7 @@ namespace SoundWeaver.Models
                 };
                 timer.Start();
 
-                // Mute si demandé (état runtime)
+                // Mute si demandÃ© (Ã©tat runtime)
                 if (sfx.State == SfxLayerState.Muted)
                     SetMuteSfx(sfx, true);
             }

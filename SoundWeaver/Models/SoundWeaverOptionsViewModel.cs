@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+ï»¿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
@@ -72,7 +72,7 @@ public class SoundWeaverOptionsViewModel : IOptionsViewModel, INotifyPropertyCha
     }
 
     /// <summary>
-    /// Ajoute ou met à jour un salon vocal (appelé lors de la connexion ou d’un scan).
+    /// Ajoute ou met Ã  jour un salon vocal (appelÃ© lors de la connexion ou dâ€™un scan).
     /// </summary>
     public ChannelSetting RegisterOrUpdateChannel(ulong channelId, string channelName, int discordCap)
     {
