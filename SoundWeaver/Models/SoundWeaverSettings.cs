@@ -4,6 +4,7 @@ namespace SoundWeaver.Models
     {
         public bool SampleOption { get; set; } = true;
         public int SelectedChannels { get; set; } = 2;
-        public List<ChannelBitrateSetting> ChannelBitrates { get; set; } = new();
+        public List<ChannelSetting> ChannelSettings { get; set; } = new();
+        public string DiscordToken { get; set; }
     }
 }

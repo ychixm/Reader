@@ -15,6 +15,5 @@ namespace SoundWeaver
             this.DataContext = viewModel;
 
         }
-
     }
 }

@@ -20,13 +20,20 @@ public class SoundWeaverOptionsViewModel : IOptionsViewModel, INotifyPropertyCha
     }
 
     // Liste observable de tous les salons connus
-    public ObservableCollection<ChannelBitrateSetting> ChannelBitrateSettings { get; } = new();
+    public ObservableCollection<ChannelSetting> ChannelBitrateSettings { get; } = new();
 
-    private ChannelBitrateSetting _selectedChannelBitrateSetting;
-    public ChannelBitrateSetting SelectedChannelBitrateSetting
+    private ChannelSetting _selectedChannelBitrateSetting;
+    public ChannelSetting SelectedChannelBitrateSetting
     {
         get => _selectedChannelBitrateSetting;
         set { _selectedChannelBitrateSetting = value; OnPropertyChanged(); }
+    }
+
+    private string _discordToken;
+    public string DiscordToken
+    {
+        get => _discordToken;
+        set { _discordToken = value; OnPropertyChanged(); }
     }
 
     public SoundWeaverOptionsViewModel()
@@ -45,12 +52,13 @@ public class SoundWeaverOptionsViewModel : IOptionsViewModel, INotifyPropertyCha
                            : 2;
 
         ChannelBitrateSettings.Clear();
-        if (settings.ChannelBitrates != null)
+        if (settings.ChannelSettings != null)
         {
-            foreach (var item in settings.ChannelBitrates)
+            foreach (var item in settings.ChannelSettings)
                 ChannelBitrateSettings.Add(item);
             SelectedChannelBitrateSetting = ChannelBitrateSettings.FirstOrDefault();
         }
+        DiscordToken = settings.DiscordToken ?? "";
     }
 
     public void SaveSettings()
@@ -58,19 +66,20 @@ public class SoundWeaverOptionsViewModel : IOptionsViewModel, INotifyPropertyCha
         var settings = AppSettingsService.LoadModuleSettings(
             "SoundWeaver", () => new SoundWeaverSettings());
         settings.SelectedChannels = this.SelectedChannels;
-        settings.ChannelBitrates = ChannelBitrateSettings.ToList();
+        settings.ChannelSettings = ChannelBitrateSettings.ToList();
+        settings.DiscordToken = this.DiscordToken;
         AppSettingsService.SaveModuleSettings("SoundWeaver", settings);
     }
 
     /// <summary>
     /// Ajoute ou met à jour un salon vocal (appelé lors de la connexion ou d’un scan).
     /// </summary>
-    public ChannelBitrateSetting RegisterOrUpdateChannel(ulong channelId, string channelName, int discordCap)
+    public ChannelSetting RegisterOrUpdateChannel(ulong channelId, string channelName, int discordCap)
     {
         var found = ChannelBitrateSettings.FirstOrDefault(x => x.ChannelId == channelId);
         if (found == null)
         {
-            found = new ChannelBitrateSetting
+            found = new ChannelSetting
             {
                 ChannelId = channelId,
                 ChannelName = channelName,

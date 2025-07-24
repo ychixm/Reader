@@ -1,23 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SoundWeaver.Models
 {
-    public class ChannelBitrateSetting : INotifyPropertyChanged
+    public class ChannelSetting : INotifyPropertyChanged
     {
+        public ulong GuildId { get; set; }
         public ulong ChannelId { get; set; }
         public string ChannelName { get; set; }
+
         private int _discordBitrateCap = 96000;
         public int DiscordBitrateCap
         {
             get => _discordBitrateCap;
             set { if (_discordBitrateCap != value) { _discordBitrateCap = value; OnPropertyChanged(); } }
         }
+
         private int _bitrate = 64000;
         public int Bitrate
         {

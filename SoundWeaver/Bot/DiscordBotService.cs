@@ -1,11 +1,14 @@
-﻿using Discord;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading;
+using System.Threading.Tasks;
+using Discord;
 using Discord.Audio;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace SoundWeaver.Bot
 {
@@ -254,7 +257,40 @@ namespace SoundWeaver.Bot
                 return false;
             }
         }
+        public static async Task<(bool Exists, string? ChannelName, string? Error)> TryResolveChannelNameAsync(string botToken, ulong guildId, ulong channelId)
+        {
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
 
+            // Vérifier si le serveur existe et est accessible (optionnel)
+            var guildUrl = $"https://discord.com/api/v10/guilds/{guildId}";
+            var guildResponse = await client.GetAsync(guildUrl);
+
+            if (!guildResponse.IsSuccessStatusCode)
+            {
+                return (false, null, "Serveur (guild) introuvable ou inaccessible.");
+            }
+
+            // Vérifier le salon
+            var channelUrl = $"https://discord.com/api/v10/channels/{channelId}";
+            var channelResponse = await client.GetAsync(channelUrl);
+
+            if (!channelResponse.IsSuccessStatusCode)
+            {
+                return (false, null, "Salon introuvable ou inaccessible.");
+            }
+
+            var channelJson = await channelResponse.Content.ReadAsStringAsync();
+            var jObj = JObject.Parse(channelJson);
+
+            // Vérifie que ce salon appartient bien au bon guild
+            if (jObj["guild_id"]?.ToString() != guildId.ToString())
+            {
+                return (false, null, "Ce salon n'appartient pas à ce serveur (guild).");
+            }
+
+            return (true, jObj["name"]?.ToString(), null);
+        }
 
     }
 }

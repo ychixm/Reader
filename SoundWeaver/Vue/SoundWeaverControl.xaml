@@ -1,74 +1,99 @@
-<UserControl x:Class="SoundWeaver.SoundWeaverControl"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:local="clr-namespace:SoundWeaver"
-             xmlns:vue="clr-namespace:SoundWeaver.Vue"
-             mc:Ignorable="d"
-             d:DesignHeight="650" d:DesignWidth="850">
+<UserControl
+    x:Class="SoundWeaver.SoundWeaverControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:SoundWeaver"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vue="clr-namespace:SoundWeaver.Vue"
+    d:DesignHeight="650"
+    d:DesignWidth="850"
+    mc:Ignorable="d">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Bot Connection -->
-        <GroupBox Header="Discord Connection" Grid.Row="0" Margin="5">
+
+        <GroupBox Grid.Row="0" Margin="5">
             <StackPanel>
-                <TextBlock Text="Bot Token:"/>
-                <TextBox Text="{Binding DiscordToken, UpdateSourceTrigger=PropertyChanged}"/>
-                <TextBlock Text="Guild ID:"/>
-                <TextBox Text="{Binding GuildId, UpdateSourceTrigger=PropertyChanged}"/>
-                <TextBlock Text="Voice Channel ID:"/>
-                <TextBox Text="{Binding ChannelId, UpdateSourceTrigger=PropertyChanged}"/>
-                <Button Content="Connect Bot" Command="{Binding ConnectBotCommand}" Margin="0,5,0,0"/>
-                <Button Content="Disconnect Bot" Command="{Binding DisconnectBotCommand}" Margin="0,5,0,0"/>
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Button
+                        Grid.Column="0"
+                        Margin="5,5,5,5"
+                        Command="{Binding ShowAddChannelDialogCommand}"
+                        Content="Ajouter un salon" />
+                    <ComboBox
+                        Grid.Column="1"
+                        Width="250"
+                        Margin="5,5,5,5"
+                        HorizontalAlignment="Left"
+                        DisplayMemberPath="ChannelName"
+                        ItemsSource="{Binding ChannelSettings}"
+                        SelectedItem="{Binding SelectedChannelSetting, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Button
+                        Width="120"
+                        Margin="5,5,5,5"
+                        Command="{Binding ConnectBotCommand}"
+                        Content="Connect Bot" />
+                    <Button
+                        Width="120"
+                        Margin="5,5,5,5"
+                        Command="{Binding DisconnectBotCommand}"
+                        Content="Disconnect Bot" />
+                </StackPanel>
             </StackPanel>
         </GroupBox>
 
-        <!-- Playlists Scroller -->
-        <StackPanel Grid.Row="1" Orientation="Vertical" Margin="5">
+        <!--  Playlists Scroller  -->
+        <StackPanel
+            Grid.Row="1"
+            Margin="5"
+            Orientation="Vertical">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                 <StackPanel Orientation="Horizontal">
                     <ItemsControl ItemsSource="{Binding Playlists}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"/>
+                                <StackPanel Orientation="Horizontal" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <vue:PlaylistElement Margin="5,0"/>
+                                <vue:PlaylistElement Margin="5,0" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <!-- Le bouton est ici, dans le flux horizontal -->
-                    <Button Content="&#xFF0B; Nouvelle playlist"
-                    Command="{Binding AddPlaylistCommand}"
-                    Margin="10,0,0,0"
-                    Padding="16,0"/>
+                    <!--  Le bouton est ici, dans le flux horizontal  -->
+                    <Button
+                        Margin="10,0,0,0"
+                        Padding="16,0"
+                        Command="{Binding AddPlaylistCommand}"
+                        Content="&#xFF0B; Nouvelle playlist" />
                 </StackPanel>
             </ScrollViewer>
         </StackPanel>
+        <StackPanel Grid.Row="2" />
 
-        <!-- Global Controls -->
-        <StackPanel Grid.Row="4" Margin="5">
-            <Border BorderThickness="1" BorderBrush="White">
+        <!--  Global Controls  -->
+        <StackPanel Grid.Row="3" Margin="5">
+            <Border BorderBrush="White" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <Button Content="Stop All Audio"
-            Command="{Binding StopAllAudioCommand}"
-            HorizontalAlignment="Left"
-            Grid.Column="0"/>
+                    <Button
+                        Grid.Column="0"
+                        HorizontalAlignment="Left"
+                        Command="{Binding StopAllAudioCommand}"
+                        Content="Stop All Audio" />
 
                     <StatusBar Grid.Column="1" Margin="5,0,0,0">
                         <StatusBarItem>

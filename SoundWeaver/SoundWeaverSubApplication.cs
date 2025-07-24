@@ -47,7 +47,7 @@ namespace SoundWeaver
             _optionsViewModel?.Apply();
 
             _settings = AppSettingsService.LoadModuleSettings<SoundWeaverSettings>("SoundWeaver", () => new SoundWeaverSettings());
-
+            _viewModel.LoadSettings();
             if (_mainView != null && _viewModel != null)
             {
                 _logger.LogInfo("SoundWeaverSubApplication: ApplyOptions called. Settings reloaded.");

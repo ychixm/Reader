@@ -1,24 +1,19 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
 using SoundWeaver.Audio;
 using SoundWeaver.Bot;
 using SoundWeaver.Playlists;
+using SoundWeaver.ViewModels;
 using Utils;
 
 namespace SoundWeaver.Models
 {
     public class SoundWeaverControlViewModel : INotifyPropertyChanged, IDisposable
     {
-        private string _discordToken;
         private ulong _guildId;
         private ulong _channelId;
         private string _statusMessage;
@@ -32,7 +27,6 @@ namespace SoundWeaver.Models
         private PlaylistManager _playlistManager;
         private SoundWeaverSettings _settings;
 
-        // ********** NOUVELLE COLLECTION POUR LE SCROLLER DE PLAYLISTS **********
         public ObservableCollection<PlaylistElementViewModel> Playlists { get; } = new ObservableCollection<PlaylistElementViewModel>();
         public ICommand AddPlaylistCommand { get; }
         public ICommand LoadPlaylistElementCommand { get; }
@@ -43,24 +37,12 @@ namespace SoundWeaver.Models
         private Playlist _currentPlaylist;
         private AudioLayer _currentPlaylistLayer;
 
-        public string DiscordToken
+        private ChannelSetting _selectedChannelSetting;
+        public ChannelSetting SelectedChannelSetting
         {
-            get => _discordToken;
-            set { _discordToken = value; OnPropertyChanged(); UpdateCommandStates(); }
+            get => _selectedChannelSetting;
+            set { _selectedChannelSetting = value; OnPropertyChanged(); }
         }
-
-        public ulong GuildId
-        {
-            get => _guildId;
-            set { _guildId = value; OnPropertyChanged(); UpdateCommandStates(); }
-        }
-
-        public ulong ChannelId
-        {
-            get => _channelId;
-            set { _channelId = value; OnPropertyChanged(); UpdateCommandStates(); }
-        }
-
         public string StatusMessage
         {
             get => _statusMessage;
@@ -145,8 +127,8 @@ namespace SoundWeaver.Models
             set { _resamplerQuality = Math.Clamp(value, 1, 60); OnPropertyChanged(); }
         }
 
-        private ChannelBitrateSetting _currentChannelBitrateSetting;
-        public ChannelBitrateSetting CurrentChannelBitrateSetting
+        private ChannelSetting _currentChannelBitrateSetting;
+        public ChannelSetting CurrentChannelBitrateSetting
         {
             get => _currentChannelBitrateSetting;
             set
@@ -160,12 +142,38 @@ namespace SoundWeaver.Models
             }
         }
 
+        private ObservableCollection<ChannelSetting> _channelSettings = new ObservableCollection<ChannelSetting>();
+        public ObservableCollection<ChannelSetting> ChannelSettings
+        {
+            get => _channelSettings;
+            set { _channelSettings = value; OnPropertyChanged(); }
+        }
+
+        // Propriété pour afficher/masquer la popup
+        private bool _isAddChannelDialogOpen;
+        public bool IsAddChannelDialogOpen
+        {
+            get => _isAddChannelDialogOpen;
+            set { _isAddChannelDialogOpen = value; OnPropertyChanged(); }
+        }
+
+        // ViewModel dédié à la popup (pour le binding)
+        private AddChannelDialogViewModel? _addChannelDialogVM;
+        public AddChannelDialogViewModel? AddChannelDialogVM
+        {
+            get => _addChannelDialogVM;
+            set { _addChannelDialogVM = value; OnPropertyChanged(); }
+        }
+
+        public ICommand ShowAddChannelDialogCommand { get; }
+
+
         public SoundWeaverControlViewModel()
         {
             _playlistManager = new PlaylistManager();
 
             ConnectBotCommand = new RelayCommand<object>(async _ => await ConnectBotAsync(),
-                                                 _ => !IsConnecting && !IsConnected && !string.IsNullOrWhiteSpace(DiscordToken) && GuildId > 0 && ChannelId > 0);
+                                                 _ => !IsConnecting && !IsConnected && SelectedChannelSetting != null);
 
             DisconnectBotCommand = new RelayCommand<object>(async _ => await DisconnectBotAsync(),
                                                     _ => IsConnected && !IsConnecting);
@@ -181,6 +189,7 @@ namespace SoundWeaver.Models
             PlayTrackCommand = new RelayCommand<object>(async _ => await PlaySelectedTrackAsync(),
                                                 _ => SelectedTrack != null && _audioPlayer != null);
             BrowsePlaylistCommand = new RelayCommand<object>(_ => BrowseForPlaylist());
+            ShowAddChannelDialogCommand = new RelayCommand<object>(_ => OpenAddChannelDialog());
 
             // *********** NOUVELLES COMMANDES PLAYLIST ELEMENTS ************
             AddPlaylistCommand = new RelayCommand<object>(_ => ExecuteAddPlaylist());
@@ -190,12 +199,14 @@ namespace SoundWeaver.Models
             IsConnecting = false;
             IsConnected = false;
 
-            _settings = AppSettingsService.LoadModuleSettings("SoundWeaver", () => new SoundWeaverSettings());
-
-            // Init dummy si tu veux une playlist à l’ouverture (optionnel)
-            //LoadPlaylists(GetInitialPlaylists());
+            LoadSettings();
+            ChannelSettings = new ObservableCollection<ChannelSetting>(_settings.ChannelSettings ?? new List<ChannelSetting>());
         }
 
+        public void LoadSettings()
+        {
+            _settings = AppSettingsService.LoadModuleSettings("SoundWeaver", () => new SoundWeaverSettings());
+        }
 
         private void ExecuteAddPlaylist()
         {
@@ -281,7 +292,7 @@ namespace SoundWeaver.Models
 
             // Diagnostic AVANT login Discord.NET
             bool gatewayOk = await DiscordBotService.PingDiscordGatewayAsync(_botService.Logger);
-            bool tokenOk = await DiscordBotService.TestDiscordTokenAsync(DiscordToken, _botService.Logger);
+            bool tokenOk = await DiscordBotService.TestDiscordTokenAsync(_settings.DiscordToken, _botService.Logger);
 
             if (!gatewayOk)
             {
@@ -302,27 +313,32 @@ namespace SoundWeaver.Models
 
             try
             {
-                await _botService.InitializeAsync(DiscordToken);
+                await _botService.InitializeAsync(_settings.DiscordToken);
                 StatusMessage = "Bot initialized. Connecting to voice channel...";
 
                 // Connexion vocale et récupération du IAudioClient
-                var audioClient = await _botService.JoinVoiceChannelAsync(GuildId, ChannelId);
-                StatusMessage = $"Connected to voice channel {ChannelId} on guild {GuildId}.";
+                if (SelectedChannelSetting == null)
+                {
+                    StatusMessage = "Aucun salon sélectionné.";
+                    return;
+                }
+                var audioClient = await _botService.JoinVoiceChannelAsync(SelectedChannelSetting.GuildId, SelectedChannelSetting.ChannelId);
+                StatusMessage = $"Connected to voice channel {SelectedChannelSetting.ChannelId} on guild {SelectedChannelSetting.GuildId}.";
 
                 if (audioClient != null)
                 {
-                    var guild = _botService.Client.GetGuild(GuildId);
-                    var channel = guild?.GetVoiceChannel(ChannelId);
+                    var guild = _botService.Client.GetGuild(SelectedChannelSetting.GuildId);
+                    var channel = guild?.GetVoiceChannel(SelectedChannelSetting.ChannelId);
                     int discordCap = channel?.Bitrate ?? 96000;
-                    string channelName = channel?.Name ?? $"Channel_{ChannelId}";
+                    string channelName = channel?.Name ?? $"Channel_{SelectedChannelSetting.ChannelId}";
 
-                    var chanList = _settings.ChannelBitrates ??= new List<ChannelBitrateSetting>();
-                    var chanSetting = chanList.FirstOrDefault(x => x.ChannelId == ChannelId);
+                    var chanList = _settings.ChannelSettings ??= new List<ChannelSetting>();
+                    var chanSetting = chanList.FirstOrDefault(x => x.ChannelId == SelectedChannelSetting.ChannelId);
                     if (chanSetting == null)
                     {
-                        chanSetting = new ChannelBitrateSetting
+                        chanSetting = new ChannelSetting
                         {
-                            ChannelId = ChannelId,
+                            ChannelId = SelectedChannelSetting.ChannelId,
                             ChannelName = channelName,
                             DiscordBitrateCap = discordCap,
                             Bitrate = Math.Min(64000, discordCap)
@@ -339,7 +355,9 @@ namespace SoundWeaver.Models
                                 chanSetting.Bitrate = discordCap;
                         }
                     }
-                    AppSettingsService.SaveModuleSettings("SoundWeaver", _settings);
+
+                    SaveSettings();
+
                     UpdateBitrateBounds(chanSetting.DiscordBitrateCap, _settings.SelectedChannels);
                     TargetBitrate = chanSetting.Bitrate;
 
@@ -617,19 +635,19 @@ namespace SoundWeaver.Models
             TargetBitrate = Math.Clamp(TargetBitrate, BitrateMin, BitrateMax);
         }
 
-        private ChannelBitrateSetting GetOrCreateChannelSetting(ulong channelId, string channelName, int discordCap)
+        private ChannelSetting GetOrCreateChannelSetting(ulong channelId, string channelName, int discordCap)
         {
-            var setting = _settings.ChannelBitrates.FirstOrDefault(x => x.ChannelId == channelId);
+            var setting = _settings.ChannelSettings.FirstOrDefault(x => x.ChannelId == channelId);
             if (setting == null)
             {
-                setting = new ChannelBitrateSetting
+                setting = new ChannelSetting
                 {
                     ChannelId = channelId,
                     ChannelName = channelName,
                     DiscordBitrateCap = discordCap,
                     Bitrate = Math.Min(64000, discordCap) // Valeur initiale safe
                 };
-                _settings.ChannelBitrates.Add(setting);
+                _settings.ChannelSettings.Add(setting);
                 SaveSettings();
             }
             // MAJ du cap si besoin
@@ -646,6 +664,7 @@ namespace SoundWeaver.Models
         // Pour sauver les modifs
         private void SaveSettings()
         {
+            _settings.ChannelSettings = ChannelSettings.ToList();
             AppSettingsService.SaveModuleSettings("SoundWeaver", _settings);
         }
 
@@ -661,5 +680,35 @@ namespace SoundWeaver.Models
             if (Playlists.Contains(vm))
                 Playlists.Remove(vm);
         }
+
+        private void OpenAddChannelDialog()
+        {
+            var dialogVM = new AddChannelDialogViewModel
+            {
+                ExistingChannels = ChannelSettings.ToList(),
+                BotToken = _settings.DiscordToken
+            };
+
+            var dialog = new Vue.AddChannelDialogWindow
+            {
+                DataContext = dialogVM,
+                Owner = Application.Current.MainWindow
+            };
+
+            dialogVM.RequestClose += (channel) =>
+            {
+                dialog.DialogResultChannel = channel;
+                dialog.CloseDialog(channel != null); 
+            };
+
+            bool? result = dialog.ShowDialog();
+            if (result == true && dialog.DialogResultChannel != null)
+            {
+                ChannelSettings.Add(dialog.DialogResultChannel);
+                SaveSettings();
+            }
+        }
+
     }
+
 }
