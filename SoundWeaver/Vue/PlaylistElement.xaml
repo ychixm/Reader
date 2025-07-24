@@ -1,29 +1,55 @@
 ﻿<UserControl x:Class="SoundWeaver.Vue.PlaylistElement"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
-    <GroupBox Header="{Binding Playlist.Name}" Width="500" Margin="0,0,0,0">
-        <StackPanel>
-            <!-- tes boutons, la liste, etc -->
-            <StackPanel Orientation="Horizontal">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+    <Grid>
+        <Border BorderThickness="2" BorderBrush="White" CornerRadius="5" Width="500" Margin="0,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
                 <Button Content="Ouvrir .m3u8"
-                        Command="{Binding BrowseAndLoadCommand}"
-                        Margin="0,0,8,0"/>
-                <Button Content="Charger"
-                        Command="{Binding LoadPlaylistCommand}"
+                              Command="{Binding BrowseAndLoadCommand}"
+                           Visibility="{Binding IsLoadAvailable, Converter={StaticResource BoolToVis}}"
+                          Margin="0,0,0,4"
+                            Grid.Row="0" Grid.Column="0"
+                            />
+
+                <TextBlock Text="{Binding Playlist.Name}" Margin="10,2,0,0" Grid.Row="0" Grid.Column="1" Visibility="{Binding IsLoaded, Converter={StaticResource BoolToVis}}" />
+
+                <Button Content="&#x00D7;"
+                        Command="{Binding DeletePlaylistCommand}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="0,0,0,0"
+                        Background="Transparent"
+                        Foreground="Red"
+                        BorderThickness="0"
+                        FontWeight="Bold"
+                        ToolTip="Supprimer la playlist"
+                        Grid.Row="0"
+                        Grid.Column="2"
+                   />
+
+                <ItemsControl ItemsSource="{Binding Playlist.Tracks}" Grid.Row="1" Grid.Column="0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Title}" Margin="10,2,0,0"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Button Grid.Row="2"
+                        Content="Play"
+                        Command="{Binding PlayPlaylistCommand}"
                         CommandParameter="{Binding Playlist}"
-                        Margin="8,0,0,0"/>
-            </StackPanel>
-            <ItemsControl ItemsSource="{Binding Playlist.Tracks}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Title}" Margin="10,2,0,0"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button Content="Play"
-                    Command="{Binding PlayPlaylistCommand}"
-                    CommandParameter="{Binding Playlist}"
-                    Margin="0,4,0,0"/>
-        </StackPanel>
-    </GroupBox>
+                        Margin="0,4,0,0"/>
+            </Grid>
+        </Border>
+    </Grid>
 </UserControl>

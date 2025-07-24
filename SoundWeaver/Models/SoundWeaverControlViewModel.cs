@@ -200,12 +200,7 @@ namespace SoundWeaver.Models
         private void ExecuteAddPlaylist()
         {
             var newPlaylist = new Playlist("Nom de la playlist"); ;
-            Playlists.Add(new PlaylistElementViewModel(
-            newPlaylist,
-           LoadPlaylistElementCommand,
-               PlayPlaylistElementCommand,
-               this
-));
+            Playlists.Add(new PlaylistElementViewModel(newPlaylist, PlayPlaylistElementCommand, this));
         }
 
         private async Task ExecuteLoadPlaylistElementAsync(Playlist playlist)
@@ -652,6 +647,19 @@ namespace SoundWeaver.Models
         private void SaveSettings()
         {
             AppSettingsService.SaveModuleSettings("SoundWeaver", _settings);
+        }
+
+        public void AddPlaylist()
+        {
+            var playlist = new Playlist("Nouvelle Playlist");
+            var vm = new PlaylistElementViewModel(playlist, PlayPlaylistCommand, this);
+            Playlists.Add(vm);
+        }
+
+        public void RemovePlaylist(PlaylistElementViewModel vm)
+        {
+            if (Playlists.Contains(vm))
+                Playlists.Remove(vm);
         }
     }
 }
