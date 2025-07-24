@@ -13,15 +13,15 @@
     mc:Ignorable="d">
 
     <UserControl.Resources>
-        <audio:OnlyContinuousVisibility x:Key="OnlyContinuousVisibility " />
+        <audio:OnlyContinuousVisibility x:Key="OnlyContinuousVisibility" />
         <audio:OnlyInstantVisibility x:Key="OnlyInstantVisibility" />
     </UserControl.Resources>
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition />
-            <RowDefinition Height="144.06" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -141,17 +141,18 @@
                                                 Width="34"
                                                 Command="{Binding DataContext.PlaySfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="?" />
+                                                Content="&#x25B6;" />
                                             <Button
                                                 Width="34"
                                                 Command="{Binding DataContext.PauseSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="?" />
+                                                Content="&#x23F8;" />
                                             <Button
                                                 Width="34"
                                                 Command="{Binding DataContext.StopSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="?" />
+                                                Content="&#x23F9;" />
+
                                             <Slider
                                                 Width="90"
                                                 Margin="8,0,0,0"
@@ -170,14 +171,35 @@
                                                 Width="34"
                                                 Command="{Binding DataContext.PlaySfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="?" />
+                                                Content="&#x25B6;" />
+                                            <Button
+                                                Width="34"
+                                                Command="{Binding DataContext.StopSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="&#x23F9;" />
                                         </StackPanel>
                                         <Button
                                             Width="34"
                                             Margin="8,0,0,0"
                                             Command="{Binding DataContext.RemoveSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Content="?" />
+                                            Content="&#x1F5D1;" />
+                                        <Button Command="{Binding DataContext.ToggleMuteSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                            <TextBlock>
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="&#x1F507;" />
+                                                        <Setter Property="ToolTip" Value="Mute" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding State}" Value="Muted">
+                                                                <Setter Property="Text" Value="&#x1F50A;" />
+                                                                <Setter Property="ToolTip" Value="Unmute" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Button>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>

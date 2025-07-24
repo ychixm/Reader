@@ -16,7 +16,8 @@ namespace SoundWeaver.Audio
         public AudioTrack Track { get; }
         public WaveStream WaveStream { get; private set; }
         public ISampleProvider SampleProvider { get; private set; }
-
+        public SfxLayerState State { get; set; } = SfxLayerState.Stopped;
+        
         private LoopStream _loopStreamLogic;
         private VolumeSampleProvider _volumeProvider;
         private MediaFoundationResampler _resamplerInstance; // Pour disposer correctement

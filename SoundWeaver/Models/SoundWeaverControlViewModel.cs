@@ -15,8 +15,6 @@ namespace SoundWeaver.Models
 {
     public class SoundWeaverControlViewModel : INotifyPropertyChanged, IDisposable
     {
-        private ulong _guildId;
-        private ulong _channelId;
         private string _statusMessage;
         private string _playlistPath;
         private AudioTrack _selectedTrack;
@@ -32,7 +30,7 @@ namespace SoundWeaver.Models
         public ICommand AddPlaylistCommand { get; }
         public ICommand LoadPlaylistElementCommand { get; }
         public ICommand PlayPlaylistElementCommand { get; }
-
+        private readonly Dictionary<SfxElement, AudioLayer> _activeSfxLayers = new();
         public ObservableCollection<AudioTrack> CurrentPlaylistTracks { get; } = new ObservableCollection<AudioTrack>();
         public ObservableCollection<AudioLayer> ActiveLayers { get; } = new ObservableCollection<AudioLayer>();
         private Playlist _currentPlaylist;
@@ -207,7 +205,8 @@ namespace SoundWeaver.Models
             PauseSfxCommand = new RelayCommand<object>(s => PauseSfx(s as SfxElement));
             StopSfxCommand = new RelayCommand<object>(s => StopSfx(s as SfxElement));
 
-            LoadSettings();
+
+        LoadSettings();
         }
 
         public void LoadSettings()
@@ -735,6 +734,17 @@ namespace SoundWeaver.Models
         public ICommand StopSfxCommand { get; }
         public ICommand SeekSfxCommand { get; }
 
+        public ICommand MuteSfxCommand => new RelayCommand<object>(s => SetMuteSfx(s as SfxElement, true));
+        public ICommand UnmuteSfxCommand => new RelayCommand<object>(s => SetMuteSfx(s as SfxElement, false));
+
+        public ICommand ToggleMuteSfxCommand => new RelayCommand<object>(s =>
+        {
+            if (s is SfxElement sfx)
+            {
+                bool mute = sfx.State != SfxLayerState.Muted;
+                SetMuteSfx(sfx, mute);
+            }
+        });
 
 
         private void SaveSfxElements()
@@ -774,69 +784,122 @@ namespace SoundWeaver.Models
 
         public void PlaySfx(SfxElement? sfx)
         {
-            if (sfx == null) return;
-            StopSfx(sfx); // Si déjà lancé
-            try
-            {
-                var reader = new AudioFileReader(sfx.FilePath) { Volume = (float)sfx.Volume };
-                var player = new WaveOutEvent();
-                player.Init(reader);
-                player.Play();
-                sfx.Duration = reader.TotalTime;
-                sfx.IsPlaying = true;
-                _sfxPlayers[sfx] = (player, reader);
+            if (sfx == null || _audioPlayer == null) return;
+            StopSfx(sfx);
 
-                // Timer pour mise à jour de la position (si Continuous)
+            var track = ToAudioTrack(sfx);
+            var layer = _audioPlayer.AddLayer(track, sfx.Type == SfxType.Continuous, (float)sfx.Volume);
+            if (layer != null)
+            {
+                _activeSfxLayers[sfx] = layer;
+                sfx.Duration = layer.WaveStream.TotalTime;
+                sfx.IsPlaying = true;
+                sfx.State = SfxLayerState.Playing;
+
+                if (sfx.PausePosition.HasValue && sfx.PausePosition.Value > TimeSpan.Zero)
+                {
+                    layer.WaveStream.CurrentTime = sfx.PausePosition.Value;
+                    sfx.Position = sfx.PausePosition.Value;
+                    sfx.PausePosition = null;
+                }
+                else if (sfx.Position > TimeSpan.Zero)
+                {
+                    layer.WaveStream.CurrentTime = sfx.Position;
+                }
+
+                layer.PlaybackEnded += (sender, e) =>
+                {
+                    sfx.IsPlaying = false;
+                    sfx.Position = TimeSpan.Zero;
+                    sfx.State = SfxLayerState.Stopped;
+                    _activeSfxLayers.Remove(sfx);
+                };
+
                 var timer = new System.Timers.Timer(200);
-                timer.Elapsed += (s, e) =>
+                timer.Elapsed += (ss, ee) =>
                 {
                     if (sfx.Type == SfxType.Continuous)
-                    {
-                        sfx.Position = reader.CurrentTime;
-                    }
-                    if (player.PlaybackState == PlaybackState.Stopped)
-                    {
-                        sfx.IsPlaying = false;
-                        timer.Dispose();
-                        StopSfx(sfx);
-                    }
+                        sfx.Position = layer.WaveStream.CurrentTime;
+                    if (!sfx.IsPlaying) timer.Dispose();
                 };
                 timer.Start();
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Erreur lecture SFX : {ex.Message}");
+
+                // Mute si demandé (état runtime)
+                if (sfx.State == SfxLayerState.Muted)
+                    SetMuteSfx(sfx, true);
             }
         }
 
+
+
         public void PauseSfx(SfxElement? sfx)
         {
-            if (sfx == null || !_sfxPlayers.ContainsKey(sfx)) return;
-            var (player, _) = _sfxPlayers[sfx];
-            player?.Pause();
-            sfx.IsPlaying = false;
+            if (sfx == null || _audioPlayer == null) return;
+            if (_activeSfxLayers.TryGetValue(sfx, out var layer))
+            {
+                sfx.PausePosition = layer.WaveStream.CurrentTime;
+                sfx.State = SfxLayerState.Paused;
+                sfx.IsPlaying = false;
+                _audioPlayer.RemoveLayer(layer.Id);
+                _activeSfxLayers.Remove(sfx);
+            }
         }
 
         public void StopSfx(SfxElement? sfx)
         {
-            if (sfx == null) return;
-            if (_sfxPlayers.TryGetValue(sfx, out var tuple))
+            if (sfx == null || _audioPlayer == null) return;
+            if (_activeSfxLayers.TryGetValue(sfx, out var layer))
             {
-                tuple.player?.Stop();
-                tuple.player?.Dispose();
-                tuple.reader?.Dispose();
-                _sfxPlayers.Remove(sfx);
+                _audioPlayer.RemoveLayer(layer.Id);
+                _activeSfxLayers.Remove(sfx);
+                sfx.IsPlaying = false;
+                sfx.Position = TimeSpan.Zero;
+                sfx.PausePosition = null;
+                sfx.State = SfxLayerState.Stopped;
             }
-            sfx.IsPlaying = false;
-            sfx.Position = TimeSpan.Zero;
         }
 
-        public void SeekSfx(SfxElement? sfx, TimeSpan newPosition)
+        public void SeekSfx(SfxElement? sfx, double seconds)
         {
-            if (sfx == null || !_sfxPlayers.ContainsKey(sfx)) return;
-            var (_, reader) = _sfxPlayers[sfx];
-            reader.CurrentTime = newPosition;
+            if (sfx == null) return;
+            var newPosition = TimeSpan.FromSeconds(seconds);
             sfx.Position = newPosition;
+
+            if (_activeSfxLayers.TryGetValue(sfx, out var layer))
+            {
+                layer.WaveStream.CurrentTime = newPosition;
+            }
+            if (!sfx.IsPlaying)
+                sfx.PausePosition = newPosition;
+        }
+
+
+        public void SetMuteSfx(SfxElement? sfx, bool mute)
+        {
+            if (sfx == null || _audioPlayer == null) return;
+            if (_activeSfxLayers.TryGetValue(sfx, out var layer))
+            {
+                if (mute)
+                {
+                    sfx.State = SfxLayerState.Muted;
+                    layer.Volume = 0.0f;
+                }
+                else
+                {
+                    sfx.State = SfxLayerState.Playing;
+                    layer.Volume = (float)sfx.Volume;
+                }
+            }
+        }
+
+        private AudioTrack ToAudioTrack(SfxElement sfx)
+        {
+            return new AudioTrack(sfx.FilePath)
+            {
+                Title = sfx.DisplayName,
+                Volume = (float)sfx.Volume,
+                IsLooping = sfx.Type == SfxType.Continuous
+            };
         }
 
     }

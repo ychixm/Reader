@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using SoundWeaver.Audio;
 
 namespace SoundWeaver.Models
 {
@@ -12,6 +13,10 @@ namespace SoundWeaver.Models
         public string DisplayName { get; set; }
         public double Volume { get; set; } = 1.0;
         public SfxType Type { get; set; }
+        public SfxLayerState State { get; set; } = SfxLayerState.Stopped;
+        public TimeSpan? PausePosition { get; set; }
+
+
         // Lecture
         private bool _isPlaying;
         public bool IsPlaying
@@ -52,4 +57,5 @@ namespace SoundWeaver.Models
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
+
 }
