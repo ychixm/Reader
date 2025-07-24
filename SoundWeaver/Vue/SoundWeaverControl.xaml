@@ -2,18 +2,26 @@
     x:Class="SoundWeaver.SoundWeaverControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:audio="clr-namespace:SoundWeaver.Audio"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:SoundWeaver"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:SoundWeaver.Models"
     xmlns:vue="clr-namespace:SoundWeaver.Vue"
     d:DesignHeight="650"
     d:DesignWidth="850"
     mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <audio:OnlyContinuousVisibility x:Key="OnlyContinuousVisibility " />
+        <audio:OnlyInstantVisibility x:Key="OnlyInstantVisibility" />
+    </UserControl.Resources>
+
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="*" />
+            <RowDefinition />
+            <RowDefinition Height="144.06" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -78,7 +86,107 @@
                 </StackPanel>
             </ScrollViewer>
         </StackPanel>
-        <StackPanel Grid.Row="2" />
+        <GroupBox
+            Grid.Row="2"
+            Margin="0,10,0,0"
+            Header="Effets sonores et ambiances">
+            <StackPanel>
+                <Button
+                    Margin="0,0,0,5"
+                    Command="{Binding AddSfxCommand}"
+                    Content="Ajouter un SFX" />
+                <ItemsControl ItemsSource="{Binding SfxElements}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="2" />
+                            <!--  ou change Columns selon la place  -->
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Margin="6"
+                                Padding="8"
+                                BorderBrush="Gray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel>
+                                    <TextBlock FontWeight="Bold" Text="{Binding DisplayName}" />
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="Gray"
+                                        Text="{Binding FilePath}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <StackPanel
+                                        Margin="0,7,0,0"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal">
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            Text="Volume" />
+                                        <Slider
+                                            Width="90"
+                                            VerticalAlignment="Center"
+                                            Maximum="1"
+                                            Minimum="0"
+                                            Value="{Binding Volume, Mode=TwoWay}" />
+                                    </StackPanel>
+
+                                    <!--  Controles selon le type  -->
+                                    <StackPanel Margin="0,7,0,0" Orientation="Horizontal">
+                                        <!--  CONTINUOUS  -->
+                                        <StackPanel Orientation="Horizontal" Visibility="{Binding Type, Converter={StaticResource OnlyContinuousVisibility}}">
+                                            <Button
+                                                Width="34"
+                                                Command="{Binding DataContext.PlaySfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="?" />
+                                            <Button
+                                                Width="34"
+                                                Command="{Binding DataContext.PauseSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="?" />
+                                            <Button
+                                                Width="34"
+                                                Command="{Binding DataContext.StopSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="?" />
+                                            <Slider
+                                                Width="90"
+                                                Margin="8,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Maximum="{Binding Duration.TotalSeconds}"
+                                                Minimum="0"
+                                                Value="{Binding PositionSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBlock
+                                                Margin="6,0,0,0"
+                                                FontSize="10"
+                                                Text="{Binding Position, StringFormat={}{0:mm\\:ss}}" />
+                                        </StackPanel>
+                                        <!--  INSTANT  -->
+                                        <StackPanel Orientation="Horizontal" Visibility="{Binding Type, Converter={StaticResource OnlyInstantVisibility}}">
+                                            <Button
+                                                Width="34"
+                                                Command="{Binding DataContext.PlaySfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="?" />
+                                        </StackPanel>
+                                        <Button
+                                            Width="34"
+                                            Margin="8,0,0,0"
+                                            Command="{Binding DataContext.RemoveSfxCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Content="?" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </GroupBox>
+
 
         <!--  Global Controls  -->
         <StackPanel Grid.Row="3" Margin="5">

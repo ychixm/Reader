@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
+using NAudio.Wave;
 using SoundWeaver.Audio;
 using SoundWeaver.Bot;
 using SoundWeaver.Playlists;
@@ -167,6 +168,7 @@ namespace SoundWeaver.Models
 
         public ICommand ShowAddChannelDialogCommand { get; }
 
+        public Array SfxTypes => Enum.GetValues(typeof(SfxType));
 
         public SoundWeaverControlViewModel()
         {
@@ -191,7 +193,6 @@ namespace SoundWeaver.Models
             BrowsePlaylistCommand = new RelayCommand<object>(_ => BrowseForPlaylist());
             ShowAddChannelDialogCommand = new RelayCommand<object>(_ => OpenAddChannelDialog());
 
-            // *********** NOUVELLES COMMANDES PLAYLIST ELEMENTS ************
             AddPlaylistCommand = new RelayCommand<object>(_ => ExecuteAddPlaylist());
             LoadPlaylistElementCommand = new RelayCommand<Playlist>(async playlist => await ExecuteLoadPlaylistElementAsync(playlist));
             PlayPlaylistElementCommand = new RelayCommand<Playlist>(async playlist => await ExecutePlayPlaylistElementAsync(playlist));
@@ -199,13 +200,21 @@ namespace SoundWeaver.Models
             IsConnecting = false;
             IsConnected = false;
 
+            // ... ton code habituel ...
+            AddSfxCommand = new RelayCommand<object>(_ => AddSfxInteractive());
+            RemoveSfxCommand = new RelayCommand<object>(s => RemoveSfx(s as SfxElement));
+            PlaySfxCommand = new RelayCommand<object>(s => PlaySfx(s as SfxElement));
+            PauseSfxCommand = new RelayCommand<object>(s => PauseSfx(s as SfxElement));
+            StopSfxCommand = new RelayCommand<object>(s => StopSfx(s as SfxElement));
+
             LoadSettings();
-            ChannelSettings = new ObservableCollection<ChannelSetting>(_settings.ChannelSettings ?? new List<ChannelSetting>());
         }
 
         public void LoadSettings()
         {
             _settings = AppSettingsService.LoadModuleSettings("SoundWeaver", () => new SoundWeaverSettings());
+            ChannelSettings = new ObservableCollection<ChannelSetting>(_settings.ChannelSettings ?? new List<ChannelSetting>());
+            SfxElements = new ObservableCollection<SfxElement>(_settings.SfxElements ?? new List<SfxElement>());
         }
 
         private void ExecuteAddPlaylist()
@@ -665,6 +674,7 @@ namespace SoundWeaver.Models
         private void SaveSettings()
         {
             _settings.ChannelSettings = ChannelSettings.ToList();
+            _settings.SfxElements = SfxElements.ToList();
             AppSettingsService.SaveModuleSettings("SoundWeaver", _settings);
         }
 
@@ -698,7 +708,7 @@ namespace SoundWeaver.Models
             dialogVM.RequestClose += (channel) =>
             {
                 dialog.DialogResultChannel = channel;
-                dialog.CloseDialog(channel != null); 
+                dialog.CloseDialog(channel != null);
             };
 
             bool? result = dialog.ShowDialog();
@@ -707,6 +717,126 @@ namespace SoundWeaver.Models
                 ChannelSettings.Add(dialog.DialogResultChannel);
                 SaveSettings();
             }
+        }
+        private ObservableCollection<SfxElement> _sfxElements = new();
+        public ObservableCollection<SfxElement> SfxElements
+        {
+            get => _sfxElements;
+            set { _sfxElements = value; OnPropertyChanged(); }
+        }
+
+        // Pour la gestion audio (1 par ambiance, ou par SfxElement.Type)
+        private readonly Dictionary<SfxElement, (WaveOutEvent? player, AudioFileReader? reader)> _sfxPlayers = new();
+
+        public ICommand AddSfxCommand { get; }
+        public ICommand RemoveSfxCommand { get; }
+        public ICommand PlaySfxCommand { get; }
+        public ICommand PauseSfxCommand { get; }
+        public ICommand StopSfxCommand { get; }
+        public ICommand SeekSfxCommand { get; }
+
+
+
+        private void SaveSfxElements()
+        {
+            var settings = AppSettingsService.LoadModuleSettings("SoundWeaver", () => new SoundWeaverSettings());
+            settings.SfxElements = SfxElements.ToList();
+            AppSettingsService.SaveModuleSettings("SoundWeaver", settings);
+        }
+
+        private void AddSfxInteractive()
+        {
+            var vm = new AddSfxViewModel();
+            var win = new SoundWeaver.Vue.AddSfxWindow(vm) { Owner = Application.Current.MainWindow };
+            bool? result = win.ShowDialog();
+            if (result == true && win.CreatedSfx != null)
+            {
+                SfxElements.Add(win.CreatedSfx);
+                SaveSfxElements();
+            }
+        }
+        private SfxType PromptSfxType()
+        {
+            // TODO : remplace par un vrai dialog MVVM. Pour exemple simple :
+            var res = System.Windows.MessageBox.Show("Ce son est-il un effet court (Oui) ou une ambiance longue (Non) ?", "Type SFX", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+            return res == System.Windows.MessageBoxResult.Yes ? SfxType.Instant : SfxType.Continuous;
+        }
+
+        public void RemoveSfx(SfxElement? sfx)
+        {
+            if (sfx == null) return;
+            StopSfx(sfx);
+            SfxElements.Remove(sfx);
+            SaveSfxElements();
+        }
+
+        // --- Gestion NAudio ---
+
+        public void PlaySfx(SfxElement? sfx)
+        {
+            if (sfx == null) return;
+            StopSfx(sfx); // Si déjà lancé
+            try
+            {
+                var reader = new AudioFileReader(sfx.FilePath) { Volume = (float)sfx.Volume };
+                var player = new WaveOutEvent();
+                player.Init(reader);
+                player.Play();
+                sfx.Duration = reader.TotalTime;
+                sfx.IsPlaying = true;
+                _sfxPlayers[sfx] = (player, reader);
+
+                // Timer pour mise à jour de la position (si Continuous)
+                var timer = new System.Timers.Timer(200);
+                timer.Elapsed += (s, e) =>
+                {
+                    if (sfx.Type == SfxType.Continuous)
+                    {
+                        sfx.Position = reader.CurrentTime;
+                    }
+                    if (player.PlaybackState == PlaybackState.Stopped)
+                    {
+                        sfx.IsPlaying = false;
+                        timer.Dispose();
+                        StopSfx(sfx);
+                    }
+                };
+                timer.Start();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Erreur lecture SFX : {ex.Message}");
+            }
+        }
+
+        public void PauseSfx(SfxElement? sfx)
+        {
+            if (sfx == null || !_sfxPlayers.ContainsKey(sfx)) return;
+            var (player, _) = _sfxPlayers[sfx];
+            player?.Pause();
+            sfx.IsPlaying = false;
+        }
+
+        public void StopSfx(SfxElement? sfx)
+        {
+            if (sfx == null) return;
+            if (_sfxPlayers.TryGetValue(sfx, out var tuple))
+            {
+                tuple.player?.Stop();
+                tuple.player?.Dispose();
+                tuple.reader?.Dispose();
+                _sfxPlayers.Remove(sfx);
+            }
+            sfx.IsPlaying = false;
+            sfx.Position = TimeSpan.Zero;
+        }
+
+        public void SeekSfx(SfxElement? sfx, TimeSpan newPosition)
+        {
+            if (sfx == null || !_sfxPlayers.ContainsKey(sfx)) return;
+            var (_, reader) = _sfxPlayers[sfx];
+            reader.CurrentTime = newPosition;
+            sfx.Position = newPosition;
         }
 
     }

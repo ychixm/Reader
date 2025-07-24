@@ -6,5 +6,6 @@ namespace SoundWeaver.Models
         public int SelectedChannels { get; set; } = 2;
         public List<ChannelSetting> ChannelSettings { get; set; } = new();
         public string DiscordToken { get; set; }
+        public List<SfxElement> SfxElements { get; set; } = new();
     }
 }
